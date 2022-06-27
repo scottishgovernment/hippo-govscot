@@ -19,7 +19,7 @@ import java.io.IOException;
  * This is a workaround for the following issue:
  * https://issues.onehippo.com/browse/CMS-14725
  */
-public class HttpsFilter extends HttpFilter {
+public class ProtocolFilter extends HttpFilter {
 
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

@@ -13,9 +13,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class HttpsFilterTest {
+public class ProtocolFilterTest {
 
-    private HttpsFilter filter = new HttpsFilter();
+    private ProtocolFilter filter = new ProtocolFilter();
 
     private FilterChain chain = mock(FilterChain.class);
 
