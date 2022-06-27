@@ -17,6 +17,7 @@
 
   <modules>
     <module>hippo-govscot-hst</module>
+    <module>hippo-govscot-hst-funnelback</module>
   </modules>
 
   <build>
