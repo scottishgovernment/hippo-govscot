@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback;
+package scot.gov.publishing.hippo.funnelback.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
