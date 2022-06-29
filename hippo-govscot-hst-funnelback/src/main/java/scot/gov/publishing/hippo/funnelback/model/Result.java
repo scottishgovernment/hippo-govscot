@@ -4,12 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.hippoecm.hst.content.beans.standard.HippoBean;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Result {
-
-    HippoBean bean;
 
     int rank;
 
@@ -151,11 +148,4 @@ public class Result {
         this.clickTrackingUrl = clickTrackingUrl;
     }
 
-    public HippoBean getBean() {
-        return bean;
-    }
-
-    public void setBean(HippoBean bean) {
-        this.bean = bean;
-    }
 }
