@@ -15,6 +15,8 @@ public class ListMetadata {
 
     List<String> t;
 
+    List<String> dcTitle;
+
     public List<String> getTitleSeries() {
         return titleSeries;
     }
@@ -45,5 +47,13 @@ public class ListMetadata {
 
     public void setT(List<String> t) {
         this.t = t;
+    }
+
+    public List<String> getDcTitle() {
+        return dcTitle;
+    }
+
+    public void setDcTitle(List<String> dcTitle) {
+        this.dcTitle = dcTitle;
     }
 }
