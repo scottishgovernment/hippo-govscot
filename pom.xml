@@ -15,9 +15,14 @@
 
   <name>hippo-govscot</name>
 
+  <properties>
+    <hippo.version>14.7.3</hippo.version>
+  </properties>
+
   <modules>
     <module>hippo-govscot-hst</module>
     <module>hippo-govscot-hst-funnelback</module>
+    <module>hippo-govscot-search-repository</module>
   </modules>
 
   <build>

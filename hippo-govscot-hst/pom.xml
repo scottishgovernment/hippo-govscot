@@ -23,7 +23,7 @@
     <dependency>
       <groupId>org.onehippo.cms7.hst</groupId>
       <artifactId>hst-api</artifactId>
-      <version>14.7.3</version>
+      <version>${hippo.version}</version>
       <scope>provided</scope>
     </dependency>
 
