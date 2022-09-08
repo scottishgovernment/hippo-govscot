@@ -2,10 +2,14 @@ package scot.gov.publishing.hippo.funnelback.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.Map;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Exhibit {
 
     private String titleHtml;
+
+    private String messageHtml;
 
     private String displayUrl;
 
@@ -15,12 +19,22 @@ public class Exhibit {
 
     private String category;
 
+    private Map<String, String> additionalProperties;
+
     public String getTitleHtml() {
         return titleHtml;
     }
 
     public void setTitleHtml(String titleHtml) {
         this.titleHtml = titleHtml;
+    }
+
+    public String getMessageHtml() {
+        return messageHtml;
+    }
+
+    public void setMessageHtml(String messageHtml) {
+        this.messageHtml = messageHtml;
     }
 
     public String getDisplayUrl() {
@@ -53,5 +67,13 @@ public class Exhibit {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public Map<String, String> getAdditionalProperties() {
+        return additionalProperties;
+    }
+
+    public void setAdditionalProperties(Map<String, String> additionalProperties) {
+        this.additionalProperties = additionalProperties;
     }
 }
