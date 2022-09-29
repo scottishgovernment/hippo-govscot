@@ -1,0 +1,8 @@
+<'hippo'='http://www.onehippo.org/jcr/hippo/nt/2.0.2'>
+<'hippostd'='http://www.onehippo.org/jcr/hippostd/nt/2.0'>
+<'hippostdpubwf'='http://www.onehippo.org/jcr/hippostdpubwf/nt/1.0'>
+<'search'='http://www.gov.scot/search/1.0'>
+[search:searchsettings] > hippo:document, hippostd:publishableSummary, hippostdpubwf:document orderable
+  - search:searchtype (string)
+  - search:timeoutMillis (long)
+  - search:enabled (boolean)
