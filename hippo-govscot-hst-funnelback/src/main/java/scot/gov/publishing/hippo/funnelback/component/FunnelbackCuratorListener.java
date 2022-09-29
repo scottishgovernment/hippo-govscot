@@ -16,7 +16,16 @@ public class FunnelbackCuratorListener implements PersistedHippoEventListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(FunnelbackCuratorListener.class);
 
-    private static final String CURATOR_DOC_PATH = "/content/documents/administration/funnelback-curator-changes";
+    static final String CURATOR_DOC_PATH = "/content/documents/administration/funnelback-curator-changes";
+
+    interface CacheCleaner {
+        void clean();
+    }
+
+    CacheCleaner cacheCleaner = () -> {
+        clearPageCache();
+        clearCrispCache();
+    };
 
     @Override
     public String getEventCategory() {
@@ -38,8 +47,7 @@ public class FunnelbackCuratorListener implements PersistedHippoEventListener {
 
         if (isFunnelbackCuratorChange(event)) {
             LOG.info("funnelback curator change detected ... clearing page cache and CRISP cache");
-            clearPageCache();
-            clearCrispCache();
+            cacheCleaner.clean();
         }
     }
 

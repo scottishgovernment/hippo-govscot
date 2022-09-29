@@ -11,6 +11,13 @@
   <artifactId>hippo-govscot-hst-funnelback</artifactId>
   <version>0.0.1-SNAPSHOT</version>
 
+  <properties>
+    <sonar.coverage.exclusions>
+      **/ResilientSearchComponent.java,
+      **/FunnelbackSearchService.java
+    </sonar.coverage.exclusions>
+  </properties>
+
   <dependencies>
 
     <dependency>
