@@ -2,12 +2,15 @@ package scot.gov.publishing.hippo.funnelback.component;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -25,6 +28,8 @@ import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blan
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResilientSearchComponent extends EssentialsContentComponent {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ResilientSearchComponent.class);
 
     @Autowired
     private FunnelbackSearchService funnelbackSearchService;
@@ -45,6 +50,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
 
     private static Boolean hystrixPropertiesStrategySet = false;
 
+    @Override
     public void init(ServletContext servletContext, ComponentConfiguration componentConfig) {
         super.init(servletContext, componentConfig);
         resilientSearchService = new ResilientSearchService();
@@ -70,7 +76,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     public void doBeforeRender(HstRequest request, HstResponse response) {
         super.doBeforeRender(request, response);
 
-        SearchSettings searchsettings = searchSettings(request);
+        SearchSettings searchsettings = searchSettings();
         if (isEnabled(searchsettings) ) {
             Search search = search(request);
 
@@ -105,18 +111,35 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
                 .request(request).build();
     }
 
-    SearchSettings searchSettings(HstRequest request) {
-        HippoBean baseBean = request.getRequestContext().getSiteContentBaseBean();
-        HippoBean bean = baseBean.getBean("administration/search-settings");
-
+    SearchSettings searchSettings() {
+        HippoBean bean = getSearchSettingsBean();
         SearchSettings searchsettings = new SearchSettings();
         if (bean != null) {
+            LOG.info("Loaded search settings from {}", bean.getPath());
             searchsettings.setSearchType(bean.getSingleProperty("search:searchtype"));
             searchsettings.setEnabled(bean.getSingleProperty("search:enabled"));
             searchsettings.setTimeoutMillis(bean.getSingleProperty("search:timeoutMillis"));
+        } else {
+            LOG.warn("unable to find search settings document");
         }
 
         return searchsettings;
+    }
+
+    /**
+     * In publishing each site has its own search settings document, and for gov it lives under the root
+     * administration folder
+     */
+    HippoBean getSearchSettingsBean() {
+        HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
+        HippoBean searchSettingsBean = siteBaseBean.getBean("administration/search-settings");
+        if (searchSettingsBean != null) {
+            return searchSettingsBean;
+        }
+
+        HippoBean root = siteBaseBean.getParentBean();
+        searchSettingsBean = root.getBean("administration/search-settings");
+        return searchSettingsBean;
     }
 
     String searchType(SearchSettings searchsettings) {
