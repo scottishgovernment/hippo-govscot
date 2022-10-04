@@ -20,11 +20,13 @@ import scot.gov.publishing.hippo.funnelback.component.postprocess.PaginationBuil
 import scot.gov.publishing.hippo.funnelback.component.postprocess.PostProcessor;
 import scot.gov.publishing.hippo.funnelback.component.postprocess.ResultLinkRewriter;
 import scot.gov.publishing.hippo.funnelback.model.*;
+import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
+import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.equalsAny;
 
 @Service
@@ -42,7 +44,7 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final String FUNNELBACK_RESOURCE_SPACE = "funnelback";
 
-    private static CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
+    private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
 
     private String collection;
 
@@ -50,10 +52,11 @@ public class FunnelbackSearchService implements SearchService {
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
+
         int rank = getRank(search.getPage());
         Map<String, Object> params = searchParamMap(search.getQuery(), rank);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-        String urlTemplate = getUrlTemplate(search.isEnableSuplimentaryQueries());
+        String urlTemplate = getUrlTemplate(search);
         Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, urlTemplate, params);
         ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
         FunnelbackSearchResponse response = resourceBeanMapper.map(results, FunnelbackSearchResponse.class);
@@ -89,9 +92,30 @@ public class FunnelbackSearchService implements SearchService {
         return suggestions.stream().map(Suggestion::getDisp).collect(toList());
     }
 
-    String getUrlTemplate(boolean qsupOff) {
-        // add the qusup param if it is switched off.  Otherwise the param is omitted so that it defaults.
-        return qsupOff ? URL_TEMPLATE + "&qsup=off" : URL_TEMPLATE;
+    String getUrlTemplate(Search search) {
+
+        StringBuilder builder = new StringBuilder(URL_TEMPLATE);
+
+        if (search.isEnableSuplimentaryQueries()) {
+            builder.append("&qsup=off");
+        }
+
+        if (usePreview(search.getRequest())) {
+            builder.append("&profile=_default_preview");
+        }
+
+        return builder.toString();
+    }
+
+    boolean usePreview(HstRequest request) {
+        String userType = userType(request);
+        String previewParam = request.getParameter("profile");
+        return "internal".equals(userType) && "_default_preview".equals(previewParam);
+    }
+
+    String userType(HstRequest request) {
+        String headerUserType = (String) request.getAttribute(UserTypeValve.USERTYPE_REQUEST_ATTR_NAME);
+        return defaultString(headerUserType, "internal");
     }
 
     Pagination createPagination(Search search, FunnelbackSearchResponse response) {
