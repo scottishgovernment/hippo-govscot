@@ -6,3 +6,7 @@
   - search:searchtype (string)
   - search:timeoutMillis (long)
   - search:enabled (boolean)
+
+[search:funnelbackcuratorchanges] > hippo:document, hippostd:publishableSummary, hippotranslation:translated, hippostdpubwf:document orderable
+  - search:hash (string)
+  - search:lastchangedate (date)
