@@ -111,7 +111,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
                 .request(request).build();
     }
 
-    SearchSettings searchSettings() {
+    public static SearchSettings searchSettings() {
         HippoBean bean = getSearchSettingsBean();
         SearchSettings searchsettings = new SearchSettings();
         if (bean != null) {
@@ -130,7 +130,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
      * In publishing each site has its own search settings document, and for gov it lives under the root
      * administration folder
      */
-    HippoBean getSearchSettingsBean() {
+    static HippoBean getSearchSettingsBean() {
         HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
         HippoBean searchSettingsBean = siteBaseBean.getBean("administration/search-settings");
         if (searchSettingsBean != null) {
@@ -167,5 +167,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         request.setAttribute("response", searchResponse.getResponse());
         request.setAttribute("bloomreachresults", searchResponse.getBloomreachResults());
         request.setAttribute("pagination", searchResponse.getPagination());
+
     }
 }
