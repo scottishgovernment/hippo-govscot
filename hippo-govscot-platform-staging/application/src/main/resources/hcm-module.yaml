@@ -1,0 +1,5 @@
+group: hippo-cms
+project:
+  name: hippo-govscot-staging
+  after: [ hippo-cms, hippo-repository ]
+module: hippo-govscot-repository-data
