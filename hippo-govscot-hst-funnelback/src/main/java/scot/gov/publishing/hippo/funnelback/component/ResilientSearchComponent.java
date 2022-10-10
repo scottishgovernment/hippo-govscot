@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletContext;
 
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-
+import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
 
 @Service
@@ -89,9 +87,10 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
                     isBlank(search.getQuery())
                     ? blankSearchResponse()
                     : searchService.performSearch(search, searchsettings);
-            populateRequestAttributes(request, searchResponse);
+            populateRequestAttributes(request, searchResponse, searchsettings);
         } else {
             request.setAttribute("enabled", false);
+            request.setAttribute("autoCompleteEnabled", false);
         }
     }
 
@@ -160,13 +159,18 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         }
     }
 
-    void populateRequestAttributes(HstRequest request, SearchResponse searchResponse) {
+    boolean autoCompleteEnabled(SearchSettings searchSettings) {
+        return searchSettings.isEnabled()
+                && !equalsAny(SEARCH_TYPE_BLOOMREACH, this.searchType, searchSettings.getSearchType());
+    }
+
+    void populateRequestAttributes(HstRequest request, SearchResponse searchResponse, SearchSettings searchSettings) {
         request.setAttribute("queryString", defaultString(request.getQueryString()));
         request.setAttribute("searchType", searchResponse.getType().toString());
         request.setAttribute("question", searchResponse.getQuestion());
         request.setAttribute("response", searchResponse.getResponse());
         request.setAttribute("bloomreachresults", searchResponse.getBloomreachResults());
         request.setAttribute("pagination", searchResponse.getPagination());
-
+        request.setAttribute("autoCompleteEnabled", autoCompleteEnabled(searchSettings));
     }
 }
