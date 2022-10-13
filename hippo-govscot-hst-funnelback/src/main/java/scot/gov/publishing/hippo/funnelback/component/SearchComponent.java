@@ -12,13 +12,17 @@ import javax.servlet.ServletContext;
  */
 public class SearchComponent extends EssentialsContentComponent {
 
+    private static final String AUTO_COMPLETE_ENABLED = "autoCompleteEnabled";
+
     private String searchType;
 
+    @Override
     public void init(ServletContext servletContext, ComponentConfiguration componentConfig) {
         super.init(servletContext, componentConfig);
         this.searchType = componentConfig.getRawParameters().getOrDefault("searchtype", "resilient");
     }
 
+    @Override
     public void doBeforeRender(HstRequest request, HstResponse response) {
         super.doBeforeRender(request, response);
 
@@ -29,14 +33,14 @@ public class SearchComponent extends EssentialsContentComponent {
         // otherwise the value is determined from the search settings document
         switch (searchType) {
             case "bloomreach":
-                request.setAttribute("autoCompleteEnabled", false);
+                request.setAttribute(AUTO_COMPLETE_ENABLED, false);
                 break;
             case "funnelback":
-                request.setAttribute("autoCompleteEnabled", true);
+                request.setAttribute(AUTO_COMPLETE_ENABLED, true);
                 break;
             default:
                 // defer to the type specific in search settings
-                request.setAttribute("autoCompleteEnabled", ResilientSearchComponent.searchSettings().isEnabled());
+                request.setAttribute(AUTO_COMPLETE_ENABLED, ResilientSearchComponent.searchSettings().isEnabled());
         }
     }
 
