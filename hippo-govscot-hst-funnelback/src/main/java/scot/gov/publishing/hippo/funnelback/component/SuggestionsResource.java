@@ -12,6 +12,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Service
@@ -26,6 +27,12 @@ public class SuggestionsResource {
     @Produces(APPLICATION_JSON)
     @GET
     public List<String> getSuggestions(@QueryParam("partial_query") String partialQuery) {
-        return funnelbackSearchService.getSuggestions(partialQuery);
+        SearchSettings searchSettings = ResilientSearchComponent.searchSettings();
+
+        if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
+            return emptyList();
+        } else {
+            return funnelbackSearchService.getSuggestions(partialQuery);
+        }
     }
 }
