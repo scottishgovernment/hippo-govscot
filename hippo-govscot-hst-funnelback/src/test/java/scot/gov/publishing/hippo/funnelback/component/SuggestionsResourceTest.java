@@ -1,0 +1,84 @@
+package scot.gov.publishing.hippo.funnelback.component;
+
+import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
+
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class SuggestionsResourceTest {
+
+    @Test
+    public void returnsEmptyListIfSearchIsDiabled() {
+        // ARRANGE
+        SuggestionsResource sut = new SuggestionsResource();
+        SearchSettings searchSettings = new SearchSettings();
+        searchSettings.setEnabled(false);
+        sut.searchSettingSource = () -> searchSettings;
+        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
+
+        // ACT
+        List<String> actual = sut.getSuggestions("query");
+
+        // ASSERT
+        assertEquals(Collections.emptyList(), actual);
+    }
+
+    @Test
+    public void returnsEmptyListIfSearchIsBloomreach() {
+        // ARRANGE
+        SuggestionsResource sut = new SuggestionsResource();
+        SearchSettings searchSettings = new SearchSettings();
+        searchSettings.setEnabled(true);
+        searchSettings.setSearchType("bloomreach");
+        sut.searchSettingSource = () -> searchSettings;
+        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
+
+        // ACT
+        List<String> actual = sut.getSuggestions("query");
+
+        // ASSERT
+        assertEquals(Collections.emptyList(), actual);
+    }
+
+    @Test
+    public void returnsResultsIfSearchTypeIsResilient() {
+        // ARRANGE
+        SuggestionsResource sut = new SuggestionsResource();
+        SearchSettings searchSettings = new SearchSettings();
+        searchSettings.setEnabled(true);
+        searchSettings.setSearchType("resilient");
+        sut.searchSettingSource = () -> searchSettings;
+        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
+        when(sut.funnelbackSearchService.getSuggestions(anyString())).thenReturn(singletonList("one"));
+
+        // ACT
+        List<String> actual = sut.getSuggestions("query");
+
+        // ASSERT
+        assertEquals(singletonList("one"), actual);
+    }
+
+    @Test
+    public void returnsResultsIfSearchTypeIsFunnelback() {
+        // ARRANGE
+        SuggestionsResource sut = new SuggestionsResource();
+        SearchSettings searchSettings = new SearchSettings();
+        searchSettings.setEnabled(true);
+        searchSettings.setSearchType("resilient");
+        sut.searchSettingSource = () -> searchSettings;
+        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
+        when(sut.funnelbackSearchService.getSuggestions(anyString())).thenReturn(singletonList("one"));
+
+        // ACT
+        List<String> actual = sut.getSuggestions("query");
+
+        // ASSERT
+        assertEquals(singletonList("one"), actual);
+    }
+}
