@@ -52,7 +52,15 @@ public class FunnelbackSearchService implements SearchService {
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
+        try {
+            return  doPerformSearch(search, searchsettings);
+        } catch (ResourceException e) {
+            LOG.error("performSearch failed {}", search.getQuery(), e);
+            throw e;
+        }
+    }
 
+    SearchResponse doPerformSearch(Search search, SearchSettings searchsettings) {
         int rank = getRank(search.getPage());
         Map<String, Object> params = searchParamMap(search.getQuery(), rank);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
