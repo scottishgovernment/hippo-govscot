@@ -101,11 +101,17 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     Search search(HstRequest request) {
         String query = getAnyParameter(request, "q");
         String qsup = getAnyParameter(request, "qsup");
+        String errorFunnelbackStr = getAnyParameter(request, "errorFunnelback");
+        String errorBloomreachStr = getAnyParameter(request, "errorBloomreach");
         int page = getAnyIntParameter(request, "page", 1);
         boolean qsupOff = "off".equals(qsup);
+        boolean errorBloomreach = "true".equals(errorBloomreachStr);
+        boolean errorFunnelback = "true".equals(errorFunnelbackStr);
         return new SearchBuilder()
                 .query(query)
                 .page(page)
+                .errorBloomreach(errorBloomreach)
+                .errorFunnelback(errorFunnelback)
                 .enableSuplimentaryQueries(qsupOff)
                 .request(request).build();
     }

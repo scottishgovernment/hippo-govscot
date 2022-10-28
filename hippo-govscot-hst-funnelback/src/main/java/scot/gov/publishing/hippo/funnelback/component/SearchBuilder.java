@@ -16,6 +16,10 @@ public class SearchBuilder {
 
     private String requestUrl;
 
+    private boolean errorBloomreach = false;
+
+    private boolean errorFunnelback = false;
+
     private HstRequest request;
 
     SearchBuilder query(String query) {
@@ -27,6 +31,17 @@ public class SearchBuilder {
         this.page = page;
         return this;
     }
+
+    SearchBuilder errorBloomreach(boolean error) {
+        this.errorBloomreach = error;
+        return this;
+    }
+
+    SearchBuilder errorFunnelback(boolean error) {
+        this.errorFunnelback = error;
+        return this;
+    }
+
 
     SearchBuilder enableSuplimentaryQueries(boolean enableSuplimentaryQueries) {
         this.enableSuplimentaryQueries = enableSuplimentaryQueries;
@@ -45,6 +60,7 @@ public class SearchBuilder {
         return HstRequestUtils.getExternalRequestUrl(servletRequest, false);
     }
 
+
     public Search build() {
         Search search = new Search();
         search.setQuery(query);
@@ -52,6 +68,8 @@ public class SearchBuilder {
         search.setRequest(request);
         search.setRequestUrl(requestUrl);
         search.setEnableSuplimentaryQueries(enableSuplimentaryQueries);
+        search.setErrorBloomreach(errorBloomreach);
+        search.setErrorFunnelback(errorFunnelback);
         return search;
     }
 }

@@ -53,6 +53,10 @@ public class FunnelbackSearchService implements SearchService {
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
 
+        if (search.isErrorFunnelback()) {
+            throw new ResourceException("Manafactured funnelback error!");
+        }
+
         int rank = getRank(search.getPage());
         Map<String, Object> params = searchParamMap(search.getQuery(), rank);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());

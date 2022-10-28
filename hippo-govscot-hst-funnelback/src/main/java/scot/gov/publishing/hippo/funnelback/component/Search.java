@@ -12,6 +12,10 @@ public class Search {
 
     private boolean enableSuplimentaryQueries;
 
+    private boolean errorBloomreach;
+
+    private boolean errorFunnelback;
+
     private String requestUrl;
 
     private HstRequest request;
@@ -40,6 +44,22 @@ public class Search {
         this.enableSuplimentaryQueries = enableSuplimentaryQueries;
     }
 
+    public boolean isErrorBloomreach() {
+        return errorBloomreach;
+    }
+
+    public void setErrorBloomreach(boolean errorBloomreach) {
+        this.errorBloomreach = errorBloomreach;
+    }
+
+    public boolean isErrorFunnelback() {
+        return errorFunnelback;
+    }
+
+    public void setErrorFunnelback(boolean errorFunnelback) {
+        this.errorFunnelback = errorFunnelback;
+    }
+
     public String getRequestUrl() {
         return requestUrl;
     }
@@ -55,4 +75,6 @@ public class Search {
     public void setRequest(HstRequest request) {
         this.request = request;
     }
+
+
 }
