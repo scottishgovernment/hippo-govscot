@@ -5,11 +5,11 @@
   <parent>
     <groupId>scot.gov.publishing.hippo</groupId>
     <artifactId>hippo-govscot</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.32</version>
   </parent>
 
   <artifactId>hippo-govscot-hst-funnelback</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.32</version>
 
   <properties>
     <sonar.coverage.exclusions>
