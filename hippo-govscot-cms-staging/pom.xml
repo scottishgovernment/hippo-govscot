@@ -12,9 +12,16 @@
   <version>0.0.1-SNAPSHOT</version>
 
   <properties>
+    <sonar.exclusions>
+      **/ExportDialog.java,
+      **/LoginPanel.java,
+      **/PreviewLinkDialog.java,
+      **/PreviewPlugin.java
+    </sonar.exclusions>
     <sonar.coverage.exclusions>
     </sonar.coverage.exclusions>
   </properties>
+
   <dependencies>
 
     <dependency>
