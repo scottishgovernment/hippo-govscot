@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scot.gov.publishing.staging.dialog.PreviewDatePickerDialog;
 
+import javax.jcr.NamespaceException;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import java.util.HashSet;
@@ -57,9 +58,9 @@ public class PreviewFolderMenuItemPlugin extends RenderPlugin {
             if (child.isNodeType(NT_FOLDER) || child.isNodeType(NT_DIRECTORY)) {
                 folderPreviewGeneration(child, nodeIDs);
             } else if (child.isNodeType(NT_HANDLE)) {
-//                if (isMirror(child)) {
-//                    nodeIDs.add(getMirrorTarget(child));
-//                }
+                if (isMirror(child)) {
+                    nodeIDs.add(getMirrorTarget(child));
+                }
                 nodeIDs.add(child.getIdentifier());
             }
         }
@@ -72,7 +73,11 @@ public class PreviewFolderMenuItemPlugin extends RenderPlugin {
         }
 
         Node doc = node.getNode(node.getName());
-        return doc.isNodeType("publishing:mirror");
+        try {
+            return doc.isNodeType("publishing:mirror");
+        } catch (NamespaceException e) {
+            return false;
+        }
     }
 
     String getMirrorTarget(Node node) throws RepositoryException {
