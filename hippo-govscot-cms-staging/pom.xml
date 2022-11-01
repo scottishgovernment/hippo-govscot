@@ -13,12 +13,11 @@
 
   <properties>
     <sonar.exclusions>
-      **/ExportDialog.java,
-      **/LoginPanel.java,
       **/PreviewLinkDialog.java,
       **/PreviewPlugin.java,
       **/PreviewDatePickerDialog.java,
-      **/PreviewFolderMenuItemPlugin.java
+      **/PreviewFolderMenuItemPlugin.java,
+      **/PreviewLinksCleanupJob.java
     </sonar.exclusions>
     <sonar.coverage.exclusions>
     </sonar.coverage.exclusions>
