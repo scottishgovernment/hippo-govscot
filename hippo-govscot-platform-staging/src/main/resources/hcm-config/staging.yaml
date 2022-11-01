@@ -1,0 +1,5 @@
+definitions:
+  namespace:
+    staging:
+      uri: http://www.staging.com/staging/nt/1.0
+      cnd: namespaces/staging.cnd

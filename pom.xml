@@ -18,8 +18,11 @@
   <modules>
     <module>hippo-govscot-hst</module>
     <module>hippo-govscot-hst-funnelback</module>
+    <module>hippo-govscot-hst-staging</module>
     <module>hippo-govscot-cms-funnelback</module>
+    <module>hippo-govscot-cms-staging</module>
     <module>hippo-govscot-platform-funnelback</module>
+    <module>hippo-govscot-platform-staging</module>
   </modules>
 
   <properties>

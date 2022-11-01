@@ -21,6 +21,8 @@ import javax.servlet.ServletContext;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
+import static wicket.contrib.input.events.key.KeyType.i;
+import static wicket.contrib.input.events.key.KeyType.s;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
