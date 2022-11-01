@@ -16,7 +16,9 @@
       **/ExportDialog.java,
       **/LoginPanel.java,
       **/PreviewLinkDialog.java,
-      **/PreviewPlugin.java
+      **/PreviewPlugin.java,
+      **/PreviewDatePickerDialog.java,
+      **/PreviewFolderMenuItemPlugin.java
     </sonar.exclusions>
     <sonar.coverage.exclusions>
     </sonar.coverage.exclusions>
