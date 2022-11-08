@@ -24,6 +24,6 @@
 
     <name>Hippo govscot search repository</name>
     <description>Hippo govscot search repository</description>
-    <artifactId>hippo-govscot-platform-funnelback</artifactId>
+    <artifactId>hippo-govscot-funnelback-repository</artifactId>
 
 </project>

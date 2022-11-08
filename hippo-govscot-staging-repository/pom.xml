@@ -10,6 +10,6 @@
 
     <name>www.gov.scot Repository Data</name>
     <description>www.gov.scot Repository Data</description>
-    <artifactId>hippo-govscot-platform-staging</artifactId>
+    <artifactId>hippo-govscot-staging-repository</artifactId>
 
 </project>
