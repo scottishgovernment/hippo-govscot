@@ -22,6 +22,7 @@ import org.apache.wicket.request.handler.resource.ResourceReferenceRequestHandle
 import org.apache.wicket.request.resource.CssResourceReference;
 import org.apache.wicket.request.resource.PackageResourceReference;
 import org.apache.wicket.request.resource.ResourceReference;
+import org.apache.wicket.validation.validator.DateValidator;
 import org.hippoecm.frontend.behaviors.EventStoppingDecorator;
 import org.hippoecm.frontend.dialog.AbstractDialog;
 import org.hippoecm.frontend.session.UserSession;
@@ -33,14 +34,13 @@ import org.hippoecm.hst.platform.model.HstModelRegistry;
 import org.hippoecm.repository.HippoStdNodeType;
 import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.NodeIterable;
+import org.joda.time.DateTime;
 import org.onehippo.cms7.channelmanager.HstUtil;
 import org.onehippo.cms7.services.HippoServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.jcr.Node;
-import javax.jcr.RepositoryException;
-import javax.jcr.Session;
+import javax.jcr.*;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.*;
@@ -66,7 +66,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
     private Date expirationDate;
     private Set<String> nodeIDs;
 
-    public PreviewDatePickerDialog(final Set<String> nodeIDs) {
+    public PreviewDatePickerDialog(Set<String> nodeIDs) {
         this.title = getString("dialog-title", null, "Preview generation");
         this.nodeIDs = nodeIDs;
 
@@ -76,19 +76,20 @@ public class PreviewDatePickerDialog extends AbstractDialog {
         this.expirationDate =  preselectedDate.getTime();
 
         Form form = new Form<>("form", new CompoundPropertyModel<>(this));
-        final DateTextField expiryDate = new DateTextField("expiration-date",
+        DateTextField expiryDate = new DateTextField("expiration-date",
                 new PropertyModel<>(this, "expirationDate"),
                 new PatternDateConverter("dd/MM/yyyy", true)) {
 
             @Override
             protected void onModelChanged() {
                 super.onModelChanged();
-                final AjaxRequestTarget target = getRequestCycle().find(AjaxRequestTarget.class);
+                AjaxRequestTarget target = getRequestCycle().find(AjaxRequestTarget.class);
                 if (target != null) {
                     target.add(this.getParent().get(this.getId() + RESET_CONTAINER));
                 }
             }
         };
+        expiryDate.add(DateValidator.minimum(Calendar.getInstance().getTime()));
         expiryDate.add(createDatePicker());
         expiryDate.add(createSimpleAjaxChangeBehavior());
         form.add(expiryDate);
@@ -128,13 +129,13 @@ public class PreviewDatePickerDialog extends AbstractDialog {
         return datePicker;
     }
 
-    private AjaxFormComponentUpdatingBehavior createSimpleAjaxChangeBehavior(final Component... components) {
+    private AjaxFormComponentUpdatingBehavior createSimpleAjaxChangeBehavior(Component... components) {
         return new AjaxFormComponentUpdatingBehavior("change") {
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
                 setOkEnabled(true);
                 if (components != null) {
-                    for (final Component component : components) {
+                    for (Component component : components) {
                         target.add(component);
                         Component reset = component.getParent().get(component.getId() + RESET_CONTAINER);
                         if (reset != null) {
@@ -148,7 +149,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
 
 
 
-    private MarkupContainer createSimpleResetLink(final Component component, final PreviewDatePickerDialog dialog) {
+    private MarkupContainer createSimpleResetLink(Component component, PreviewDatePickerDialog dialog) {
         WebMarkupContainer container = new WebMarkupContainer(component.getId() + RESET_CONTAINER);
         container.setOutputMarkupId(true);
         Image resetImage = new Image(component.getId() + "-reset", RESET_ICON) {
@@ -161,13 +162,13 @@ public class PreviewDatePickerDialog extends AbstractDialog {
         resetImage.add(new AjaxEventBehavior("click") {
 
             @Override
-            protected void updateAjaxAttributes(final AjaxRequestAttributes attributes) {
+            protected void updateAjaxAttributes(AjaxRequestAttributes attributes) {
                 super.updateAjaxAttributes(attributes);
                 attributes.getAjaxCallListeners().add(new EventStoppingDecorator());
             }
 
             @Override
-            protected void onEvent(final AjaxRequestTarget target) {
+            protected void onEvent(AjaxRequestTarget target) {
                 dialog.setOkEnabled(false);
                 component.setDefaultModelObject(null);
                 target.add(component);
@@ -196,8 +197,8 @@ public class PreviewDatePickerDialog extends AbstractDialog {
     private List<String> getPreviewURLs(Node node) {
         HstRequestContext hstRequestContext = RequestContextProvider.get();
         HstModelRegistry hstModelRegistry = HippoServiceRegistry.getService(HstModelRegistry.class);
-        final HstModel siteModel = hstModelRegistry.getHstModel("/site");
-        final HstLinkCreator hstLinkCreator = siteModel.getHstLinkCreator();
+        HstModel siteModel = hstModelRegistry.getHstModel("/site");
+        HstLinkCreator hstLinkCreator = siteModel.getHstLinkCreator();
         return siteModel.getVirtualHosts().getMountsByHostGroup(HstUtil.getHostGroup())
                 .stream()
                 .filter(mount -> {
@@ -212,7 +213,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
                 .collect(Collectors.toList());
     }
 
-    protected void generatePreviewLinkNodes(final Node node, final List<String> urls, final String randomUUIDString) throws RepositoryException {
+    protected void generatePreviewLinkNodes(Node node, List<String> urls, String randomUUIDString) throws RepositoryException {
         LOG.info("generatePreviewLinkNodes {}, {}, {}", node.getPath(), urls, randomUUIDString);
         Node unpublishedVariant = getUnpublishedVariant(node);
         urls.stream().forEach(url -> {
@@ -240,10 +241,44 @@ public class PreviewDatePickerDialog extends AbstractDialog {
         });
     }
 
-    private static Node getUnpublishedVariant(Node handle) throws RepositoryException {
+    private Node getUnpublishedVariant(Node handle) throws RepositoryException {
+        Node unpublishedVariant = getVariantWithState(handle, HippoStdNodeType.UNPUBLISHED);
+        if (unpublishedVariant != null) {
+            return unpublishedVariant;
+        }
+
+        // there is no unpublished variant. This is due to code automatically creating content that has never ben edited
+        // clone the published one.
+        return createUnpublishedVariant(handle);
+    }
+
+    Node createUnpublishedVariant(Node handle) throws RepositoryException {
+        Node publishedVariant = getVariantWithState(handle, HippoStdNodeType.PUBLISHED);
+        if (publishedVariant == null) {
+            return null;
+        }
+
+        Workspace workspace = handle.getSession().getWorkspace();
+        workspace.copy(publishedVariant.getPath(), publishedVariant.getPath());
+        Node newVariant = lastVariant(handle);
+        newVariant.setProperty(HippoStdNodeType.HIPPOSTD_STATE, HippoStdNodeType.UNPUBLISHED);
+        newVariant.setProperty("hippo:availability", new String [] {"preview"});
+        return newVariant;
+    }
+
+    Node lastVariant(Node handle) throws RepositoryException {
+        NodeIterator it = handle.getNodes(handle.getName());
+        Node last = null;
+        while (it.hasNext()) {
+            last = it.nextNode();
+        }
+        return last;
+    }
+
+    private Node getVariantWithState(Node handle, String state) throws RepositoryException {
         for (Node variant : new NodeIterable(handle.getNodes(handle.getName()))) {
-            final String state = JcrUtils.getStringProperty(variant, HippoStdNodeType.HIPPOSTD_STATE, null);
-            if (HippoStdNodeType.UNPUBLISHED.equals(state)) {
+            String variantState = JcrUtils.getStringProperty(variant, HippoStdNodeType.HIPPOSTD_STATE, null);
+            if (variantState.equals(state)) {
                 return variant;
             }
         }
@@ -251,7 +286,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
     }
 
     @Override
-    public void renderHead(final IHeaderResponse response) {
+    public void renderHead(IHeaderResponse response) {
         super.renderHead(response);
         response.render(CssHeaderItem.forReference(CSS));
     }

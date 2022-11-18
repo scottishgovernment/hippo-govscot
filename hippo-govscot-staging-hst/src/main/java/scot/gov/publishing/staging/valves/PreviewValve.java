@@ -33,20 +33,27 @@ public class PreviewValve extends AbstractOrderableValve {
         Mount resolvedMount = requestContext.getResolvedMount().getMount();
         try {
             if (isPreviewMount(requestContext)) {
-                doInvoke(context, requestContext, resolvedMount);
+                doInvokeWithExceptionHandling(context, requestContext, resolvedMount);
             }
-        } catch (RepositoryException repositoryException) {
-            LOG.error("Something with repo went wrong while accessing this node {}.", requestContext.getSiteContentBaseBean(), repositoryException);
-        } catch (IOException ioException) {
-            LOG.error("Something with IO went wrong while accessing this node {}.", requestContext.getSiteContentBaseBean(), ioException);
+        } catch (IOException e) {
+            LOG.error("IO IOException invoking preview valve for {}.", requestContext.getSiteContentBaseBean(), e);
         } finally {
             context.invokeNext();
         }
     }
 
+    void doInvokeWithExceptionHandling(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount) throws IOException {
+        try {
+            doInvoke(valveContext, requestContext, resolvedMount);
+        } catch (Exception e) {
+            // if anything goes wring, default to not allowing access
+            LOG.error("Exception while accessing this node {}.", requestContext.getSiteContentBaseBean(), e);
+            requestContext.getServletResponse().sendError(403);
+        }
+    }
+
     void doInvoke(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount)
             throws RepositoryException, IOException {
-
         //fetching the content bean
         HippoBean contentBean = requestContext.getContentBean();
 
