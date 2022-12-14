@@ -11,6 +11,9 @@ public class SearchSettings {
 
     private boolean enabled;
 
+    double funnelbackErrorRate = 0;
+
+    double bloomreachErrorRate = 0;
 
     public String getSearchType() {
         return searchType;
@@ -34,5 +37,21 @@ public class SearchSettings {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public double getFunnelbackErrorRate() {
+        return funnelbackErrorRate;
+    }
+
+    public void setFunnelbackErrorRate(double funnelbackErrorRate) {
+        this.funnelbackErrorRate = funnelbackErrorRate;
+    }
+
+    public double getBloomreachErrorRate() {
+        return bloomreachErrorRate;
+    }
+
+    public void setBloomreachErrorRate(double bloomreachErrorRate) {
+        this.bloomreachErrorRate = bloomreachErrorRate;
     }
 }

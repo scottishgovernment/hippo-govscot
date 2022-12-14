@@ -21,6 +21,7 @@ import javax.servlet.ServletContext;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
+import static wicket.contrib.input.events.key.KeyType.e;
 import static wicket.contrib.input.events.key.KeyType.i;
 import static wicket.contrib.input.events.key.KeyType.s;
 
@@ -53,11 +54,30 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     @Override
     public void init(ServletContext servletContext, ComponentConfiguration componentConfig) {
         super.init(servletContext, componentConfig);
+
+        searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
-        searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
+        configureManafacturedErrorRates(componentConfig);
         ensueHystrixPropertiesStrategy();
+    }
+
+    void configureManafacturedErrorRates(ComponentConfiguration componentConfig) {
+        double bloomreachErrorRate = errorRate(componentConfig, "bloomreachErrorRate");
+        double funnelbackErrorRate = errorRate(componentConfig, "funnelbackErrorRate");
+
+        if (bloomreachErrorRate != 0 || funnelbackErrorRate != 0) {
+            LOG.warn("Manafactured errors configured: bloomreachErrorRate = {}, funnelbackErrorRate = {}",
+                    bloomreachErrorRate, funnelbackErrorRate);
+        }
+        resilientSearchService.setBloomreachErrorRate(bloomreachErrorRate);
+        resilientSearchService.setFunnelbackErrorRate(funnelbackErrorRate);
+    }
+
+    double errorRate(ComponentConfiguration componentConfig, String param) {
+        String errorRateString = componentConfig.getRawParameters().getOrDefault(param, "0");
+        return Double.parseDouble(errorRateString);
     }
 
     private void ensueHystrixPropertiesStrategy() {
