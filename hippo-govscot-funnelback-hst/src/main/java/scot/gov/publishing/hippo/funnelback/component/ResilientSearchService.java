@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.TimeUnit;
+
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -24,11 +26,29 @@ public class ResilientSearchService implements SearchService {
 
     private SearchService bloomreachSearchService;
 
+    double bloomreachErrorRate = 0;
+
+    double funnelbackErrorRate = 0;
+
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
         LOG.info("performSearch {}, {}, {}", searchsettings.isEnabled(), searchsettings.getSearchType(), searchsettings.getTimeoutMillis());
 
-        HystrixCommandProperties.Setter commandPropertiesSetter = HystrixCommandProperties.Setter().withExecutionTimeoutInMilliseconds((int) searchsettings.getTimeoutMillis());
+        int timeoutMilis = (int) searchsettings.getTimeoutMillis();
+        HystrixCommandProperties.Setter commandPropertiesSetter = HystrixCommandProperties.Setter()
+                .withExecutionTimeoutInMilliseconds(timeoutMilis)
+
+                // there are 10 buckets, so each bucket is 5 seconds
+                .withMetricsRollingStatisticalWindowInMilliseconds((int) TimeUnit.SECONDS.toMillis(50))
+
+                // wait 1 minute before retrying tripped circuit
+                .withCircuitBreakerSleepWindowInMilliseconds((int) TimeUnit.MINUTES.toMillis(1))
+
+                // do not trip the circuit unless we get at least 5 requests in the statistical window
+                .withCircuitBreakerRequestVolumeThreshold(5)
+
+                // 500 percent error rate will cause circuit to trip
+                .withCircuitBreakerErrorThresholdPercentage(50);
         SearchCommand command = new SearchCommand(search, searchsettings, commandPropertiesSetter);
         return command.execute();
     }
@@ -50,13 +70,16 @@ public class ResilientSearchService implements SearchService {
 
         @Override
         protected SearchResponse run() {
+
             LOG.info("Using funnelback search ... {}", search.getQuery());
+            throwExceptionAtSpecifiedRate("funnelback", funnelbackErrorRate);
             return funnelbackSearchService.performSearch(search, searchsettings);
         }
 
         @Override
         protected SearchResponse getFallback() {
             LOG.info("Using fallback search ... {}", search.getQuery());
+            throwExceptionAtSpecifiedRate("bloomreach", bloomreachErrorRate);
             return bloomreachSearchService.performSearch(search, searchsettings);
         }
     }
@@ -77,4 +100,42 @@ public class ResilientSearchService implements SearchService {
         this.bloomreachSearchService = bloomreachSearchService;
     }
 
+    /**
+     * Used for testing error behaviour.  The rate can be set in the component in the sitemap.
+     */
+    void throwExceptionAtSpecifiedRate(String label, double rate) {
+
+        if (rate == 0) {
+            return;
+        }
+
+        double random = Math.random();
+        if (random < rate) {
+            LOG.warn("Generating manafactured exception, label is {}, rate is {}", label, rate);
+            throw new ManafacturedException(label);
+        }
+    }
+
+    public double getBloomreachErrorRate() {
+        return bloomreachErrorRate;
+    }
+
+    public void setBloomreachErrorRate(double bloomreachErrorRate) {
+        this.bloomreachErrorRate = bloomreachErrorRate;
+    }
+
+    public double getFunnelbackErrorRate() {
+        return funnelbackErrorRate;
+    }
+
+    public void setFunnelbackErrorRate(double funnelbackErrorRate) {
+        this.funnelbackErrorRate = funnelbackErrorRate;
+    }
+
+    class ManafacturedException extends RuntimeException {
+
+        public ManafacturedException(String msg) {
+            super(msg);
+        }
+    }
 }
