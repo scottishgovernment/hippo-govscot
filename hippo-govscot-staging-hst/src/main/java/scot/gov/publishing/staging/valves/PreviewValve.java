@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.container.valves.AbstractOrderableValve;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
+import org.hippoecm.hst.content.beans.standard.HippoDocumentBean;
+import org.hippoecm.hst.content.beans.standard.HippoFolderBean;
 import org.hippoecm.hst.core.container.ContainerException;
 import org.hippoecm.hst.core.container.ValveContext;
 import org.hippoecm.hst.core.request.HstRequestContext;
@@ -19,6 +21,8 @@ import javax.jcr.RepositoryException;
 
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static scot.gov.publishing.staging.valves.PreviewKeyUtils.isPreviewMount;
@@ -54,26 +58,26 @@ public class PreviewValve extends AbstractOrderableValve {
 
     void doInvoke(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount)
             throws RepositoryException, IOException {
-        //fetching the content bean
-        HippoBean contentBean = requestContext.getContentBean();
+
 
         //fetching the previewkey
         Set<String> previewKeys = PreviewKeyUtils.getPreviewKeys(
                 valveContext.getServletRequest(), valveContext.getServletResponse(), resolvedMount);
 
-        if (isExempt(requestContext)) {
-            return;
-        }
-
-        if (contentBean == null) {
-            LOG.info("Preview request doesn't contain content bean");
+        // intercepting requests having the id in the url
+        if (previewKeys.isEmpty()) {
+            LOG.info("Preview request doesn't contain preview key");
             requestContext.getServletResponse().sendError(403);
             return;
         }
 
-        // intercepting requests having the id in the url
-        if (previewKeys.isEmpty()) {
-            LOG.info("Preview request doesn't contain preview key");
+        if (isExempt(requestContext)) {
+            return;
+        }
+
+        HippoBean contentBean = getContentBean(requestContext);
+        if (contentBean == null) {
+            LOG.info("Preview request doesn't contain content bean");
             requestContext.getServletResponse().sendError(403);
             return;
         }
@@ -84,6 +88,29 @@ public class PreviewValve extends AbstractOrderableValve {
         }
     }
 
+    HippoBean getContentBean(HstRequestContext requestContext) {
+        HippoBean contentBean = requestContext.getContentBean();
+
+        // special case for /publication/slug/documents urls: content bean is a folder which does not have a
+        // preview key so return the publication
+        if (contentBean.isHippoFolderBean() && "documents".equals(contentBean.getName())) {
+            HippoFolderBean documentFolder = (HippoFolderBean) contentBean;
+            HippoFolderBean publicationFolder = (HippoFolderBean) documentFolder.getParentBean();
+            List<HippoDocumentBean> documents = publicationFolder.getDocuments();
+            Optional<HippoDocumentBean> publication = documents.stream().filter(this::isPublicaiton).findFirst();
+            return publication.isPresent() ? publication.get() : null;
+        }
+        return contentBean;
+    }
+
+    boolean isPublicaiton(HippoDocumentBean bean) {
+        try {
+            return bean.getNode().isNodeType("govscot:Publication");
+        }catch (RepositoryException e) {
+            LOG.error("Unexpected exception trying to find publication", e);
+            return false;
+        }
+    }
     /**
      * anything starting with /fragments is exempt as it is a dynamic endpoint and have to implement its
      * own logic determining visibility.
