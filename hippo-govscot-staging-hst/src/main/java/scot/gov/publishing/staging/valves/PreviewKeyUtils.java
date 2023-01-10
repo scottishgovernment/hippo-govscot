@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -85,7 +84,7 @@ public class PreviewKeyUtils {
     private static Set<String> getPreviewKeyCookies(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null) {
-            return emptySet();
+            return new HashSet<>();
         }
         Set<String> previewKeys = Arrays.stream(cookies)
                 .filter(PreviewKeyUtils::isPreviewKey)
