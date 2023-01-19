@@ -16,7 +16,7 @@
       **/HealthResource.java,
       **/FunnelbackSearchService.java,
       **/ResilientSearchComponent.java,
-      **/ResilientSearchService.java
+      **/ResilientSearchService.java,
       **/SearchComponent.java
     </sonar.coverage.exclusions>
   </properties>
