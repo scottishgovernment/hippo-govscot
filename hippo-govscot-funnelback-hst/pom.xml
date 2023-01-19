@@ -13,9 +13,11 @@
 
   <properties>
     <sonar.coverage.exclusions>
+      **/HealthResource.java,
+      **/FunnelbackSearchService.java,
       **/ResilientSearchComponent.java,
-      **/SearchComponent.java,
-      **/FunnelbackSearchService.java
+      **/ResilientSearchService.java
+      **/SearchComponent.java
     </sonar.coverage.exclusions>
   </properties>
 

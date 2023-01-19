@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
@@ -27,6 +28,8 @@ public class ResilientSearchService implements SearchService {
     private SearchService funnelbackSearchService;
 
     private SearchService bloomreachSearchService;
+
+    Supplier<Double> randomNumberSource = () -> Math.random();
 
     double bloomreachErrorRate = 0;
 
@@ -105,7 +108,7 @@ public class ResilientSearchService implements SearchService {
             return;
         }
 
-        double random = Math.random();
+        double random = randomNumberSource.get();
         if (random < rate) {
             LOG.warn("Generating manufactured exception, label is {}, rate is {}", label, rate);
             throw new ManafacturedException(label);
