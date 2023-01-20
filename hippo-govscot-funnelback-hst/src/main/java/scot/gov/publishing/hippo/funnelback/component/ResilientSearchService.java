@@ -41,11 +41,11 @@ public class ResilientSearchService implements SearchService {
         HystrixCommandProperties.Setter commandPropertiesSetter = HystrixCommandProperties.Setter()
                 .withExecutionTimeoutInMilliseconds(timeoutMilis)
 
-                // there are 10 buckets, so each bucket is 5 seconds
-                .withMetricsRollingStatisticalWindowInMilliseconds((int) TimeUnit.SECONDS.toMillis(50))
+                // there are 10 buckets, so each bucket is 30 seconds
+                .withMetricsRollingStatisticalWindowInMilliseconds((int) TimeUnit.MINUTES.toMillis(5))
 
-                // wait 1 minute before retrying tripped circuit
-                .withCircuitBreakerSleepWindowInMilliseconds((int) TimeUnit.MINUTES.toMillis(1))
+                // wait 5 minute before retrying tripped circuit
+                .withCircuitBreakerSleepWindowInMilliseconds((int) TimeUnit.SECONDS.toMillis(30))
 
                 // do not trip the circuit unless we get at least 5 requests in the statistical window
                 .withCircuitBreakerRequestVolumeThreshold(5)
