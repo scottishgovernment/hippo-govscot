@@ -31,10 +31,6 @@ public class ResilientSearchService implements SearchService {
 
     Supplier<Double> randomNumberSource = () -> Math.random();
 
-    double bloomreachErrorRate = 0;
-
-    double funnelbackErrorRate = 0;
-
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
         int timeoutMilis = (int) searchsettings.getTimeoutMillis();
@@ -56,6 +52,22 @@ public class ResilientSearchService implements SearchService {
         return command.execute();
     }
 
+    public SearchService getFunnelbackSearchService() {
+        return funnelbackSearchService;
+    }
+
+    public void setFunnelbackSearchService(FunnelbackSearchService funnelbackSearchService) {
+        this.funnelbackSearchService = funnelbackSearchService;
+    }
+
+    public SearchService getBloomreachSearchService() {
+        return bloomreachSearchService;
+    }
+
+    public void setBloomreachSearchService(SearchService bloomreachSearchService) {
+        this.bloomreachSearchService = bloomreachSearchService;
+    }
+
     class SearchCommand extends HystrixCommand<SearchResponse> {
 
         Search search;
@@ -73,37 +85,24 @@ public class ResilientSearchService implements SearchService {
 
         @Override
         protected SearchResponse run() {
-            throwExceptionAtSpecifiedRate("funnelback", funnelbackErrorRate);
+            throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
             return funnelbackSearchService.performSearch(search, searchsettings);
         }
 
         @Override
         protected SearchResponse getFallback() {
-            throwExceptionAtSpecifiedRate("bloomreach", bloomreachErrorRate);
+            throwExceptionAtSpecifiedRate("bloomreach", searchsettings.getBloomreachErrorRate());
             return bloomreachSearchService.performSearch(search, searchsettings);
         }
-    }
-
-    public SearchService getFunnelbackSearchService() {
-        return funnelbackSearchService;
-    }
-
-    public void setFunnelbackSearchService(FunnelbackSearchService funnelbackSearchService) {
-        this.funnelbackSearchService = funnelbackSearchService;
-    }
-
-    public SearchService getBloomreachSearchService() {
-        return bloomreachSearchService;
-    }
-
-    public void setBloomreachSearchService(SearchService bloomreachSearchService) {
-        this.bloomreachSearchService = bloomreachSearchService;
     }
 
     /**
      * Used for testing error behaviour.  The rate can be set in the component in the sitemap.
      */
     void throwExceptionAtSpecifiedRate(String label, double rate) {
+
+        LOG.info("throwExceptionAtSpecifiedRate {}, {}", label, rate);
+
         if (rate == 0) {
             return;
         }
@@ -115,24 +114,7 @@ public class ResilientSearchService implements SearchService {
         }
     }
 
-    public double getBloomreachErrorRate() {
-        return bloomreachErrorRate;
-    }
-
-    public void setBloomreachErrorRate(double bloomreachErrorRate) {
-        this.bloomreachErrorRate = bloomreachErrorRate;
-    }
-
-    public double getFunnelbackErrorRate() {
-        return funnelbackErrorRate;
-    }
-
-    public void setFunnelbackErrorRate(double funnelbackErrorRate) {
-        this.funnelbackErrorRate = funnelbackErrorRate;
-    }
-
     class ManafacturedException extends RuntimeException {
-
         public ManafacturedException(String msg) {
             super(msg);
         }

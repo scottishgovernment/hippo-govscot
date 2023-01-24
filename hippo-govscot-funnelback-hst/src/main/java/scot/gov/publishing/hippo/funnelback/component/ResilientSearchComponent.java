@@ -21,9 +21,6 @@ import javax.servlet.ServletContext;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
-import static wicket.contrib.input.events.key.KeyType.e;
-import static wicket.contrib.input.events.key.KeyType.i;
-import static wicket.contrib.input.events.key.KeyType.s;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
@@ -59,25 +56,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
-        configureManafacturedErrorRates(componentConfig);
         ensueHystrixPropertiesStrategy();
-    }
-
-    void configureManafacturedErrorRates(ComponentConfiguration componentConfig) {
-        double bloomreachErrorRate = errorRate(componentConfig, "bloomreachErrorRate");
-        double funnelbackErrorRate = errorRate(componentConfig, "funnelbackErrorRate");
-
-        if (bloomreachErrorRate != 0 || funnelbackErrorRate != 0) {
-            LOG.warn("Manafactured errors configured: bloomreachErrorRate = {}, funnelbackErrorRate = {}",
-                    bloomreachErrorRate, funnelbackErrorRate);
-        }
-        resilientSearchService.setBloomreachErrorRate(bloomreachErrorRate);
-        resilientSearchService.setFunnelbackErrorRate(funnelbackErrorRate);
-    }
-
-    double errorRate(ComponentConfiguration componentConfig, String param) {
-        String errorRateString = componentConfig.getRawParameters().getOrDefault(param, "0");
-        return Double.parseDouble(errorRateString);
     }
 
     private void ensueHystrixPropertiesStrategy() {
@@ -97,6 +76,8 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         super.doBeforeRender(request, response);
 
         SearchSettings searchsettings = searchSettings();
+        LOG.info("doBeforeRender funnelbackErrorRate: {}, bloomreachErrorRate: {}",
+                searchsettings.getFunnelbackErrorRate(), searchsettings.getBloomreachErrorRate());
         if (isEnabled(searchsettings) ) {
             Search search = search(request);
 
@@ -140,6 +121,8 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
             searchsettings.setSearchType(bean.getSingleProperty("search:searchtype"));
             searchsettings.setEnabled(bean.getSingleProperty("search:enabled"));
             searchsettings.setTimeoutMillis(bean.getSingleProperty("search:timeoutMillis"));
+            searchsettings.setBloomreachErrorRate(bean.getSingleProperty("search:bloomreachErrorRate", 0.0));
+            searchsettings.setFunnelbackErrorRate(bean.getSingleProperty("search:funnelbackErrorRate", 0.0));
         } else {
             LOG.warn("unable to find search settings document");
         }

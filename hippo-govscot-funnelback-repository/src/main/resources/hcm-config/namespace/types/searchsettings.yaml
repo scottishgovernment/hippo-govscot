@@ -39,6 +39,24 @@ definitions:
             hipposysedit:primary: false
             hipposysedit:type: Boolean
             hipposysedit:validators: [required]
+          /bloomreachErrorRate:
+            jcr:primaryType: hipposysedit:field
+            hipposysedit:mandatory: false
+            hipposysedit:multiple: false
+            hipposysedit:ordered: false
+            hipposysedit:path: search:bloomreachErrorRate
+            hipposysedit:primary: false
+            hipposysedit:type: Double
+            hipposysedit:validators: [required]
+          /funnelbackErrorRate:
+            jcr:primaryType: hipposysedit:field
+            hipposysedit:mandatory: false
+            hipposysedit:multiple: false
+            hipposysedit:ordered: false
+            hipposysedit:path: search:funnelbackErrorRate
+            hipposysedit:primary: false
+            hipposysedit:type: Double
+            hipposysedit:validators: [required]
       /hipposysedit:prototypes:
         jcr:primaryType: hipposysedit:prototypeset
         /hipposysedit:prototype:
@@ -91,6 +109,24 @@ definitions:
             field: timeoutMillis
             hint: When the type of search is 'resilient' then funnelback wil be called
               with this timeout before falling back to use bloomreach.
+            plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
+            wicket.id: ${cluster.id}.field
+            /cluster.options:
+              jcr:primaryType: frontend:pluginconfig
+          /funnelbackErrorRate:
+            jcr:primaryType: frontend:plugin
+            caption: Funnelback error rate (0 - 1)
+            field: funnelbackErrorRate
+            hint: Used to simulate funnelback errors for testing
+            plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
+            wicket.id: ${cluster.id}.field
+            /cluster.options:
+              jcr:primaryType: frontend:pluginconfig
+          /bloomreachErrorRate:
+            jcr:primaryType: frontend:plugin
+            caption: Bloomreach error rate (0 - 1)
+            field: bloomreachErrorRate
+            hint: Used to simulate funnelback errors for testing
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
             /cluster.options:

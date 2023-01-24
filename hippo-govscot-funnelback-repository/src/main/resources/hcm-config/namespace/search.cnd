@@ -6,6 +6,8 @@
   - search:searchtype (string)
   - search:timeoutMillis (long)
   - search:enabled (boolean)
+  - search:funnelbackErrorRate (double)
+  - search:bloomreachErrorRate (double)
 
 [search:funnelbackcuratorchanges] > hippo:document, hippostd:publishableSummary, hippotranslation:translated, hippostdpubwf:document orderable
   - search:hash (string)
