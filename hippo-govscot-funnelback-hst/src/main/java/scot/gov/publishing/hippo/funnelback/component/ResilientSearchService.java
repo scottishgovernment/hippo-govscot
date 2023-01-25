@@ -23,7 +23,7 @@ public class ResilientSearchService implements SearchService {
 
     public static final HystrixCommandGroupKey FUNNELBACK_COMMAND_GROUP_KEY = HystrixCommandGroupKey.Factory.asKey("Funnelback");
 
-    static final HystrixCommandKey FUNNELBACK_COMMAND_KEY = HystrixCommandKey.Factory.asKey("searchWithTimout");
+    static final HystrixCommandKey FUNNELBACK_COMMAND_KEY = HystrixCommandKey.Factory.asKey("searchWithTimeout");
 
     private SearchService funnelbackSearchService;
 
