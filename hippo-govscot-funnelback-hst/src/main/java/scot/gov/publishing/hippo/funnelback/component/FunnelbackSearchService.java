@@ -22,12 +22,14 @@ import scot.gov.publishing.hippo.funnelback.component.postprocess.ResultLinkRewr
 import scot.gov.publishing.hippo.funnelback.model.*;
 import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 
+import javax.jcr.RepositoryException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.apache.commons.lang3.StringUtils.equalsAny;
+import static org.apache.commons.lang3.StringUtils.*;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.FunnelbackService")
@@ -46,17 +48,36 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
 
+    DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYYYY");
+
     private String collection;
 
     private List<String> sites;
 
+    private Map<String, String> publicationTypeMappings = new HashMap<>();
+
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
+        populatePublicationTypes(search);
         try {
             return  doPerformSearch(search, searchsettings);
         } catch (ResourceException e) {
             LOG.error("performSearch failed {}", search.getQuery(), e);
             throw e;
+        }
+    }
+
+    void populatePublicationTypes(Search search) {
+
+        if (!publicationTypeMappings.isEmpty()) {
+            return;
+        }
+
+        try {
+            publicationTypeMappings = ValueListUtil.toMap(search.getRequest(),
+                    "/content/documents/govscot/valuelists/publicationTypes/publicationTypes");
+        } catch (RepositoryException e) {
+            LOG.error("Unexpected exception populating publication types");
         }
     }
 
@@ -102,17 +123,44 @@ public class FunnelbackSearchService implements SearchService {
 
     String getUrlTemplate(Search search) {
 
-        StringBuilder builder = new StringBuilder(URL_TEMPLATE);
-
+        List<String> params = new ArrayList<>();
         if (search.isEnableSuplimentaryQueries()) {
-            builder.append("&qsup=off");
+            params.add("sup=off");
         }
 
         if (usePreview(search.getRequest())) {
-            builder.append("&profile=_default_preview");
+            params.add("profile=_default_preview");
         }
 
-        return builder.toString();
+        if (search.getTab() != null) {
+            params.add(tabParam(search.getTab()));
+        }
+
+        if (search.getFromDate() != null || search.getToDate() != null) {
+            params.add(dateRangeParam(search));
+        }
+
+        if (search.getSort() != Sort.RELEVANCE) {
+            params.add(sortParam(search.getSort()));
+        }
+
+        if (!search.getTopics().isEmpty()) {
+            search.getTopics()
+                    .stream()
+                    .map(this::topicParam)
+                    .forEach(params::add);
+        }
+
+        if (!search.getPublicationTypes().isEmpty()) {
+            search.getPublicationTypes()
+                    .stream()
+                    .filter(publicationTypeMappings::containsKey)
+                    .map(publicationTypeMappings::get)
+                    .map(this::publicationTypeParam)
+                    .forEach(params::add);
+        }
+
+        return params.isEmpty() ? URL_TEMPLATE : URL_TEMPLATE + "&" + params.stream().collect(Collectors.joining("&"));
     }
 
     boolean usePreview(HstRequest request) {
@@ -126,9 +174,58 @@ public class FunnelbackSearchService implements SearchService {
         return defaultString(headerUserType, "internal");
     }
 
+    String publicationTypeParam(String publicationType) {
+        return "f.Publication type|publicationType=" + publicationType;
+    }
+
+    String tabParam(SearchTab searchTab) {
+        switch (searchTab) {
+            case NEWS:
+                return "f.Tabs|govscot~ds-news-push=News";
+
+            case PUBLICATIONS:
+                return "f.Tabs|govscot~ds-foi-eir-releases-push,govscot~ds-publications-push,govscot~ds-statistics-research-push=Publications";
+
+            default:
+                return "";
+        }
+    }
+
+    String dateRangeParam(Search search) {
+        // the date range param looks like:
+        // f.Date|d=d>1Feb2023<3Feb2023
+        StringBuilder dateParam = new StringBuilder("f.Date|d=d");
+        if (search.getFromDate() != null) {
+            LocalDate from = search.getFromDate().minusDays(1);
+            dateParam.append(">").append(from.format(dateFormatter));
+        }
+        if (search.getToDate() != null) {
+            LocalDate to = search.getToDate().plusDays(1);
+            dateParam.append("<").append(to.format(dateFormatter));
+        }
+        return dateParam.toString();
+    }
+
+    String sortParam(Sort sort) {
+        switch (sort) {
+            case DATE:
+                return "sort=date";
+
+            case ADATE:
+                return "sort=adate";
+
+            default:
+                return "";
+        }
+    }
+
+    String topicParam(String topic) {
+        return "f.Topic|topics=" + topic;
+    }
+
     Pagination createPagination(Search search, FunnelbackSearchResponse response) {
         ResultsSummary summary = response.getResponse().getResultPacket().getResultsSummary();
-        return new PaginationBuilder(search.getRequestUrl()).getPagination(summary, search.getQuery());
+        return new PaginationBuilder(search.getRequestUrl()).getPagination(summary, search);
     }
 
     void postProcessSearchresponse(Search search, FunnelbackSearchResponse response) {

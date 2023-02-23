@@ -1,9 +1,13 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
 import org.junit.Test;
+import scot.gov.publishing.hippo.funnelback.component.Search;
+import scot.gov.publishing.hippo.funnelback.component.Sort;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
 import scot.gov.publishing.hippo.funnelback.model.ResultPacket;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -21,7 +25,7 @@ public class PaginationBuilderTest {
         ResultsSummary resultsSummary = resultsSummary(5, 1);
 
         // ACT
-        Pagination pagination = sut.getPagination(resultsSummary, anyQuery());
+        Pagination pagination = sut.getPagination(resultsSummary, anySearch());
 
         // ASSERT
         assertTrue("no pagination should be present for 5 results", pagination.getPages().isEmpty());
@@ -35,12 +39,12 @@ public class PaginationBuilderTest {
         ResultsSummary resultsSummary = resultsSummary(25, 1);
 
         // ACT
-        Pagination pagination = sut.getPagination(resultsSummary, anyQuery());
+        Pagination pagination = sut.getPagination(resultsSummary, anySearch());
 
         // ASSERT
         assertEquals("wrong number of pages", 4, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(0).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1", pagination.getPages().get(0).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1&sort=relevance", pagination.getPages().get(0).getUrl());
         assertNull(pagination.getFirst());
         assertNull(pagination.getLast());
     }
@@ -51,14 +55,14 @@ public class PaginationBuilderTest {
         ResultsSummary resultsSummary = resultsSummary(95, 41);
 
         // ACT
-        Pagination pagination = sut.getPagination(resultsSummary, anyQuery());
+        Pagination pagination = sut.getPagination(resultsSummary, anySearch());
 
         // ASSERT
         assertEquals("wrong number of pages", 3, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(1).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=5", pagination.getPages().get(1).getUrl());
-        assertEquals(pagination.getFirst().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=1");
-        assertEquals(pagination.getLast().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=10");
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=5&sort=relevance", pagination.getPages().get(1).getUrl());
+        assertEquals(pagination.getFirst().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=1&sort=relevance");
+        assertEquals(pagination.getLast().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=10&sort=relevance");
     }
 
     @Test
@@ -67,14 +71,14 @@ public class PaginationBuilderTest {
         ResultsSummary resultsSummary = resultsSummary(95, 21);
 
         // ACT
-        Pagination pagination = sut.getPagination(resultsSummary, anyQuery());
+        Pagination pagination = sut.getPagination(resultsSummary, anySearch());
 
         // ASSERT
         assertEquals("wrong number of pages", 4, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(2).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=3", pagination.getPages().get(2).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=3&sort=relevance", pagination.getPages().get(2).getUrl());
         assertNull("first should be null", pagination.getFirst());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=10", pagination.getLast().getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=10&sort=relevance", pagination.getLast().getUrl());
     }
 
     @Test
@@ -83,14 +87,21 @@ public class PaginationBuilderTest {
         ResultsSummary resultsSummary = resultsSummary(95, 71);
 
         // ACT
-        Pagination pagination = sut.getPagination(resultsSummary, anyQuery());
+        Pagination pagination = sut.getPagination(resultsSummary, anySearch());
 
         // ASSERT
         assertEquals("wrong number of pages", 4, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(1).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=8", pagination.getPages().get(1).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=8&sort=relevance", pagination.getPages().get(1).getUrl());
         assertNull("last should be null", pagination.getLast());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1", pagination.getFirst().getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1&sort=relevance", pagination.getFirst().getUrl());
+    }
+
+    Search anySearch() {
+        Search search = new Search();
+        search.setQuery(anyQuery());
+        search.setSort(Sort.RELEVANCE);
+        return search;
     }
 
     String anyQuery() {

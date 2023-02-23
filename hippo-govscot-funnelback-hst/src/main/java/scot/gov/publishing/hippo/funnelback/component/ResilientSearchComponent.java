@@ -2,6 +2,7 @@ package scot.gov.publishing.hippo.funnelback.component;
 
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.apache.commons.lang.StringUtils;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
 import org.hippoecm.hst.core.component.HstRequest;
@@ -18,6 +19,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletContext;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
@@ -46,6 +50,8 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     // the type of search that this component is configured to provide in the sitemap
     private String searchType;
 
+    private SearchTab searchTab;
+
     private static Boolean hystrixPropertiesStrategySet = false;
 
     @Override
@@ -53,10 +59,18 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         super.init(servletContext, componentConfig);
 
         searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
+        searchTab = searchTab(componentConfig);
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
         ensueHystrixPropertiesStrategy();
+    }
+
+    SearchTab searchTab(ComponentConfiguration componentConfig) {
+        String tabString = componentConfig.getRawParameters().get("tab");
+        return tabString == null
+                ? null
+                : parseTabString(tabString);
     }
 
     private void ensueHystrixPropertiesStrategy() {
@@ -102,15 +116,63 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     }
 
     Search search(HstRequest request) {
-        String query = getAnyParameter(request, "q");
         String qsup = getAnyParameter(request, "qsup");
-        int page = getAnyIntParameter(request, "page", 1);
         boolean qsupOff = "off".equals(qsup);
+
         return new SearchBuilder()
-                .query(query)
-                .page(page)
+                .query(getAnyParameter(request, "q"))
+                .tab(searchTab(request))
+                .fromDate(date(request, "begin"))
+                .toDate(date(request, "end"))
+                .sort(sort(request))
+                .topics(getAnyParameter(request, "topics"))
+                .publicationTypes(getAnyParameter(request, "publicationTypes"))
+                .page(getAnyIntParameter(request, "page", 1))
                 .enableSuplimentaryQueries(qsupOff)
-                .request(request).build();
+                .request(request)
+                .build();
+    }
+
+    SearchTab searchTab(HstRequest request) {
+        // if ths search tab is configured as a part of the component then always use that regardless of amy params
+        if (searchTab != null) {
+            return searchTab;
+        }
+
+        // since no tab is configured, allow the type param to control it
+        String param = request.getParameter("type");
+        return param != null ? parseTabString(param) : null;
+    }
+
+    SearchTab parseTabString(String tabString) {
+        try {
+            return SearchTab.valueOf(tabString);
+        } catch (IllegalArgumentException e) {
+            return searchTab;
+        }
+    }
+
+    LocalDate date(HstRequest request, String dateParam) {
+        String dateValue = getAnyParameter(request, dateParam);
+
+        if (StringUtils.isBlank(dateValue)) {
+            return null;
+        }
+        return LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
+    Sort sort(HstRequest request) {
+        String sortParam = request.getParameter("sort");
+        if (isBlank(sortParam)) {
+            return Sort.RELEVANCE;
+        }
+
+        try {
+            return Sort.valueOf(sortParam.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            LOG.error("Invalid sort value {}, defaulting to relevance", sortParam);
+            return Sort.RELEVANCE;
+        }
     }
 
     public static SearchSettings searchSettings() {

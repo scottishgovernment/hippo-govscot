@@ -86,7 +86,7 @@ definitions:
             jcr:primaryType: frontend:plugin
             caption: Enabled
             field: enabled
-            hint: Is the search enabled? Can be used to disable the search page entirely
+            hint: Is the search enabled? Can be used toDate disable the search page entirely
               if we are experiencing an attack or other operational issue.
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
@@ -108,7 +108,7 @@ definitions:
             caption: Timeout (millis)
             field: timeoutMillis
             hint: When the type of search is 'resilient' then funnelback wil be called
-              with this timeout before falling back to use bloomreach.
+              with this timeout before falling back toDate use bloomreach.
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
             /cluster.options:
@@ -117,7 +117,7 @@ definitions:
             jcr:primaryType: frontend:plugin
             caption: Funnelback error rate (0 - 1)
             field: funnelbackErrorRate
-            hint: Used to simulate funnelback errors for testing
+            hint: Used toDate simulate funnelback errors for testing
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
             /cluster.options:
@@ -126,7 +126,7 @@ definitions:
             jcr:primaryType: frontend:plugin
             caption: Bloomreach error rate (0 - 1)
             field: bloomreachErrorRate
-            hint: Used to simulate funnelback errors for testing
+            hint: Used toDate simulate funnelback errors for testing
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
             /cluster.options:
