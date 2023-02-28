@@ -1,5 +1,6 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.hippoecm.hst.configuration.hosting.VirtualHost;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.request.HstRequestContext;
@@ -57,6 +58,20 @@ public class FunnelbackSearchService implements SearchService {
         } catch (ResourceException e) {
             LOG.error("performSearch failed {}", search.getQuery(), e);
             throw e;
+        }
+    }
+
+    /**
+     * Used to send a scheduled ping request to funnelback. This is scheduled in spring code, see
+     * /site/components/src/main/resources/META-INF/hst-assembly/overrides/spring-managed-components.xml
+     */
+    void ping() {
+        String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
+        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
+        if (broker != null) {
+            Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, suggestionsParamMap(query));
+            ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
+            resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
         }
     }
 
@@ -122,7 +137,9 @@ public class FunnelbackSearchService implements SearchService {
     }
 
     String userType(HstRequest request) {
-        String headerUserType = (String) request.getAttribute(UserTypeValve.USERTYPE_REQUEST_ATTR_NAME);
+        String headerUserType = request != null
+                ? (String) request.getAttribute(UserTypeValve.USERTYPE_REQUEST_ATTR_NAME)
+                : "internal";
         return defaultString(headerUserType, "internal");
     }
 
