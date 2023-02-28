@@ -45,6 +45,8 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final String FUNNELBACK_RESOURCE_SPACE = "funnelback";
 
+    private static final String INTERNAL = "internal";
+
     private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
 
     private String collection;
@@ -133,14 +135,14 @@ public class FunnelbackSearchService implements SearchService {
     boolean usePreview(HstRequest request) {
         String userType = userType(request);
         String previewParam = request.getParameter("profile");
-        return "internal".equals(userType) && "_default_preview".equals(previewParam);
+        return INTERNAL.equals(userType) && "_default_preview".equals(previewParam);
     }
 
     String userType(HstRequest request) {
         String headerUserType = request != null
                 ? (String) request.getAttribute(UserTypeValve.USERTYPE_REQUEST_ATTR_NAME)
-                : "internal";
-        return defaultString(headerUserType, "internal");
+                : INTERNAL;
+        return defaultString(headerUserType, INTERNAL);
     }
 
     Pagination createPagination(Search search, FunnelbackSearchResponse response) {
