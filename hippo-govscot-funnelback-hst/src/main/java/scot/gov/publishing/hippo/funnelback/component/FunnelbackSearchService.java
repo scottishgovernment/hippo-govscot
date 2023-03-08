@@ -68,6 +68,10 @@ public class FunnelbackSearchService implements SearchService {
      * /site/components/src/main/resources/META-INF/hst-assembly/overrides/spring-managed-components.xml
      */
     void ping() {
+        if (!HstServices.isAvailable()) {
+            return;
+        }
+
         String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         if (broker != null) {
