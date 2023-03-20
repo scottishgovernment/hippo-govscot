@@ -278,7 +278,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
     private Node getVariantWithState(Node handle, String state) throws RepositoryException {
         for (Node variant : new NodeIterable(handle.getNodes(handle.getName()))) {
             String variantState = JcrUtils.getStringProperty(variant, HippoStdNodeType.HIPPOSTD_STATE, null);
-            if (variantState.equals(state)) {
+            if (state.equals(variantState)) {
                 return variant;
             }
         }
