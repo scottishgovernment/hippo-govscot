@@ -117,7 +117,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         HippoBean bean = getSearchSettingsBean();
         SearchSettings searchsettings = new SearchSettings();
         if (bean != null) {
-            LOG.info("Loaded search settings from {}", bean.getPath());
             searchsettings.setSearchType(bean.getSingleProperty("search:searchtype"));
             searchsettings.setEnabled(bean.getSingleProperty("search:enabled"));
             searchsettings.setTimeoutMillis(bean.getSingleProperty("search:timeoutMillis"));

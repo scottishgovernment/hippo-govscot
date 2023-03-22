@@ -136,6 +136,10 @@ public class FunnelbackSearchService implements SearchService {
         return builder.toString();
     }
 
+    /**
+     * Only pass on the _default_preview parameter for internal users. This version of the URL can then be used in
+     * the marketing dashboard to allow users to preview changes.
+     */
     boolean usePreview(HstRequest request) {
         String userType = userType(request);
         String previewParam = request.getParameter("profile");
