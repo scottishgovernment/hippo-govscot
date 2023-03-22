@@ -26,6 +26,8 @@ public class HealthResource {
         }
 
         HystrixCommandMetrics commandMetrics = HystrixCommandMetrics.getInstance(FUNNELBACK_COMMAND_KEY);
+        health.setLatency75(commandMetrics.getExecutionTimePercentile(75));
+
         if (commandMetrics != null) {
             health.setFailures(commandMetrics.getRollingCount(FAILURE));
             health.setTimeouts(commandMetrics.getRollingCount(TIMEOUT));
@@ -40,6 +42,8 @@ public class HealthResource {
         long failures = 0;
 
         long timeouts = 0;
+
+        long latency75 = 0;
 
         boolean ok = true;
 
@@ -65,6 +69,14 @@ public class HealthResource {
 
         public void setOk(boolean ok) {
             this.ok = ok;
+        }
+
+        public long getLatency75() {
+            return latency75;
+        }
+        
+        public void setLatency75(long latency75) {
+            this.latency75 = latency75;
         }
     }
 }
