@@ -16,10 +16,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import scot.gov.publishing.hippo.funnelback.component.postprocess.CuratorPostProcessor;
-import scot.gov.publishing.hippo.funnelback.component.postprocess.PaginationBuilder;
-import scot.gov.publishing.hippo.funnelback.component.postprocess.PostProcessor;
-import scot.gov.publishing.hippo.funnelback.component.postprocess.ResultLinkRewriter;
+import scot.gov.publishing.hippo.funnelback.component.postprocess.*;
 import scot.gov.publishing.hippo.funnelback.model.*;
 import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 
@@ -48,6 +45,12 @@ public class FunnelbackSearchService implements SearchService {
     private static final String INTERNAL = "internal";
 
     private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
+
+    private static final RelativeImagesPostProcessor RELATIVE_IMAGES_POST_PROCESSOR = new RelativeImagesPostProcessor();
+
+    private static final DatePostProcessor DATE_POST_PROCESSOR = new DatePostProcessor();
+
+    private static final DefaultsPostProcessor DEFAULTS_POST_PROCESSOR = new DefaultsPostProcessor();
 
     private String collection;
 
@@ -157,11 +160,10 @@ public class FunnelbackSearchService implements SearchService {
     void postProcessSearchresponse(Search search, FunnelbackSearchResponse response) {
         rewriteLinks(response, search.getRequest());
         removeDuplucateQSups(response);
-        extractSimpleHtmlMessagesFromCurator(response);
-    }
-
-    void extractSimpleHtmlMessagesFromCurator(FunnelbackSearchResponse response) {
         CURATOR_POST_PROCESSOR.process(response);
+        RELATIVE_IMAGES_POST_PROCESSOR.process(response);
+        DATE_POST_PROCESSOR.process(response);
+        DEFAULTS_POST_PROCESSOR.process(response);
     }
 
     void removeDuplucateQSups(FunnelbackSearchResponse response) {
@@ -183,6 +185,7 @@ public class FunnelbackSearchService implements SearchService {
             postProcessor.process(response);
         }
     }
+
 
     boolean useRewriter(String hostGroupName) {
         return !equalsAny(hostGroupName, "production", "dev-localhost");

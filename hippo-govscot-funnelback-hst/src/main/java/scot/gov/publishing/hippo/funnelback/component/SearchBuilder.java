@@ -18,22 +18,22 @@ public class SearchBuilder {
 
     private HstRequest request;
 
-    SearchBuilder query(String query) {
+    public SearchBuilder query(String query) {
         this.query = query;
         return this;
     }
 
-    SearchBuilder page(int page) {
+    public SearchBuilder page(int page) {
         this.page = page;
         return this;
     }
 
-    SearchBuilder enableSuplimentaryQueries(boolean enableSuplimentaryQueries) {
+    public SearchBuilder enableSuplimentaryQueries(boolean enableSuplimentaryQueries) {
         this.enableSuplimentaryQueries = enableSuplimentaryQueries;
         return this;
     }
 
-    SearchBuilder request(HstRequest request) {
+    public SearchBuilder request(HstRequest request) {
         this.request = request;
         this.requestUrl = requestUrl(request);
         return this;
