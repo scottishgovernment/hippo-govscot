@@ -15,12 +15,12 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class DatePostProcessor implements PostProcessor {
 
-    private DateTimeFormatter FROM_DATE_TIME_FORMAT = new DateTimeFormatterBuilder()
+    private static DateTimeFormatter FROM_DATE_TIME_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().append(ISO_LOCAL_DATE).appendLiteral(' ').append(ISO_LOCAL_TIME).toFormatter();
 
-    private DateTimeFormatter DISPLAY_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
+    private static DateTimeFormatter DISPLAY_DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
 
-    private DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMMM yyyy");
+    private static DateTimeFormatter DISPLAY_DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMMM yyyy");
 
     @Override
     public void process(FunnelbackSearchResponse response) {
