@@ -28,15 +28,14 @@ public class FeatureFlag {
         this.flag = flag;
     }
 
+    public void setEnabled(boolean enabled) throws RepositoryException {
+        Node node = getFlagsNode();
+        node.setProperty(flag, enabled);
+    }
+
     public boolean isEnabled() {
-
         try {
-            if (!session.nodeExists(FEATURE_FLAGS_PATH)) {
-                LOG.warn("no feature flags defined, defaulting to {} = false", flag);
-                return false;
-            }
-
-            Node featureFlags = session.getNode(FEATURE_FLAGS_PATH);
+            Node featureFlags = getFlagsNode();
             if (!featureFlags.hasProperty(flag)) {
                 LOG.warn("feature flag {} does not exist, defaulting to enabled = false", flag);
                 return false;
@@ -47,5 +46,15 @@ public class FeatureFlag {
             LOG.warn("unexpected exception getting feature flag {}, defaulting to enabled = false", flag, e);
             return false;
         }
+    }
+
+    Node getFlagsNode() throws RepositoryException {
+        return session.nodeExists(FEATURE_FLAGS_PATH)
+                ? session.getNode(FEATURE_FLAGS_PATH)
+                : createFlagsNode();
+    }
+
+    Node createFlagsNode() throws RepositoryException {
+        return session.getNode("/content").addNode("featureflags", "nt:unstructured");
     }
 }

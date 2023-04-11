@@ -27,6 +27,8 @@ public class SearchJournal {
 
     private final Session session;
 
+    private final SessionSaver sessionSaver;
+
     private static final String ACTION = "searchjournal:action";
 
     private static final String COLLECTION = "searchjournal:collection";
@@ -38,7 +40,12 @@ public class SearchJournal {
     private static final String ATTEMPT = "searchjournal:attempt";
 
     public SearchJournal(Session session) {
+        this(session, 1);
+    }
+
+    public SearchJournal(Session session, int saveInterval) {
         this.session = session;
+        this.sessionSaver = new SessionSaver(session, saveInterval);
     }
 
     public Node record(SearchJournalEntry entry) throws RepositoryException {
@@ -50,7 +57,7 @@ public class SearchJournal {
         record.setProperty(URL, entry.getUrl());
         record.setProperty(TIMESTAMP, entry.getTimestamp());
         record.setProperty(ATTEMPT, entry.getAttempt());
-        session.save();
+        sessionSaver.save();
         return record;
     }
 
