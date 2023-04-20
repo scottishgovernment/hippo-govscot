@@ -38,7 +38,7 @@ public class SessionSaver {
 
     public void forceSave() throws RepositoryException {
         StopWatch stopWatch = new StopWatch();
-        LOG.error("Saving session.");
+        LOG.info("Saving session.");
         stopWatch.start();
         try {
             session.save();
@@ -47,7 +47,7 @@ public class SessionSaver {
             throw e;
         }
         stopWatch.stop();
-        LOG.error("Saving session done. Took {}", stopWatch.getTime());
+        LOG.info("Saving session done. Took {}", stopWatch.getTime());
         count = 0;
     }
 }
