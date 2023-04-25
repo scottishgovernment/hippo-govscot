@@ -24,6 +24,18 @@ public class CuratorPostProcessorTest {
         assertEquals("message2", input.getResponse().getCurator().getSimpleHtmlExhibits().get(1).getMessageHtml());
         assertEquals("google description", input.getResponse().getCurator().getAdvertExhibits().get(0).getDescriptionHtml());
     }
+    @Test
+    public void extractsLinkUrlCorrectly() {
+            /// /s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP
+        CuratorPostProcessor sut = new CuratorPostProcessor();
+        FunnelbackSearchResponse input = responseWithLink();
+
+        // ACT
+        sut.process(input);
+
+        // ASSERT
+        assertEquals("https://www.google.co.uk/", input.getResponse().getCurator().getAdvertExhibits().get(0).getLinkUrl());
+    }
 
     @Test
     public void htmlMessageCleansedAsExpected() {
@@ -85,6 +97,12 @@ public class CuratorPostProcessorTest {
         return response;
     }
 
+    FunnelbackSearchResponse responseWithLink() {
+        FunnelbackSearchResponse response = new FunnelbackSearchResponse();
+        response.getResponse().getCurator().getExhibits().add(advertExhibitWithLink());
+        return response;
+    }
+
     Exhibit messageExhibit(String message) {
         Exhibit exhibit = new Exhibit();
         exhibit.setMessageHtml(message);
@@ -94,7 +112,16 @@ public class CuratorPostProcessorTest {
     Exhibit advertExhibit1() {
         Exhibit exhibit = new Exhibit();
         exhibit.setDisplayUrl("https://www.google.com/");
-        exhibit.setLinkUrl("https://www.google.com/");
+        exhibit.setLinkUrl("/s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP");
+        exhibit.setDescriptionHtml("google description");
+        exhibit.setTitleHtml("google title");
+        return exhibit;
+    }
+
+    Exhibit advertExhibitWithLink() {
+        Exhibit exhibit = new Exhibit();
+        exhibit.setDisplayUrl("https://www.google.com/");
+        exhibit.setLinkUrl("/s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk/&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP");
         exhibit.setDescriptionHtml("google description");
         exhibit.setTitleHtml("google title");
         return exhibit;
