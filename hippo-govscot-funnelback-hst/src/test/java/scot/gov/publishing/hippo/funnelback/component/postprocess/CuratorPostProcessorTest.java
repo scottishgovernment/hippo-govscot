@@ -112,7 +112,7 @@ public class CuratorPostProcessorTest {
     Exhibit advertExhibit1() {
         Exhibit exhibit = new Exhibit();
         exhibit.setDisplayUrl("https://www.google.com/");
-        exhibit.setLinkUrl("/s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP");
+        exhibit.setLinkUrl("/s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk%2F&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP");
         exhibit.setDescriptionHtml("google description");
         exhibit.setTitleHtml("google title");
         return exhibit;

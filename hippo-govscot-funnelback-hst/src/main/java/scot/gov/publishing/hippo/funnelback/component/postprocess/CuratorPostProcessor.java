@@ -22,8 +22,8 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.stream.Collectors.partitioningBy;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.commons.lang3.StringUtils.substringAfter;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang.StringUtils.substringAfter;
 
 public class CuratorPostProcessor implements PostProcessor {
 
@@ -96,7 +96,7 @@ public class CuratorPostProcessor implements PostProcessor {
         // link url is in the form:
         // /s/redirect?collection=govscot~sp-govscot&url=https%3A%2F%2Fwww.google.co.uk&auth=DdiHB9Y8s4lobdjcTDqTNQ&profile=_default&type=FP
         // extract the url param and decode it
-        String query =  substringAfter(exhibit.getLinkUrl(), '?');
+        String query =  substringAfter(exhibit.getLinkUrl(), "?");
         List<NameValuePair> params = URLEncodedUtils.parse(query, Charset.forName("UTF-8"));
         Optional<NameValuePair> url = params.stream().filter(this::isUrl).findAny();
         if (url.isPresent()) {
