@@ -93,9 +93,8 @@ public class PaginationBuilder {
 
         int page = Math.min(firstPage + PAGES - 1, maxPage);
 
-        // if the page number is
         if (page <= PAGES) {
-            return firstPage + PAGES;
+            return Math.min(maxPage, firstPage + PAGES);
         }
 
         // if the first page the second to last then make it the last one
