@@ -192,7 +192,7 @@ public class FunnelbackSearchService implements SearchService {
 
 
     boolean useRewriter(String hostGroupName) {
-        return !equalsAny(hostGroupName, "production", "dev-localhost");
+        return !equalsAny(hostGroupName, "production", "dev-localhost", "www");
     }
 
     Map<String, Object> searchParamMap(String query, int rank) {
