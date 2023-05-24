@@ -1,6 +1,7 @@
 package scot.gov.publishing.searchjounal;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.hippoecm.repository.util.DateTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -39,6 +41,8 @@ public class SearchJournal {
 
     private static final String ATTEMPT = "searchjournal:attempt";
 
+    private static final String SEQUENCE = "searchjournal:sequence";
+
     public SearchJournal(Session session) {
         this(session, 1);
     }
@@ -50,53 +54,64 @@ public class SearchJournal {
 
     public Node record(SearchJournalEntry entry) throws RepositoryException {
         Node record = getNodeForRecord(entry);
-        LOG.info("record journal entry {} {} {}, attempt {}, {}",
-                entry.getAction(), entry.getCollection(), entry.getUrl(), entry.getAttempt(), ((GregorianCalendar)entry.getTimestamp()).toZonedDateTime());
+        LOG.error("record journal entry {} {} {} {}, attempt {}, {}",
+                record.getIdentifier(), entry.getAction(), entry.getCollection(), entry.getUrl(), entry.getAttempt(), ((GregorianCalendar) entry.getTimestamp()).toZonedDateTime());
         record.setProperty(ACTION, entry.getAction());
         record.setProperty(COLLECTION, entry.getCollection());
         record.setProperty(URL, entry.getUrl());
         record.setProperty(TIMESTAMP, entry.getTimestamp());
         record.setProperty(ATTEMPT, entry.getAttempt());
+        if (entry.getSequence() == 0) {
+            entry.setSequence(RandomUtils.nextLong());
+        }
+        record.setProperty(SEQUENCE, entry.getSequence());
         sessionSaver.save();
         return record;
     }
 
-    public SearchJournalEntry mostRecentEntry() throws RepositoryException {
-        String xpath = "//element(*, searchjournal:entry) order by @searchjournal:timestamp descending";
-        Query query = session.getWorkspace().getQueryManager().createQuery(xpath, Query.XPATH);
-        query.setLimit(1);
-        QueryResult queryResult = query.execute();
-        if (!queryResult.getNodes().hasNext()) {
-            return null;
-        }
-        Node node = queryResult.getNodes().nextNode();
-        return entryForNode(node);
-    }
-
-    public List<SearchJournalEntry> getPendingEntries(Calendar position, int limit) throws RepositoryException {
-        Query query = query(position, limit);
+    public List<SearchJournalEntry> getPendingEntries(Calendar position, long lastSequence, int limit) throws RepositoryException {
+        Query query = query(position, lastSequence, limit);
         QueryResult queryResult = query.execute();
         List<SearchJournalEntry> entries = new ArrayList<>();
         NodeIterator nodeIterator = queryResult.getNodes();
 
+        GregorianCalendar cal = (GregorianCalendar) position;
+        ZonedDateTime zdt = cal.toZonedDateTime();
+        LOG.error("getPendingEntries {}, {}", zdt, lastSequence);
         while (nodeIterator.hasNext()) {
             Node entryNode = nodeIterator.nextNode();
             SearchJournalEntry entry = entryForNode(entryNode);
-            entries.add(entry);
+            if (includeEntry(entry, position, lastSequence)) {
+                entries.add(entry);
+            } else {
+                LOG.error("leaving out entry {} {} {}", entry.getAction(), entry.getUrl(), entry.getSequence());
+            }
         }
         return entries;
     }
 
-    Query query(Calendar position, int limit) throws RepositoryException {
+    boolean includeEntry(SearchJournalEntry entry, Calendar position, long lastSequence) {
+        if (entry.getTimestamp().getTime().getTime() == position.getTime().getTime()) {
+            return entry.getSequence() > lastSequence;
+        }
+        return true;
+    }
 
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(position.getTimeInMillis() + 1);
+    Query query(Calendar from, long sequence, int limit) throws RepositoryException {
+
+        // only fetch a maximum of a 6 months of results at a time, this should reduce the memory usage of the query
+        Calendar to = (Calendar) from.clone();
+        to.add(Calendar.YEAR, 1);
+
         String xpath = String.format("" +
                         "//element(*, searchjournal:entry)" +
-                        "[@searchjournal:timestamp > %s][@searchjournal:timestamp <= %s] order by @searchjournal:timestamp",
-                DateTools.createXPathConstraint(session, cal),
-                DateTools.createXPathConstraint(session, Calendar.getInstance()));
-        LOG.info("query: {}", xpath);
+                        "[@searchjournal:timestamp >= %s AND @searchjournal:sequence > %d]" +
+                        "[@searchjournal:timestamp <= %s] " +
+                        "order by @searchjournal:timestamp, @searchjournal:sequence",
+                DateTools.createXPathConstraint(session, from),
+                sequence,
+                DateTools.createXPathConstraint(session, to));
+        LOG.error("query: {}", xpath);
         Query query = session.getWorkspace().getQueryManager().createQuery(xpath, Query.XPATH);
         query.setLimit(limit);
         return query;
@@ -109,6 +124,7 @@ public class SearchJournal {
         entry.setUrl(node.getProperty(URL).getString());
         entry.setTimestamp(node.getProperty(TIMESTAMP).getDate());
         entry.setAttempt(node.getProperty(ATTEMPT).getLong());
+        entry.setSequence(node.getProperty(SEQUENCE).getLong());
         return entry;
     }
 

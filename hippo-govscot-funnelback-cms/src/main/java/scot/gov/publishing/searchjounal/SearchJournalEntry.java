@@ -1,5 +1,8 @@
 package scot.gov.publishing.searchjounal;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import java.util.Calendar;
 
 public class SearchJournalEntry {
@@ -13,6 +16,8 @@ public class SearchJournalEntry {
     private String action;
 
     private long attempt = 0;
+
+    private long sequence;
 
     public String getUrl() {
         return url;
@@ -54,4 +59,11 @@ public class SearchJournalEntry {
         this.attempt = attempt;
     }
 
+    public long getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(long sequence) {
+        this.sequence = sequence;
+    }
 }
