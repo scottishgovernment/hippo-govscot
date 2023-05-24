@@ -10,7 +10,8 @@ import javax.ws.rs.core.Response;
 
 import static com.netflix.hystrix.HystrixEventType.*;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
-import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_COMMAND_KEY;
+import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SEARCH_COMMAND_KEY;
+import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SUGGESTIONS_COMMAND_KEY;
 
 @Path("/_search/health")
 public class HealthResource {
@@ -18,22 +19,35 @@ public class HealthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response getHealth() {
+        Health health = healthForCommandKey(FUNNELBACK_SEARCH_COMMAND_KEY);
+        int status =  health.isOk() ? 200 : 503;
+        return Response.status(status).entity(health).build();
+    }
+
+    @Produces(APPLICATION_JSON)
+    @Path("suggestions")
+    @GET
+    public Response getSuggestionsHealth() {
+        Health health = healthForCommandKey(FUNNELBACK_SUGGESTIONS_COMMAND_KEY);
+        int status =  health.isOk() ? 200 : 503;
+        return Response.status(status).entity(health).build();
+    }
+
+    Health healthForCommandKey(HystrixCommandKey key) {
         Health health = new Health();
 
-        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(FUNNELBACK_COMMAND_KEY);
+        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
         if (circuitBreaker != null) {
             health.setOk(!circuitBreaker.isOpen());
         }
 
-        HystrixCommandMetrics commandMetrics = HystrixCommandMetrics.getInstance(FUNNELBACK_COMMAND_KEY);
+        HystrixCommandMetrics commandMetrics = HystrixCommandMetrics.getInstance(key);
         if (commandMetrics != null) {
             health.setFailures(commandMetrics.getRollingCount(FAILURE));
             health.setTimeouts(commandMetrics.getRollingCount(TIMEOUT));
             health.setLatency75(commandMetrics.getExecutionTimePercentile(75));
         }
-
-        int status =  health.isOk() ? 200 : 503;
-        return Response.status(status).entity(health).build();
+        return health;
     }
 
     class Health {

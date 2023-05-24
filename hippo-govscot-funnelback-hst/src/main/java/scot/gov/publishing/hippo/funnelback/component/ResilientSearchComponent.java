@@ -120,6 +120,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
             searchsettings.setSearchType(bean.getSingleProperty("search:searchtype"));
             searchsettings.setEnabled(bean.getSingleProperty("search:enabled"));
             searchsettings.setTimeoutMillis(bean.getSingleProperty("search:timeoutMillis"));
+            searchsettings.setSugestTimeoutMillis(bean.getSingleProperty("search:suggestTimeoutMillis", 300L));
             searchsettings.setBloomreachErrorRate(bean.getSingleProperty("search:bloomreachErrorRate", 0.0));
             searchsettings.setFunnelbackErrorRate(bean.getSingleProperty("search:funnelbackErrorRate", 0.0));
         } else {

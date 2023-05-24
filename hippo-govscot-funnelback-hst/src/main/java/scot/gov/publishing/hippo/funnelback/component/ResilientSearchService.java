@@ -11,8 +11,11 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import static java.util.Collections.emptyList;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
@@ -23,7 +26,9 @@ public class ResilientSearchService implements SearchService {
 
     public static final HystrixCommandGroupKey FUNNELBACK_COMMAND_GROUP_KEY = HystrixCommandGroupKey.Factory.asKey("Funnelback");
 
-    static final HystrixCommandKey FUNNELBACK_COMMAND_KEY = HystrixCommandKey.Factory.asKey("searchWithTimeout");
+    static final HystrixCommandKey FUNNELBACK_SEARCH_COMMAND_KEY = HystrixCommandKey.Factory.asKey("searchWithTimeout");
+
+    static final HystrixCommandKey FUNNELBACK_SUGGESTIONS_COMMAND_KEY = HystrixCommandKey.Factory.asKey("suggestionsWithTimeout");
 
     private SearchService funnelbackSearchService;
 
@@ -33,9 +38,24 @@ public class ResilientSearchService implements SearchService {
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
-        int timeoutMilis = (int) searchsettings.getTimeoutMillis();
-        HystrixCommandProperties.Setter commandPropertiesSetter = HystrixCommandProperties.Setter()
-                .withExecutionTimeoutInMilliseconds(timeoutMilis)
+        int timeoutMillis = (int) searchsettings.getTimeoutMillis();
+        HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
+        SearchCommand command = new SearchCommand(search, searchsettings, properties);
+        return command.execute();
+    }
+
+    @Override
+    public List<String> getSuggestions(String query, SearchSettings searchsettings) {
+        int timeoutMillis = (int) searchsettings.getSugestTimeoutMillis();
+        HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
+        LOG.error("getSuggestions {}, {}", query, timeoutMillis);
+        SuggestionsCommand command = new SuggestionsCommand(query, searchsettings, properties);
+        return command.execute();
+    }
+
+    HystrixCommandProperties.Setter searchProperties(int timeoutMillis) {
+        return HystrixCommandProperties.Setter()
+                .withExecutionTimeoutInMilliseconds(timeoutMillis)
 
                 // there are 10 buckets, so each bucket is 30 seconds
                 .withMetricsRollingStatisticalWindowInMilliseconds((int) TimeUnit.MINUTES.toMillis(5))
@@ -48,8 +68,6 @@ public class ResilientSearchService implements SearchService {
 
                 // 50 percent error rate will cause circuit to trip
                 .withCircuitBreakerErrorThresholdPercentage(50);
-        SearchCommand command = new SearchCommand(search, searchsettings, commandPropertiesSetter);
-        return command.execute();
     }
 
     public SearchService getFunnelbackSearchService() {
@@ -77,7 +95,7 @@ public class ResilientSearchService implements SearchService {
         public SearchCommand(Search search, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
             super(Setter
                     .withGroupKey(FUNNELBACK_COMMAND_GROUP_KEY)
-                    .andCommandKey(FUNNELBACK_COMMAND_KEY)
+                    .andCommandKey(FUNNELBACK_SEARCH_COMMAND_KEY)
                     .andCommandPropertiesDefaults(commandPropertiesSetter));
             this.search = search;
             this.searchsettings = searchsettings;
@@ -93,6 +111,33 @@ public class ResilientSearchService implements SearchService {
         protected SearchResponse getFallback() {
             throwExceptionAtSpecifiedRate("bloomreach", searchsettings.getBloomreachErrorRate());
             return bloomreachSearchService.performSearch(search, searchsettings);
+        }
+    }
+
+    class SuggestionsCommand extends HystrixCommand<List<String>> {
+
+        String query;
+
+        SearchSettings searchsettings;
+
+        public SuggestionsCommand(String query, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
+            super(Setter
+                    .withGroupKey(FUNNELBACK_COMMAND_GROUP_KEY)
+                    .andCommandKey(FUNNELBACK_SUGGESTIONS_COMMAND_KEY)
+                    .andCommandPropertiesDefaults(commandPropertiesSetter));
+            this.query = query;
+            this.searchsettings = searchsettings;
+        }
+
+        @Override
+        protected List<String> run() {
+            throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
+            return funnelbackSearchService.getSuggestions(query, searchsettings);
+        }
+
+        @Override
+        protected List<String> getFallback() {
+            return emptyList();
         }
     }
 

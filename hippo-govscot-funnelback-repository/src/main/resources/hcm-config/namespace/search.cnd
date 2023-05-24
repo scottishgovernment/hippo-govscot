@@ -5,6 +5,7 @@
 [search:searchsettings] > hippo:document, hippostd:publishableSummary, hippostdpubwf:document orderable
   - search:searchtype (string)
   - search:timeoutMillis (long)
+  - search:suggestTimeoutMillis (long)
   - search:enabled (boolean)
   - search:funnelbackErrorRate (double)
   - search:bloomreachErrorRate (double)

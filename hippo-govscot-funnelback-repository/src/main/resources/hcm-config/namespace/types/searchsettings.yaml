@@ -30,6 +30,15 @@ definitions:
             hipposysedit:primary: false
             hipposysedit:type: Long
             hipposysedit:validators: [required]
+          /suggestTimeoutMillis:
+            jcr:primaryType: hipposysedit:field
+            hipposysedit:mandatory: false
+            hipposysedit:multiple: false
+            hipposysedit:ordered: false
+            hipposysedit:path: search:suggestTimeoutMillis
+            hipposysedit:primary: false
+            hipposysedit:type: Long
+            hipposysedit:validators: [required]
           /enabled:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -108,6 +117,16 @@ definitions:
             caption: Timeout (millis)
             field: timeoutMillis
             hint: When the type of search is 'resilient' then funnelback wil be called
+              with this timeout before falling back to use bloomreach.
+            plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
+            wicket.id: ${cluster.id}.field
+            /cluster.options:
+              jcr:primaryType: frontend:pluginconfig
+          /suggestTimeoutMillis:
+            jcr:primaryType: frontend:plugin
+            caption: Suggest timeout (millis)
+            field: suggestTimeoutMillis
+            hint: When the type of suggestion is 'resilient' then funnelback wil be called
               with this timeout before falling back to use bloomreach.
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field

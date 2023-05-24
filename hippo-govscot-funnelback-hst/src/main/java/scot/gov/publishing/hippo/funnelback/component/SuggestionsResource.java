@@ -24,18 +24,24 @@ public class SuggestionsResource {
     @Autowired
     FunnelbackSearchService funnelbackSearchService;
 
+    ResilientSearchService resilientSearchService;
+
     Supplier<SearchSettings> searchSettingSource = () -> ResilientSearchComponent.searchSettings();
 
+    public SuggestionsResource() {
+        resilientSearchService = new ResilientSearchService();
+        resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
+    }
     @Path("search/suggestions")
     @Produces(APPLICATION_JSON)
     @GET
     public List<String> getSuggestions(@QueryParam("partial_query") String partialQuery) {
         SearchSettings searchSettings = searchSettingSource.get();
-
+        resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
             return emptyList();
         } else {
-            return funnelbackSearchService.getSuggestions(partialQuery);
+            return resilientSearchService.getSuggestions(partialQuery, searchSettings);
         }
     }
 }

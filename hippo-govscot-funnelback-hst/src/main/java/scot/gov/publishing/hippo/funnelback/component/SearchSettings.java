@@ -9,6 +9,8 @@ public class SearchSettings {
 
     private long timeoutMillis;
 
+    private long sugestTimeoutMillis;
+
     private boolean enabled;
 
     double funnelbackErrorRate = 0;
@@ -29,6 +31,14 @@ public class SearchSettings {
 
     public void setTimeoutMillis(long timeoutMillis) {
         this.timeoutMillis = timeoutMillis;
+    }
+
+    public long getSugestTimeoutMillis() {
+        return sugestTimeoutMillis;
+    }
+
+    public void setSugestTimeoutMillis(long sugestTimeoutMillis) {
+        this.sugestTimeoutMillis = sugestTimeoutMillis;
     }
 
     public boolean isEnabled() {

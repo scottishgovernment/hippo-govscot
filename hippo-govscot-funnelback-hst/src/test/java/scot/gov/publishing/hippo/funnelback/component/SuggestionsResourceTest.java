@@ -7,6 +7,7 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -14,7 +15,7 @@ import static org.mockito.Mockito.when;
 public class SuggestionsResourceTest {
 
     @Test
-    public void returnsEmptyListIfSearchIsDiabled() {
+    public void returnsEmptyListIfSearchIsDisabled() {
         // ARRANGE
         SuggestionsResource sut = new SuggestionsResource();
         SearchSettings searchSettings = new SearchSettings();
@@ -52,10 +53,11 @@ public class SuggestionsResourceTest {
         SuggestionsResource sut = new SuggestionsResource();
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(true);
+        searchSettings.setSugestTimeoutMillis(1000);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString())).thenReturn(singletonList("one"));
+        when(sut.funnelbackSearchService.getSuggestions(anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");
@@ -73,7 +75,7 @@ public class SuggestionsResourceTest {
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString())).thenReturn(singletonList("one"));
+        when(sut.funnelbackSearchService.getSuggestions(anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");

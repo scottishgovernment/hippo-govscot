@@ -106,8 +106,10 @@ public class FunnelbackSearchService implements SearchService {
         return ((page - 1) * 10) + 1;
     }
 
-    public List<String> getSuggestions(String partialQuery) {
+    @Override
+    public List<String> getSuggestions(String partialQuery, SearchSettings searchSettings) {
         try {
+            LOG.error("getSuggestions {}", partialQuery);
             return doGetSuggestions(partialQuery);
         } catch (ResourceException e) {
             LOG.error("getSuggestions failed", e);
