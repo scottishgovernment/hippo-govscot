@@ -158,7 +158,7 @@ public class FunnelbackSearchService implements SearchService {
 
     Pagination createPagination(Search search, FunnelbackSearchResponse response) {
         ResultsSummary summary = response.getResponse().getResultPacket().getResultsSummary();
-        return new PaginationBuilder(search.getRequestUrl()).getPagination(summary, search.getQuery());
+        return new PaginationBuilder(search).getPagination(summary, search.getQuery());
     }
 
     void postProcessSearchresponse(Search search, FunnelbackSearchResponse response) {

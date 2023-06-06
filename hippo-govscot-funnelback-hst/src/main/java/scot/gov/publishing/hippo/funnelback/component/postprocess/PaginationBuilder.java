@@ -2,6 +2,7 @@ package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scot.gov.publishing.hippo.funnelback.component.Search;
 import scot.gov.publishing.hippo.funnelback.model.Page;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
@@ -17,10 +18,10 @@ public class PaginationBuilder {
 
     private static final int PAGES = 3;
 
-    String baseUrl;
+    Search search;
 
-    public PaginationBuilder(String baseUrl) {
-        this.baseUrl = baseUrl;
+    public PaginationBuilder(Search search) {
+        this.search = search;
     }
 
     public Pagination getPagination(ResultsSummary resultsSummary, String query) {
@@ -38,30 +39,30 @@ public class PaginationBuilder {
         int lastPage = lastPage(firstPage, maxPage);
         Set<Integer> included = new HashSet<>();
         for (int pageIndex = firstPage; pageIndex <= lastPage; pageIndex++) {
-            Page page = page(baseUrl, query, pageIndex);
+            Page page = page(search, query, pageIndex);
             included.add(pageIndex);
             page.setSelected(pageIndex == currentPage);
             pagination.getPages().add(page);
         }
 
         if (!included.contains(1)) {
-            Page first = page(baseUrl, query, 1);
+            Page first = page(search, query, 1);
             pagination.setFirst(first);
         }
 
         if (!included.contains(maxPage)) {
-            Page last = page(baseUrl, query, maxPage);
+            Page last = page(search, query, maxPage);
             pagination.setLast(last);
         }
 
         if (currentPage != 1) {
-            Page previous = page(baseUrl, query, currentPage - 1);
+            Page previous = page(search, query, currentPage - 1);
             previous.setLabel("Previous");
             pagination.setPrevious(previous);
         }
 
         if (currentPage != maxPage) {
-            Page next = page(baseUrl, query, currentPage + 1);
+            Page next = page(search, query, currentPage + 1);
             next.setLabel("Next");
             pagination.setNext(next);
         }
@@ -105,15 +106,21 @@ public class PaginationBuilder {
         return page;
     }
 
-    Page page(String base, String query, int index) {
+    Page page(Search search, String query, int index) {
         Page page = new Page();
         String encodedQuery = encodeParam(query);
-        String url = new StringBuffer(base)
+
+        StringBuffer urlBuilder = new StringBuffer(search.getRequestUrl())
                         .append('?')
                         .append("q=")
                         .append(encodedQuery)
-                        .append("&page=").append(index)
-                        .toString();
+                        .append("&page=")
+                        .append(index);
+        String cat = search.getRequest().getParameter("cat");
+        if (cat != null) {
+            urlBuilder.append("&cat=").append(cat);
+        }
+        String url = urlBuilder.toString();
         page.setLabel(Integer.toString(index));
         page.setUrl(url);
         page.setSelected(false);

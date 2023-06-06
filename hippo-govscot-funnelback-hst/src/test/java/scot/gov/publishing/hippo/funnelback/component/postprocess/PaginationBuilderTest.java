@@ -1,18 +1,34 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
+import org.hippoecm.hst.core.component.HstRequest;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import scot.gov.publishing.hippo.funnelback.component.Search;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
 import scot.gov.publishing.hippo.funnelback.model.ResultPacket;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * Created by z418868 on 17/06/2022.
  */
 public class PaginationBuilderTest {
 
-    PaginationBuilder sut = new PaginationBuilder("https://www.mygov.scot/search");
+
+
+    PaginationBuilder sut = new PaginationBuilder(search());
+
+    Search search() {
+        Search search = new Search();
+        search.setRequestUrl("https://www.mygov.scot/search");
+        HstRequest request = Mockito.mock(HstRequest.class);
+        Mockito.when(request.getParameter(eq("cat"))).thenReturn("sitesearch");
+        search.setRequest(request);
+        return search;
+    }
 
     @Test
     public void resultsLessThanPageSize() {
@@ -40,7 +56,7 @@ public class PaginationBuilderTest {
         // ASSERT
         assertEquals("wrong number of pages", 3, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(0).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1", pagination.getPages().get(0).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1&cat=sitesearch", pagination.getPages().get(0).getUrl());
         assertNull(pagination.getFirst());
         assertNull(pagination.getLast());
     }
@@ -56,9 +72,9 @@ public class PaginationBuilderTest {
         // ASSERT
         assertEquals("wrong number of pages", 3, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(1).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=5", pagination.getPages().get(1).getUrl());
-        assertEquals(pagination.getFirst().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=1");
-        assertEquals(pagination.getLast().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=10");
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=5&cat=sitesearch", pagination.getPages().get(1).getUrl());
+        assertEquals(pagination.getFirst().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=1&cat=sitesearch");
+        assertEquals(pagination.getLast().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=10&cat=sitesearch");
     }
 
     @Test
@@ -72,9 +88,9 @@ public class PaginationBuilderTest {
         // ASSERT
         assertEquals("wrong number of pages", 4, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(2).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=3", pagination.getPages().get(2).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=3&cat=sitesearch", pagination.getPages().get(2).getUrl());
         assertNull("first should be null", pagination.getFirst());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=10", pagination.getLast().getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=10&cat=sitesearch", pagination.getLast().getUrl());
     }
 
     @Test
@@ -88,9 +104,9 @@ public class PaginationBuilderTest {
         // ASSERT
         assertEquals("wrong number of pages", 4, pagination.getPages().size());
         assertTrue("wrong item selected", pagination.getPages().get(1).isSelected());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=8", pagination.getPages().get(1).getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=8&cat=sitesearch", pagination.getPages().get(1).getUrl());
         assertNull("last should be null", pagination.getLast());
-        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1", pagination.getFirst().getUrl());
+        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1&cat=sitesearch", pagination.getFirst().getUrl());
     }
 
     String anyQuery() {
