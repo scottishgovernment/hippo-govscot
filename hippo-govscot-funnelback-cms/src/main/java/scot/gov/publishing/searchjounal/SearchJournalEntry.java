@@ -1,8 +1,5 @@
 package scot.gov.publishing.searchjounal;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import java.util.Calendar;
 
 public class SearchJournalEntry {
