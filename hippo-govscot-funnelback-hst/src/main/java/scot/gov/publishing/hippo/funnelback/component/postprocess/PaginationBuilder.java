@@ -110,7 +110,7 @@ public class PaginationBuilder {
         Page page = new Page();
         String encodedQuery = encodeParam(query);
 
-        StringBuffer urlBuilder = new StringBuffer(search.getRequestUrl())
+        StringBuilder urlBuilder = new StringBuilder(search.getRequestUrl())
                         .append('?')
                         .append("q=")
                         .append(encodedQuery)
