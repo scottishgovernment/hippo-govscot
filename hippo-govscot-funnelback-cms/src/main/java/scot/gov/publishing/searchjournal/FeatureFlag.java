@@ -1,4 +1,4 @@
-package scot.gov.publishing.searchjounal;
+package scot.gov.publishing.searchjournal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

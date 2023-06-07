@@ -1,4 +1,4 @@
-package scot.gov.publishing.searchjounal;
+package scot.gov.publishing.searchjournal;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.hippoecm.repository.util.DateTools;

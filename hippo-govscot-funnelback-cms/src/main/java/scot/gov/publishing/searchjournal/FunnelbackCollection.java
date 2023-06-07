@@ -1,4 +1,4 @@
-package scot.gov.publishing.searchjounal;
+package scot.gov.publishing.searchjournal;
 
 import static org.apache.commons.lang3.StringUtils.equalsAny;
 
