@@ -101,11 +101,10 @@ public class SearchJournal {
 
         String xpath = String.format("" +
                         "//element(*, searchjournal:entry)" +
-                        "[@searchjournal:timestamp >= %s AND @searchjournal:sequence > %d]" +
+                        "[@searchjournal:timestamp >= %s]" +
                         "[@searchjournal:timestamp <= %s] " +
                         "order by @searchjournal:timestamp, @searchjournal:sequence",
                 DateTools.createXPathConstraint(session, from),
-                sequence,
                 DateTools.createXPathConstraint(session, to));
         LOG.info("query: {}", xpath);
         Query query = session.getWorkspace().getQueryManager().createQuery(xpath, Query.XPATH);
