@@ -54,7 +54,7 @@ public class SearchJournal {
 
     public Node record(SearchJournalEntry entry) throws RepositoryException {
         Node record = getNodeForRecord(entry);
-        LOG.error("record journal entry {} {} {} {}, attempt {}, {}",
+        LOG.info("record journal entry {} {} {} {}, attempt {}, {}",
                 record.getIdentifier(), entry.getAction(), entry.getCollection(), entry.getUrl(), entry.getAttempt(), ((GregorianCalendar) entry.getTimestamp()).toZonedDateTime());
         record.setProperty(ACTION, entry.getAction());
         record.setProperty(COLLECTION, entry.getCollection());
@@ -77,14 +77,14 @@ public class SearchJournal {
 
         GregorianCalendar cal = (GregorianCalendar) position;
         ZonedDateTime zdt = cal.toZonedDateTime();
-        LOG.error("getPendingEntries {}, {}", zdt, lastSequence);
+        LOG.info("getPendingEntries {}, {}", zdt, lastSequence);
         while (nodeIterator.hasNext()) {
             Node entryNode = nodeIterator.nextNode();
             SearchJournalEntry entry = entryForNode(entryNode);
             if (includeEntry(entry, position, lastSequence)) {
                 entries.add(entry);
             } else {
-                LOG.error("leaving out entry {} {} {}", entry.getAction(), entry.getUrl(), entry.getSequence());
+                LOG.info("leaving out entry {} {} {}", entry.getAction(), entry.getUrl(), entry.getSequence());
             }
         }
         return entries;
@@ -111,7 +111,7 @@ public class SearchJournal {
                 DateTools.createXPathConstraint(session, from),
                 sequence,
                 DateTools.createXPathConstraint(session, to));
-        LOG.error("query: {}", xpath);
+        LOG.info("query: {}", xpath);
         Query query = session.getWorkspace().getQueryManager().createQuery(xpath, Query.XPATH);
         query.setLimit(limit);
         return query;
