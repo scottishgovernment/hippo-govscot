@@ -1,7 +1,6 @@
 package scot.gov.publishing.searchjounal;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.hippoecm.repository.util.DateTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,9 +60,6 @@ public class SearchJournal {
         record.setProperty(URL, entry.getUrl());
         record.setProperty(TIMESTAMP, entry.getTimestamp());
         record.setProperty(ATTEMPT, entry.getAttempt());
-        if (entry.getSequence() == 0) {
-            entry.setSequence(RandomUtils.nextLong());
-        }
         record.setProperty(SEQUENCE, entry.getSequence());
         sessionSaver.save();
         return record;
