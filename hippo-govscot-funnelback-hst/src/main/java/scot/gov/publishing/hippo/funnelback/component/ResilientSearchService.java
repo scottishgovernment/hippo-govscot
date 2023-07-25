@@ -48,7 +48,7 @@ public class ResilientSearchService implements SearchService {
     public List<String> getSuggestions(String query, SearchSettings searchsettings) {
         int timeoutMillis = (int) searchsettings.getSugestTimeoutMillis();
         HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
-        LOG.error("getSuggestions {}, {}", query, timeoutMillis);
+        LOG.info("getSuggestions {}, {}", query, timeoutMillis);
         SuggestionsCommand command = new SuggestionsCommand(query, searchsettings, properties);
         return command.execute();
     }

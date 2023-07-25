@@ -109,7 +109,7 @@ public class FunnelbackSearchService implements SearchService {
     @Override
     public List<String> getSuggestions(String partialQuery, SearchSettings searchSettings) {
         try {
-            LOG.error("getSuggestions {}", partialQuery);
+            LOG.info("getSuggestions {}", partialQuery);
             return doGetSuggestions(partialQuery);
         } catch (ResourceException e) {
             LOG.error("getSuggestions failed", e);
