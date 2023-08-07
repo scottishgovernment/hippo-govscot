@@ -1,5 +1,6 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
+import org.hippoecm.hst.container.RequestContextProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -10,6 +11,8 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -28,6 +31,11 @@ public class SuggestionsResource {
 
     Supplier<SearchSettings> searchSettingSource = () -> ResilientSearchComponent.searchSettings();
 
+    Supplier<String> mountSupplier = () -> FunnelbackSearchService.mountName(RequestContextProvider.get());
+
+    @Context
+    private UriInfo uriInfo;
+
     public SuggestionsResource() {
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
@@ -37,11 +45,12 @@ public class SuggestionsResource {
     @GET
     public List<String> getSuggestions(@QueryParam("partial_query") String partialQuery) {
         SearchSettings searchSettings = searchSettingSource.get();
+        String mount = mountSupplier.get();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
             return emptyList();
         } else {
-            return resilientSearchService.getSuggestions(partialQuery, searchSettings);
+            return resilientSearchService.getSuggestions(partialQuery, mount, searchSettings);
         }
     }
 }

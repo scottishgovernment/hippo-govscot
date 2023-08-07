@@ -18,6 +18,7 @@ public class SuggestionsResourceTest {
     public void returnsEmptyListIfSearchIsDisabled() {
         // ARRANGE
         SuggestionsResource sut = new SuggestionsResource();
+        sut.mountSupplier = () -> "mygov";
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(false);
         sut.searchSettingSource = () -> searchSettings;
@@ -34,6 +35,7 @@ public class SuggestionsResourceTest {
     public void returnsEmptyListIfSearchIsBloomreach() {
         // ARRANGE
         SuggestionsResource sut = new SuggestionsResource();
+        sut.mountSupplier = () -> "mygov";
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(true);
         searchSettings.setSearchType("bloomreach");
@@ -51,13 +53,14 @@ public class SuggestionsResourceTest {
     public void returnsResultsIfSearchTypeIsResilient() {
         // ARRANGE
         SuggestionsResource sut = new SuggestionsResource();
+        sut.mountSupplier = () -> "mygov";
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(true);
         searchSettings.setSugestTimeoutMillis(1000);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
+        when(sut.funnelbackSearchService.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");
@@ -70,12 +73,13 @@ public class SuggestionsResourceTest {
     public void returnsResultsIfSearchTypeIsFunnelback() {
         // ARRANGE
         SuggestionsResource sut = new SuggestionsResource();
+        sut.mountSupplier = () -> "mygov";
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(true);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
+        when(sut.funnelbackSearchService.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");

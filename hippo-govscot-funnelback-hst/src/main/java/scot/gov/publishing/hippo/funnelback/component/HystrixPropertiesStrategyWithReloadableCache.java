@@ -10,8 +10,18 @@ import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
  */
 class HystrixPropertiesStrategyWithReloadableCache extends HystrixPropertiesStrategy {
 
+    private final Object lock = new Object();
+
+    private String key;
+
     @Override
     public String getCommandPropertiesCacheKey(HystrixCommandKey commandKey, HystrixCommandProperties.Setter setter) {
-        return new StringBuilder(commandKey.name()).append(setter.getExecutionTimeoutInMilliseconds()).toString();
+
+        synchronized (lock) {
+            if (key == null) {
+                key = new StringBuilder(commandKey.name()).append(setter.getExecutionTimeoutInMilliseconds()).toString();
+            }
+            return key;
+        }
     }
 }

@@ -45,11 +45,11 @@ public class ResilientSearchService implements SearchService {
     }
 
     @Override
-    public List<String> getSuggestions(String query, SearchSettings searchsettings) {
+    public List<String> getSuggestions(String query, String mount, SearchSettings searchsettings) {
         int timeoutMillis = (int) searchsettings.getSugestTimeoutMillis();
         HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
         LOG.info("getSuggestions {}, {}", query, timeoutMillis);
-        SuggestionsCommand command = new SuggestionsCommand(query, searchsettings, properties);
+        SuggestionsCommand command = new SuggestionsCommand(query, mount, searchsettings, properties);
         return command.execute();
     }
 
@@ -118,21 +118,24 @@ public class ResilientSearchService implements SearchService {
 
         String query;
 
+        String mount;
+
         SearchSettings searchsettings;
 
-        public SuggestionsCommand(String query, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
+        public SuggestionsCommand(String query, String mount, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
             super(Setter
                     .withGroupKey(FUNNELBACK_COMMAND_GROUP_KEY)
                     .andCommandKey(FUNNELBACK_SUGGESTIONS_COMMAND_KEY)
                     .andCommandPropertiesDefaults(commandPropertiesSetter));
             this.query = query;
+            this.mount = mount;
             this.searchsettings = searchsettings;
         }
 
         @Override
         protected List<String> run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            return funnelbackSearchService.getSuggestions(query, searchsettings);
+            return funnelbackSearchService.getSuggestions(query, mount, searchsettings);
         }
 
         @Override
@@ -147,7 +150,6 @@ public class ResilientSearchService implements SearchService {
     void throwExceptionAtSpecifiedRate(String label, double rate) {
 
         LOG.info("throwExceptionAtSpecifiedRate {}, {}", label, rate);
-
         if (rate == 0) {
             return;
         }

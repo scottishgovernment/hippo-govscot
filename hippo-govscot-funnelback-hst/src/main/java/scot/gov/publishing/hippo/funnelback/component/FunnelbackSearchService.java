@@ -52,9 +52,9 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DefaultsPostProcessor DEFAULTS_POST_PROCESSOR = new DefaultsPostProcessor();
 
-    private String collection;
+    private Map<String, String> collections;
 
-    private List<String> sites;
+    private Map<String, List<String>> sites;
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
@@ -70,7 +70,7 @@ public class FunnelbackSearchService implements SearchService {
      * Used to send a scheduled ping request to funnelback. This is scheduled in spring code, see
      * /site/components/src/main/resources/META-INF/hst-assembly/overrides/spring-managed-components.xml
      */
-    void ping() {
+    void ping(String mount) {
         if (!HstServices.isAvailable()) {
             return;
         }
@@ -78,15 +78,14 @@ public class FunnelbackSearchService implements SearchService {
         String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         if (broker != null) {
-            Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, suggestionsParamMap(query));
+            Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, suggestionsParamMap(query, mount));
             ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
             resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
         }
     }
 
     SearchResponse doPerformSearch(Search search, SearchSettings searchsettings) {
-        int rank = getRank(search.getPage());
-        Map<String, Object> params = searchParamMap(search.getQuery(), rank);
+        Map<String, Object> params = searchParamMap(search);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         String urlTemplate = getUrlTemplate(search);
         Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, urlTemplate, params);
@@ -107,18 +106,18 @@ public class FunnelbackSearchService implements SearchService {
     }
 
     @Override
-    public List<String> getSuggestions(String partialQuery, SearchSettings searchSettings) {
+    public List<String> getSuggestions(String partialQuery, String mount, SearchSettings searchSettings) {
         try {
             LOG.info("getSuggestions {}", partialQuery);
-            return doGetSuggestions(partialQuery);
+            return doGetSuggestions(partialQuery, mount);
         } catch (ResourceException e) {
             LOG.error("getSuggestions failed", e);
             return Collections.emptyList();
         }
     }
 
-    List<String> doGetSuggestions(String partialQuery) {
-        Map<String, Object> params = suggestionsParamMap(partialQuery);
+    List<String> doGetSuggestions(String partialQuery, String mount) {
+        Map<String, Object> params = suggestionsParamMap(partialQuery, mount);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         Resource results = broker.findResources(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, params);
         ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
@@ -186,8 +185,9 @@ public class FunnelbackSearchService implements SearchService {
         HstRequestContext context = request.getRequestContext();
         VirtualHost virtualHost = context.getResolvedMount().getMount().getVirtualHost();
         String hostGroupName = virtualHost.getHostGroupName();
+        String mountname = mountName(request.getRequestContext());
         if (useRewriter(hostGroupName)) {
-            PostProcessor postProcessor = new ResultLinkRewriter(virtualHost.getName(), sites);
+            PostProcessor postProcessor = new ResultLinkRewriter(virtualHost.getName(), sites.get(mountname));
             postProcessor.process(response);
         }
     }
@@ -197,33 +197,39 @@ public class FunnelbackSearchService implements SearchService {
         return !equalsAny(hostGroupName, "production", "dev-localhost", "www");
     }
 
-    Map<String, Object> searchParamMap(String query, int rank) {
-
+    Map<String, Object> searchParamMap(Search search) {
+        int rank = getRank(search.getPage());
+        String mountname = mountName(search.getRequest().getRequestContext());
+        String collection = collections.get(mountname);
         Map<String, Object> params = new HashMap<>();
-        params.put("query", defaultIfBlank(query, ""));
+        params.put("query", defaultIfBlank(search.getQuery(), ""));
         params.put("rank", rank);
         params.put("collection", collection);
         return params;
     }
 
-    public String getCollection() {
-        return collection;
+    public static String mountName(HstRequestContext context) {
+        return context.getResolvedMount().getMount().getHstSite().getName();
+    }
+    public Map<String, String> getCollections() {
+        return collections;
     }
 
-    public void setCollection(String collection) {
-        this.collection = collection;
+    public void setCollections(Map<String, String> collections) {
+        this.collections = collections;
     }
 
-    public List<String> getSites() {
+    public Map<String, List<String>> getSites() {
         return sites;
     }
 
-    public void setSites(List<String> sites) {
+    public void setSites(Map<String, List<String>> sites) {
         this.sites = sites;
     }
 
-    Map<String, Object> suggestionsParamMap(String partialQuery) {
+    Map<String, Object> suggestionsParamMap(String partialQuery, String mount) {
         Map<String, Object> params = new HashMap<>();
+        String collection = collections.get(mount);
         params.put("partial_query", defaultIfBlank(partialQuery, ""));
         params.put("collection", collection);
         params.put("show", 6);
