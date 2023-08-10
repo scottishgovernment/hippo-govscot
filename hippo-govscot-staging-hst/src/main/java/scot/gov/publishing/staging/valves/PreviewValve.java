@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
+import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.util.Calendar;
@@ -35,30 +36,33 @@ public class PreviewValve extends AbstractOrderableValve {
     public void invoke(ValveContext context) throws ContainerException {
         HstRequestContext requestContext = context.getRequestContext();
         Mount resolvedMount = requestContext.getResolvedMount().getMount();
+
+        boolean invokeNext = true;
         try {
             if (isPreviewMount(requestContext)) {
-                doInvokeWithExceptionHandling(context, requestContext, resolvedMount);
+                invokeNext = doInvokeWithExceptionHandling(context, requestContext, resolvedMount);
             }
         } catch (IOException e) {
             LOG.error("IO IOException invoking preview valve for {}.", requestContext.getSiteContentBaseBean(), e);
         } finally {
-            context.invokeNext();
+            if (invokeNext) {
+                context.invokeNext();
+            }
         }
     }
 
-    void doInvokeWithExceptionHandling(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount) throws IOException {
+    boolean doInvokeWithExceptionHandling(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount) throws IOException {
         try {
-            doInvoke(valveContext, requestContext, resolvedMount);
+            return doInvoke(valveContext, requestContext, resolvedMount);
         } catch (Exception e) {
             // if anything goes wring, default to not allowing access
             LOG.error("Exception while accessing this node {}.", requestContext.getSiteContentBaseBean(), e);
-            requestContext.getServletResponse().sendError(403);
+            return false;
         }
     }
 
-    void doInvoke(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount)
+    boolean doInvoke(ValveContext valveContext, HstRequestContext requestContext, Mount resolvedMount)
             throws RepositoryException, IOException {
-
 
         //fetching the previewkey
         Set<String> previewKeys = PreviewKeyUtils.getPreviewKeys(
@@ -67,25 +71,28 @@ public class PreviewValve extends AbstractOrderableValve {
         // intercepting requests having the id in the url
         if (previewKeys.isEmpty()) {
             LOG.info("Preview request doesn't contain preview key");
-            requestContext.getServletResponse().sendError(403);
-            return;
+            requestContext.getServletResponse().sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return false;
         }
 
         if (isExempt(requestContext)) {
-            return;
+            return true;
         }
 
         HippoBean contentBean = getContentBean(requestContext);
         if (contentBean == null) {
             LOG.info("Preview request doesn't contain content bean");
-            requestContext.getServletResponse().sendError(403);
-            return;
+            requestContext.getServletResponse().sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return false;
         }
 
         if (!hasValidStagingKey(contentBean, previewKeys)) {
             LOG.info("Preview key {} for document {} is invalid or preview link has expired.", previewKeys, contentBean.getPath());
-            requestContext.getServletResponse().sendError(403);
+            requestContext.getServletResponse().sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return false;
         }
+
+        return true;
     }
 
     HippoBean getContentBean(HstRequestContext requestContext) {
