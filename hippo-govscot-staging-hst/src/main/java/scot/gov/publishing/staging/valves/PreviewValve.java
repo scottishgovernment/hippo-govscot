@@ -82,13 +82,13 @@ public class PreviewValve extends AbstractOrderableValve {
         HippoBean contentBean = getContentBean(requestContext);
         if (contentBean == null) {
             LOG.info("Preview request doesn't contain content bean");
-            requestContext.getServletResponse().sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            requestContext.getServletResponse().sendError(HttpServletResponse.SC_FORBIDDEN);
             return false;
         }
 
         if (!hasValidStagingKey(contentBean, previewKeys)) {
             LOG.info("Preview key {} for document {} is invalid or preview link has expired.", previewKeys, contentBean.getPath());
-            requestContext.getServletResponse().sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            requestContext.getServletResponse().sendError(HttpServletResponse.SC_FORBIDDEN);
             return false;
         }
 
