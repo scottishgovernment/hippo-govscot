@@ -4,6 +4,8 @@ import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
+import com.netflix.hystrix.strategy.HystrixPlugins;
+import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -36,6 +38,12 @@ public class ResilientSearchService implements SearchService {
 
     Supplier<Double> randomNumberSource = () -> Math.random();
 
+    private static Boolean hystrixPropertiesStrategySet = false;
+
+    public ResilientSearchService() {
+        ensueHystrixPropertiesStrategy();
+    }
+
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
         int timeoutMillis = (int) searchsettings.getTimeoutMillis();
@@ -51,6 +59,16 @@ public class ResilientSearchService implements SearchService {
         LOG.info("getSuggestions {}, {}", query, timeoutMillis);
         SuggestionsCommand command = new SuggestionsCommand(query, mount, searchsettings, properties);
         return command.execute();
+    }
+
+    public static void ensueHystrixPropertiesStrategy() {
+        synchronized (hystrixPropertiesStrategySet) {
+            if (!hystrixPropertiesStrategySet.booleanValue()) {
+                hystrixPropertiesStrategySet = true;
+                HystrixPropertiesStrategy newStrategy = new HystrixPropertiesStrategyWithReloadableCache();
+                HystrixPlugins.getInstance().registerPropertiesStrategy(newStrategy);
+            }
+        }
     }
 
     HystrixCommandProperties.Setter searchProperties(int timeoutMillis) {

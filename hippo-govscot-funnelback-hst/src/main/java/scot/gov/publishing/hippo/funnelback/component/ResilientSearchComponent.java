@@ -1,7 +1,5 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
 import org.hippoecm.hst.core.component.HstRequest;
@@ -46,8 +44,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     // the type of search that this component is configured to provide in the sitemap
     private String searchType;
 
-    private static Boolean hystrixPropertiesStrategySet = false;
-
     @Override
     public void init(ServletContext servletContext, ComponentConfiguration componentConfig) {
         super.init(servletContext, componentConfig);
@@ -56,19 +52,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
-        ensueHystrixPropertiesStrategy();
-    }
-
-    private void ensueHystrixPropertiesStrategy() {
-        // override the HystrixPropertiesStrategy so that we can set the timeout value at runtime from a value stored
-        // in the repo without it being cached
-        synchronized (hystrixPropertiesStrategySet) {
-            if (!hystrixPropertiesStrategySet.booleanValue()) {
-                hystrixPropertiesStrategySet = true;
-                HystrixPropertiesStrategy newStrategy = new HystrixPropertiesStrategyWithReloadableCache();
-                HystrixPlugins.getInstance().registerPropertiesStrategy(newStrategy);
-            }
-        }
     }
 
     @Override
