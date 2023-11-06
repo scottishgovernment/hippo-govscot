@@ -5,7 +5,7 @@
   <parent>
     <groupId>scot.mygov</groupId>
     <artifactId>mygov-parent</artifactId>
-    <version>5</version>
+    <version>6</version>
   </parent>
 
   <groupId>scot.gov.publishing.hippo</groupId>
@@ -26,7 +26,7 @@
   </modules>
 
   <properties>
-    <hippo.version>14.7.3</hippo.version>
+    <hippo.version>15.4.0</hippo.version>
   </properties>
 
   <build>

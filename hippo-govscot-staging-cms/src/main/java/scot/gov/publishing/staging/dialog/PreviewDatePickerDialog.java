@@ -7,9 +7,7 @@ import org.apache.wicket.ajax.AjaxEventBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.attributes.AjaxRequestAttributes;
 import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
-import org.apache.wicket.datetime.PatternDateConverter;
-import org.apache.wicket.datetime.markup.html.form.DateTextField;
-import org.apache.wicket.extensions.yui.calendar.DatePicker;
+import org.apache.wicket.extensions.markup.html.form.DateTextField;
 import org.apache.wicket.markup.head.CssHeaderItem;
 import org.apache.wicket.markup.head.IHeaderResponse;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -34,11 +32,11 @@ import org.hippoecm.hst.platform.model.HstModelRegistry;
 import org.hippoecm.repository.HippoStdNodeType;
 import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.NodeIterable;
-import org.joda.time.DateTime;
 import org.onehippo.cms7.channelmanager.HstUtil;
 import org.onehippo.cms7.services.HippoServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.wicketstuff.datetime.extensions.yui.calendar.DatePicker;
 
 import javax.jcr.*;
 import java.net.URISyntaxException;
@@ -48,7 +46,7 @@ import java.util.stream.Collectors;
 
 import static scot.gov.publishing.staging.plugins.PreviewPlugin.INTERNAL_PREVIEW_NODE_NAME;
 
-public class PreviewDatePickerDialog extends AbstractDialog {
+public class PreviewDatePickerDialog extends AbstractDialog<String> {
 
     private static final long serialVersionUID = 1L;
 
@@ -78,14 +76,14 @@ public class PreviewDatePickerDialog extends AbstractDialog {
         Form form = new Form<>("form", new CompoundPropertyModel<>(this));
         DateTextField expiryDate = new DateTextField("expiration-date",
                 new PropertyModel<>(this, "expirationDate"),
-                new PatternDateConverter("dd/MM/yyyy", true)) {
+               "dd/MM/yyyy") {
 
             @Override
             protected void onModelChanged() {
                 super.onModelChanged();
-                AjaxRequestTarget target = getRequestCycle().find(AjaxRequestTarget.class);
-                if (target != null) {
-                    target.add(this.getParent().get(this.getId() + RESET_CONTAINER));
+                Optional<AjaxRequestTarget> target = getRequestCycle().find(AjaxRequestTarget.class);
+                if (target.isPresent()) {
+                    target.get().add(this.getParent().get(this.getId() + RESET_CONTAINER));
                 }
             }
         };
@@ -293,7 +291,7 @@ public class PreviewDatePickerDialog extends AbstractDialog {
 
     @Override
     public IModel getTitle() {
-        return new AbstractReadOnlyModel<String>() {
+        return new IModel<String>() {
 
             @Override
             public String getObject() {

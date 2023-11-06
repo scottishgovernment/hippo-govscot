@@ -9,7 +9,6 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.list.ListItem;
 import org.apache.wicket.markup.html.list.PropertyListView;
-import org.apache.wicket.model.AbstractReadOnlyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.StringResourceModel;
 import org.apache.wicket.request.resource.CssResourceReference;
@@ -28,7 +27,7 @@ import java.time.format.FormatStyle;
 import java.util.Calendar;
 import java.util.List;
 
-public class PreviewLinkDialog extends AbstractDialog {
+public class PreviewLinkDialog extends AbstractDialog<String> {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(PreviewLinkDialog.class);
@@ -116,7 +115,7 @@ public class PreviewLinkDialog extends AbstractDialog {
 
     @Override
     public IModel getTitle() {
-        return new AbstractReadOnlyModel<String>() {
+        return new IModel() {
 
             @Override
             public String getObject() {
