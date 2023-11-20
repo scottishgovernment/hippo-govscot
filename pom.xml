@@ -23,6 +23,8 @@
     <module>hippo-govscot-staging-hst</module>
     <module>hippo-govscot-staging-cms</module>
     <module>hippo-govscot-staging-repository</module>
+    <module>hippo-govscot-bulkpublish-cms</module>
+    <module>hippo-govscot-bulkpublish-repository</module>
   </modules>
 
   <properties>

@@ -1,0 +1,5 @@
+definitions:
+  namespace:
+    bulkpublish:
+      uri: http://www.gov.scot.com/bulkbublish/nt/1.0
+      cnd: namespaces/bulkpublish.cnd
