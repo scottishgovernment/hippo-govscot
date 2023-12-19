@@ -23,6 +23,9 @@
     <module>hippo-govscot-staging-hst</module>
     <module>hippo-govscot-staging-cms</module>
     <module>hippo-govscot-staging-repository</module>
+    <module>hippo-govscot-sluglookup-cms</module>
+    <module>hippo-govscot-sluglookup-repository</module>
+    <module>hippo-govscot-sluglookup-hst</module>
   </modules>
 
   <properties>

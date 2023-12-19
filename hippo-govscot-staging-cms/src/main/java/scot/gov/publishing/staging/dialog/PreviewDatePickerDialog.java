@@ -180,11 +180,13 @@ public class PreviewDatePickerDialog extends AbstractDialog<String> {
     protected void onOk() {
         UUID uuid = UUID.randomUUID();
         String randomUUIDString = uuid.toString();
+        LOG.error("onOk {}", randomUUIDString);
         Session session = UserSession.get().getJcrSession();
         nodeIDs.forEach(id->{
             try {
                 Node node = session.getNodeByIdentifier(id);
                 List<String> urls = getPreviewURLs(node);
+                LOG.error("onOk urls {}", urls);
                 generatePreviewLinkNodes(node, urls, randomUUIDString);
             } catch (RepositoryException e){
                 LOG.error("An exception occurred while generating a preview for node with uuid {}", id, e);
@@ -212,7 +214,7 @@ public class PreviewDatePickerDialog extends AbstractDialog<String> {
     }
 
     protected void generatePreviewLinkNodes(Node node, List<String> urls, String randomUUIDString) throws RepositoryException {
-        LOG.info("generatePreviewLinkNodes {}, {}, {}", node.getPath(), urls, randomUUIDString);
+        LOG.error("generatePreviewLinkNodes {}, {}, {}", node.getPath(), urls, randomUUIDString);
         Node unpublishedVariant = getUnpublishedVariant(node);
         urls.stream().forEach(url -> {
             if (unpublishedVariant != null) {
@@ -234,7 +236,7 @@ public class PreviewDatePickerDialog extends AbstractDialog<String> {
                     LOG.error("Exception while constructing full URL.", e);
                 }
             } else {
-                LOG.info("unpublishedVariant is null");
+                LOG.error("unpublishedVariant is null");
             }
         });
     }
