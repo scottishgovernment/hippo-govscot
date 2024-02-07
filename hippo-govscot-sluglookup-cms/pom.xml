@@ -11,13 +11,6 @@
     <artifactId>hippo-govscot-sluglookup-cms</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <properties>
-        <sonar.exclusions>
-        </sonar.exclusions>
-        <sonar.coverage.exclusions>
-        </sonar.coverage.exclusions>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>javax.jcr</groupId>
@@ -53,26 +46,6 @@
             <scope>test</scope>
         </dependency>
 
-
     </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <filtering>false</filtering>
-                <directory>src/main/java</directory>
-                <includes>
-                    <include>**/*.properties</include>
-                    <include>**/*.html</include>
-                    <include>**/*.css</include>
-                    <include>**/*.png</include>
-                </includes>
-            </resource>
-            <resource>
-                <filtering>true</filtering>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
-    </build>
 
 </project>

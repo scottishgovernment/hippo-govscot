@@ -12,11 +12,6 @@
     <artifactId>hippo-govscot-sluglookup-hst</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <properties>
-        <sonar.coverage.exclusions>
-        </sonar.coverage.exclusions>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>javax.jcr</groupId>
