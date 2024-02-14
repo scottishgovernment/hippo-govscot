@@ -29,6 +29,7 @@ import static org.hippoecm.repository.api.HippoNodeType.NT_HANDLE;
 public class PreviewFolderMenuItemPlugin extends RenderPlugin {
 
     private static final long serialVersionUID = 1L;
+
     private static final Logger LOG = LoggerFactory.getLogger(PreviewFolderMenuItemPlugin.class);
 
     public PreviewFolderMenuItemPlugin(IPluginContext context, IPluginConfig config) {
