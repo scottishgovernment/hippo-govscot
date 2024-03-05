@@ -76,6 +76,7 @@ public class ScheduledWorkflowPlugin extends RenderPlugin<WorkflowDescriptor> {
     }
 
     private void collectValidDocumentIDsForChild(Node child, String action, Set<String> nodeIDs) throws RepositoryException, WorkflowException, RemoteException {
+
         if (child.isNodeType(NT_FOLDER) || child.isNodeType(NT_DIRECTORY)) {
             collectValidDocumentIDs(child, action, nodeIDs);
             return;
@@ -93,7 +94,7 @@ public class ScheduledWorkflowPlugin extends RenderPlugin<WorkflowDescriptor> {
     }
 
     void doCollect(Node child, String action, Set<String> nodeIDs) throws RepositoryException {
-        if(PUBLISH.equals(action) && !isDocumentHandleLive(child)) {
+        if(PUBLISH.equals(action) && (!isDocumentHandleLive(child) || hasChanged(child))) {
             nodeIDs.add(child.getIdentifier());
         } else if (DEPUBLISH.equals(action) && isDocumentHandleLive(child)){
             nodeIDs.add(child.getIdentifier());
@@ -206,6 +207,15 @@ public class ScheduledWorkflowPlugin extends RenderPlugin<WorkflowDescriptor> {
 
         String[] availabilities = JcrUtils.getMultipleStringProperty(liveVariant, HIPPO_AVAILABILITY, EMPTY_STRING_ARRAY);
         return ArrayUtils.contains(availabilities, "live");
+    }
+
+    private boolean hasChanged(Node handle) throws RepositoryException {
+        Node liveVariant = getDocumentVariantByHippoStdState(handle, HippoStdNodeType.PUBLISHED);
+        if (liveVariant == null) {
+            return false;
+        }
+        String stateSummary = liveVariant.getProperty("hippostd:stateSummary").getString();
+        return "changed".equals(stateSummary);
     }
 
     private Node getDocumentVariantByHippoStdState(Node handle, String hippoStdState)
