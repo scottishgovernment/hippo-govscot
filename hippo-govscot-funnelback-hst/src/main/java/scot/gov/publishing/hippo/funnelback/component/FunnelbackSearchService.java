@@ -148,7 +148,7 @@ public class FunnelbackSearchService implements SearchService {
     boolean usePreview(HstRequest request) {
         String userType = userType(request);
         String previewParam = request.getParameter("profile");
-        return INTERNAL.equals(userType) && "_default_preview".equals(previewParam);
+        return INTERNAL.equals(userType) && "_search_preview".equals(previewParam);
     }
 
     String userType(HstRequest request) {
