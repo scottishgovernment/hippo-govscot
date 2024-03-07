@@ -24,7 +24,7 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
 
     @Override
     public void execute(RepositoryJobExecutionContext context) throws RepositoryException {
-        LOG.error("Running preview links cleanup job");
+        LOG.info("Running preview links cleanup job");
         Session session = context.createSystemSession();
         try {
             long batchSize = batchSize(context);
@@ -54,15 +54,13 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
 
         while (nodes.hasNext()) {
             Node node = nodes.nextNode();
-
-            LOG.error("node {}", node.getPath());
             boolean expired = removeIfExpired(node);
 
             if (expired) {
                 count++;
             }
 
-            if (count++ % batchSize == 0) {
+            if (count % batchSize == 0) {
                 session.save();
                 try {
                     Thread.sleep(100);
@@ -76,9 +74,9 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
             session.save();
         }
         if (count > 0) {
-            LOG.error("Done cleaning {} items", count);
+            LOG.info("Done cleaning {} items", count);
         } else {
-            LOG.error("No timed out items");
+            LOG.info("No timed out items");
         }
     }
 
