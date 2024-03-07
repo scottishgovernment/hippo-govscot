@@ -24,6 +24,8 @@ import java.net.URISyntaxException;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 public class PollFunnelbackCurator implements RepositoryJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(PollFunnelbackCurator.class);
@@ -32,6 +34,8 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
     private static final String CURATOR_PATH = "/content/documents/administration/funnelback-curator-changes";
 
+    boolean tokenAbsenceLogged = false;
+
     @Override
     public void execute(RepositoryJobExecutionContext context) throws RepositoryException {
 
@@ -39,12 +43,20 @@ public class PollFunnelbackCurator implements RepositoryJob {
             return;
         }
 
+        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+        if (isBlank(token)) {
+            if (!tokenAbsenceLogged) {
+                LOG.warn("No funnelback token configured");
+                tokenAbsenceLogged = true;
+            }
+            return;
+        }
         Session session = context.createSystemSession();
         String pollPaths = context.getAttribute("pollPaths");
 
         try {
             String storedHash = getStoredHash(session);
-            String newhash = getPageHash(pollPaths);
+            String newhash = getPageHash(pollPaths, token);
             if (!storedHash.equals(newhash)) {
                 touchFunnelbackCacheFile(session, newhash);
             }
@@ -85,12 +97,12 @@ public class PollFunnelbackCurator implements RepositoryJob {
         return "published".equals(node.getProperty("hippostd:state").getString());
     }
 
-    String getPageHash(String pollPaths) throws RepositoryException {
+    String getPageHash(String pollPaths, String token) throws RepositoryException {
         try {
             LOG.info("getPageHash {}", pollPaths);
             StringBuilder allContent = new StringBuilder();
             for (String pollPath : pollPaths.split(",")) {
-                allContent.append(doGetPageContentHash(pollPath));
+                allContent.append(doGetPageContentHash(pollPath, token));
             }
             return allContent.toString();
         } catch (IOException | URISyntaxException e) {
@@ -98,13 +110,12 @@ public class PollFunnelbackCurator implements RepositoryJob {
         }
     }
 
-    String doGetPageContentHash(String pollPath) throws IOException, URISyntaxException {
+    String doGetPageContentHash(String pollPath, String token) throws IOException, URISyntaxException {
         URI uri = curatorURI(pollPath);
         LOG.info("doGetPageContentHash {}", pollPath);
-        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet request = new HttpGet(uri);
-
         try {
             request.addHeader("X-Security-Token", token);
             CloseableHttpResponse response = httpClient.execute(request);

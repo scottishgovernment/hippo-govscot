@@ -23,9 +23,8 @@ import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
-import static org.apache.commons.lang3.StringUtils.defaultString;
-import static org.apache.commons.lang3.StringUtils.equalsAny;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.*;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.FunnelbackService")
@@ -56,6 +55,8 @@ public class FunnelbackSearchService implements SearchService {
 
     private Map<String, List<String>> sites;
 
+    private boolean tokenChecked = false;
+
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
         try {
@@ -72,6 +73,10 @@ public class FunnelbackSearchService implements SearchService {
      */
     void ping(String mount) {
         if (!HstServices.isAvailable()) {
+            return;
+        }
+
+        if (!isFunnelbackTokenAvailable()) {
             return;
         }
 
@@ -99,6 +104,16 @@ public class FunnelbackSearchService implements SearchService {
         searchResponse.setResponse(response.getResponse());
         searchResponse.setPagination(pagination);
         return searchResponse;
+    }
+
+    public boolean isFunnelbackTokenAvailable() {
+        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+        boolean isTokenAvailable = isNotBlank(token);
+        if (!tokenChecked) {
+            LOG.warn("funnelback token not configured");
+            tokenChecked = true;
+        }
+        return isTokenAvailable;
     }
 
     int getRank(int page) {
