@@ -38,7 +38,7 @@ public class FunnelbackSearchService implements SearchService {
             = "/search.json?query={query}&start_rank={rank}&collection={collection}";
 
     private static final String SUGGEST_URL
-            = "/suggest.json?partial_query={partial_query}&show={show}&sort={sort}&fmt={fmt}&collection={collection}&profile=search";
+            = "/suggest.json?partial_query={partial_query}&show={show}&sort={sort}&fmt={fmt}&collection={collection}";
 
     private static final String FUNNELBACK_RESOURCE_SPACE = "funnelback";
 
@@ -108,6 +108,7 @@ public class FunnelbackSearchService implements SearchService {
     @Override
     public List<String> getSuggestions(String partialQuery, String mount, SearchSettings searchSettings) {
         try {
+            LOG.info("getSuggestions {}", partialQuery);
             return doGetSuggestions(partialQuery, mount);
         } catch (ResourceException e) {
             LOG.error("getSuggestions failed", e);
@@ -133,9 +134,7 @@ public class FunnelbackSearchService implements SearchService {
         }
 
         if (usePreview(search.getRequest())) {
-            builder.append("&profile=search_preview");
-        } else {
-            builder.append("&profile=search");
+            builder.append("&profile=_default_preview");
         }
 
         return builder.toString();
