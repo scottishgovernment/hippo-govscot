@@ -20,11 +20,11 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
 
     private static final String CONFIG_BATCH_SIZE = "batchsize";
 
-    private static final String PREVIEW_LINKS_QUERY = "//element(*, staging:preview)";
+    private static final String PREVIEW_LINKS_QUERY = "//element(*, staging:preview) order by @staging:expirationdate";
 
     @Override
     public void execute(RepositoryJobExecutionContext context) throws RepositoryException {
-        LOG.info("Running preview links cleanup job");
+        LOG.error("Running preview links cleanup job");
         Session session = context.createSystemSession();
         try {
             long batchSize = batchSize(context);
@@ -48,12 +48,17 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
     private void removeExpiredPreviewLinks(final long batchSize, final Session session) throws RepositoryException {
         QueryManager queryManager = session.getWorkspace().getQueryManager();
         Query query = queryManager.createQuery(PREVIEW_LINKS_QUERY, Query.XPATH);
+        query.setLimit(10000);
         NodeIterator nodes = query.execute().getNodes();
         int count = 0;
 
         while (nodes.hasNext()) {
             Node node = nodes.nextNode();
-            if (removeIfExpired(node)) {
+
+            LOG.error("node {}", node.getPath());
+            boolean expired = removeIfExpired(node);
+
+            if (expired) {
                 count++;
             }
 
@@ -62,28 +67,29 @@ public class PreviewLinksCleanupJob implements RepositoryJob {
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
-                    throw new RepositoryException("Interupted cleaning old preview links", e);
+                    throw new RepositoryException("Interrupted cleaning old preview links", e);
                 }
             }
         }
+
         if (session.hasPendingChanges()) {
             session.save();
         }
         if (count > 0) {
-            LOG.info("Done cleaning {} items", count);
+            LOG.error("Done cleaning {} items", count);
         } else {
-            LOG.info("No timed out items");
+            LOG.error("No timed out items");
         }
     }
 
     boolean removeIfExpired(Node node) throws RepositoryException {
         Calendar expirationCalendar = JcrUtils.getDateProperty(node, "staging:expirationdate", null);
         if(expirationCalendar == null || Calendar.getInstance().before(expirationCalendar)){
-            return true;
+            return false;
         }
-        LOG.debug("Removing preview node at {}", node.getPath());
+        LOG.info("Removing preview node at {}", node.getPath());
         node.remove();
-        return false;
+        return true;
     }
 
 }
