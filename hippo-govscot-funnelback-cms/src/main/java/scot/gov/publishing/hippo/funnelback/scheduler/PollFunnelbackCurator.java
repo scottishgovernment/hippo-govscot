@@ -40,11 +40,11 @@ public class PollFunnelbackCurator implements RepositoryJob {
         }
 
         Session session = context.createSystemSession();
-        String pollPath = context.getAttribute("pollPath");
+        String pollPaths = context.getAttribute("pollPaths");
 
         try {
             String storedHash = getStoredHash(session);
-            String newhash = getPageHash(pollPath);
+            String newhash = getPageHash(pollPaths);
             if (!storedHash.equals(newhash)) {
                 touchFunnelbackCacheFile(session, newhash);
             }
@@ -85,9 +85,14 @@ public class PollFunnelbackCurator implements RepositoryJob {
         return "published".equals(node.getProperty("hippostd:state").getString());
     }
 
-    String getPageHash(String pollPath) throws RepositoryException {
+    String getPageHash(String pollPaths) throws RepositoryException {
         try {
-            return doGetPageContentHash(pollPath);
+            LOG.info("getPageHash {}", pollPaths);
+            StringBuilder allContent = new StringBuilder();
+            for (String pollPath : pollPaths.split(",")) {
+                allContent.append(doGetPageContentHash(pollPath));
+            }
+            return allContent.toString();
         } catch (IOException | URISyntaxException e) {
             throw new RepositoryException(e);
         }
@@ -95,6 +100,7 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
     String doGetPageContentHash(String pollPath) throws IOException, URISyntaxException {
         URI uri = curatorURI(pollPath);
+        LOG.info("doGetPageContentHash {}", pollPath);
         String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet request = new HttpGet(uri);
