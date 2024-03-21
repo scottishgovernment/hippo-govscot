@@ -1,5 +1,8 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
 import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;
 import scot.gov.publishing.hippo.funnelback.model.ListMetadata;
 import scot.gov.publishing.hippo.funnelback.model.Result;
@@ -8,12 +11,15 @@ import scot.gov.publishing.hippo.funnelback.model.ResultPacket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 public class DatePostProcessor implements PostProcessor {
+
+    private static final Logger LOG = LoggerFactory.getLogger(FunnelbackSearchService.class);
 
     private static DateTimeFormatter FROM_DATE_TIME_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive().append(ISO_LOCAL_DATE).appendLiteral(' ').append(ISO_LOCAL_TIME).toFormatter();
@@ -38,12 +44,19 @@ public class DatePostProcessor implements PostProcessor {
         ListMetadata listMetadata = result.getListMetadata();
         String dateString = listMetadata.getD().get(0);
         LocalDateTime parsedDatetime = parseD(dateString);
-        listMetadata.setDisplayDate(DISPLAY_DATE_FORMAT.format(parsedDatetime));
-        listMetadata.setDisplayDateTime(DISPLAY_DATE_TIME_FORMAT.format(parsedDatetime));
+        if (parsedDatetime != null) {
+            listMetadata.setDisplayDate(DISPLAY_DATE_FORMAT.format(parsedDatetime));
+            listMetadata.setDisplayDateTime(DISPLAY_DATE_TIME_FORMAT.format(parsedDatetime));
+        }
     }
 
     LocalDateTime parseD(String str) {
-        return LocalDateTime.parse(str, FROM_DATE_TIME_FORMAT);
+        try {
+            return LocalDateTime.parse(str, FROM_DATE_TIME_FORMAT);
+        } catch (DateTimeParseException e) {
+            LOG.warn("Unable to parse date in funnelback results: {}", str, e);
+            return null;
+        }
     }
 
 }
