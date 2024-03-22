@@ -19,8 +19,6 @@ public class SlugLookups {
 
     Session session;
 
-    static int LETTER_DEPTH = 10;
-
     public SlugLookups(Session session) {
         this.session = session;
     }
@@ -60,6 +58,7 @@ public class SlugLookups {
         Node four = ensureFolder(three, slugHashPath[3]);
         Node node = ensureFolder(four, slug);
         node.setProperty(PATH, path);
+        LOG.info("setting lookup path for node {} -> {}", node.getPath(), path);
         return node;
     }
 
@@ -110,33 +109,9 @@ public class SlugLookups {
                 : parent.addNode(name, "sluglookup:lookup");
     }
 
-    private Node ensureLookupPath(Node parent, int pos, String path) throws RepositoryException {
-
-        if (pos == path.length()) {
-            return parent;
-        }
-
-        if (pos >= LETTER_DEPTH) {
-            return redirectNode(parent, path.substring(pos));
-        }
-
-        String element = Character.toString(escapeSlash(path.charAt(pos)));
-        Node next = parent.hasNode(element)
-                ? parent.getNode(element)
-                : redirectNode(parent, element);
-        int newPos = pos + 1;
-        return ensureLookupPath(next, newPos, path);
-    }
-
-    private Node redirectNode(Node parent, String name) throws RepositoryException {
-        return parent.addNode(name, "sluglookup:lookup");
-    }
-
     void clearLookup(Node node) throws RepositoryException {
+        LOG.info("clearing lookup path for node {}", node.getPath());
         node.getProperty(PATH).remove();
     }
 
-    static Character escapeSlash(char c) {
-        return c == '/' ? '\\' : c;
-    }
 }
