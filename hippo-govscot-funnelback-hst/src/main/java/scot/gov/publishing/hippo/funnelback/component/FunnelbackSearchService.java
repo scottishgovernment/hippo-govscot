@@ -23,6 +23,7 @@ import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.apache.commons.lang3.StringUtils.equalsAny;
@@ -75,6 +76,10 @@ public class FunnelbackSearchService implements SearchService {
             return;
         }
 
+        if (!isFunnelbackTokenAvailable()) {
+            return;
+        }
+
         String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         if (broker != null) {
@@ -82,6 +87,11 @@ public class FunnelbackSearchService implements SearchService {
             ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
             resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
         }
+    }
+
+    public boolean isFunnelbackTokenAvailable() {
+        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+        return isNotBlank(token);
     }
 
     SearchResponse doPerformSearch(Search search, SearchSettings searchsettings) {
