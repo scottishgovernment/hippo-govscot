@@ -19,9 +19,19 @@ public class SearchResponse {
 
     Response response;
 
+    FilterButtonGroups filterButtons = new FilterButtonGroups();
+
     Pagination pagination;
 
     HippoBeanIterator bloomreachResults;
+
+    public FilterButtonGroups getFilterButtons() {
+        return filterButtons;
+    }
+
+    public void setFilterButtons(FilterButtonGroups filterButtons) {
+        this.filterButtons = filterButtons;
+    }
 
     public Type getType() {
         return type;

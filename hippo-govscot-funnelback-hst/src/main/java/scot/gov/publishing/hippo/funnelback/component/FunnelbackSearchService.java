@@ -20,8 +20,11 @@ import scot.gov.publishing.hippo.funnelback.component.postprocess.*;
 import scot.gov.publishing.hippo.funnelback.model.*;
 import scot.gov.publishing.hippo.hst.request.UserTypeValve;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
@@ -53,6 +56,8 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DefaultsPostProcessor DEFAULTS_POST_PROCESSOR = new DefaultsPostProcessor();
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMYYYY");
+
     private Map<String, String> collections;
 
     private Map<String, List<String>> sites;
@@ -60,7 +65,7 @@ public class FunnelbackSearchService implements SearchService {
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
         try {
-            return  doPerformSearch(search, searchsettings);
+            return doPerformSearch(search, searchsettings);
         } catch (ResourceException e) {
             LOG.error("performSearch failed {}", search.getQuery(), e);
             throw e;
@@ -136,19 +141,77 @@ public class FunnelbackSearchService implements SearchService {
 
     String getUrlTemplate(Search search) {
 
-        StringBuilder builder = new StringBuilder(URL_TEMPLATE);
-
+        List<String> params = new ArrayList<>();
         if (search.isEnableSuplimentaryQueries()) {
-            builder.append("&qsup=off");
+            params.add("qsup=off");
         }
 
         if (usePreview(search.getRequest())) {
-            builder.append("&profile=search_preview");
+            params.add("profile=search_preview");
         } else {
-            builder.append("&profile=search");
+            params.add("profile=search");
         }
 
-        return builder.toString();
+        if (search.getFromDate() != null || search.getToDate() != null) {
+            params.add(dateRangeParam(search));
+        }
+
+        if (search.getSort() != Sort.RELEVANCE) {
+            params.add(sortParam(search.getSort()));
+        }
+
+        if (!search.getTopics().isEmpty()) {
+            search.getTopics().values()
+                    .stream()
+                    .map(this::topicParam)
+                    .forEach(params::add);
+        }
+
+        if (!search.getPublicationTypes().isEmpty()) {
+            search.getPublicationTypes().values()
+                    .stream()
+                    .map(this::publicationTypeParam)
+                    .forEach(params::add);
+        }
+
+        return params.isEmpty() ? URL_TEMPLATE : URL_TEMPLATE + "&" + params.stream().collect(joining("&"));
+    }
+
+    String publicationTypeParam(String publicationType) {
+        return "f.Content type|publicationType=" + publicationType;
+    }
+
+
+    String dateRangeParam(Search search) {
+        // the date range param looks like:
+        // f.Date|d=d>1Feb2023<3Feb2023
+        StringBuilder dateParam = new StringBuilder("f.Date|d=d");
+        if (search.getFromDate() != null) {
+            LocalDate from = search.getFromDate().minusDays(1);
+            dateParam.append(">").append(from.format(DATE_TIME_FORMATTER));
+        }
+        if (search.getToDate() != null) {
+            LocalDate to = search.getToDate().plusDays(1);
+            dateParam.append("<").append(to.format(DATE_TIME_FORMATTER));
+        }
+        return dateParam.toString();
+    }
+
+    String sortParam(Sort sort) {
+        switch (sort) {
+            case DATE:
+                return "sort=date";
+
+            case ADATE:
+                return "sort=adate";
+
+            default:
+                return "";
+        }
+    }
+
+    String topicParam(String topic) {
+        return "f.Topic|topics=" + topic;
     }
 
     /**
@@ -170,7 +233,7 @@ public class FunnelbackSearchService implements SearchService {
 
     Pagination createPagination(Search search, FunnelbackSearchResponse response) {
         ResultsSummary summary = response.getResponse().getResultPacket().getResultsSummary();
-        return new PaginationBuilder(search).getPagination(summary, search.getQuery());
+        return new PaginationBuilder().getPagination(summary, search);
     }
 
     void postProcessSearchresponse(Search search, FunnelbackSearchResponse response) {
@@ -180,6 +243,8 @@ public class FunnelbackSearchService implements SearchService {
         RELATIVE_IMAGES_POST_PROCESSOR.process(response);
         DATE_POST_PROCESSOR.process(response);
         DEFAULTS_POST_PROCESSOR.process(response);
+        new RelatedSearchesPostProcessor(search).process(response);
+        new QSupPostProcessor(search).process(response);
     }
 
     void removeDuplucateQSups(FunnelbackSearchResponse response) {

@@ -9,6 +9,8 @@ public class QSup {
 
     String query;
 
+    String url;
+
     public String getSrc() {
         return src;
     }
@@ -25,4 +27,11 @@ public class QSup {
         this.query = query;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
 }

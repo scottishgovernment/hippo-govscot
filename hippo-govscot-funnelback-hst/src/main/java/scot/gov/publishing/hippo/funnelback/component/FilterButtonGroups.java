@@ -1,0 +1,98 @@
+package scot.gov.publishing.hippo.funnelback.component;
+
+import scot.gov.publishing.hippo.funnelback.component.postprocess.SearchQueryBuilder;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.time.format.DateTimeFormatter;
+
+public class FilterButtonGroups {
+
+    List<FilterButton> types = new ArrayList<>();
+
+    List<FilterButton> topics = new ArrayList<>();
+
+    Map<String, FilterButton> dates = new HashMap<>();
+
+    public List<FilterButton> getTypes() {
+        return types;
+    }
+
+    public List<FilterButton> getTopics() {
+        return topics;
+    }
+
+    public Map<String, FilterButton> getDates() {
+        return dates;
+    }
+
+    public static FilterButtonGroups filterButtonGroups(Search search) {
+
+        FilterButtonGroups groups = new FilterButtonGroups();
+
+        if (!search.getPublicationTypes().isEmpty()) {
+            groups.types = publicationTypesButtonGroup(search);
+        }
+
+        if (!search.getTopics().isEmpty()) {
+            groups.topics = topicsButtonGroup(search);
+        }
+
+        if (search.getFromDate() != null || search.getToDate() != null) {
+            groups.dates = datesGroup(search);
+        }
+
+        return groups;
+    }
+
+    static Map<String, FilterButton> datesGroup(Search search) {
+        Map<String, FilterButton> buttons = new HashMap<>();
+
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        if (search.getFromDate() != null) {
+            FilterButton from = new FilterButton();
+            from.setLabel(search.getFromDate().format(formatter));
+            from.setUrl(searchQueryBuilder.queryParamsNoFromDate(search));
+            buttons.put("begin", from);
+        }
+
+        if (search.getToDate() != null) {
+            FilterButton end = new FilterButton();
+            end.setLabel(search.getToDate().format(formatter));
+            end.setUrl(searchQueryBuilder.queryParamsNoToDate(search));
+            buttons.put("end", end);
+        }
+        return buttons;
+    }
+
+    static List<FilterButton> topicsButtonGroup(Search search) {
+        List<FilterButton> buttons = new ArrayList<>();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+        search.getTopics().entrySet().stream().forEach(e -> {
+            FilterButton button = new FilterButton();
+            button.setLabel(e.getValue());
+            button.setUrl(searchQueryBuilder.queryParamsWithoutTopic(search, e.getKey()));
+            button.setId(e.getKey());
+            buttons.add(button);
+        });
+        return buttons;
+    }
+
+    static List<FilterButton> publicationTypesButtonGroup(Search search) {
+        List<FilterButton> buttons = new ArrayList<>();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+        search.getPublicationTypes().entrySet().stream().forEach(e -> {
+            FilterButton button = new FilterButton();
+            button.setLabel(e.getValue());
+            button.setUrl(searchQueryBuilder.queryParamsWithoutPublicationType(search, e.getKey()));
+            button.setId(e.getKey());
+            buttons.add(button);
+        });
+        return buttons;
+    }
+}

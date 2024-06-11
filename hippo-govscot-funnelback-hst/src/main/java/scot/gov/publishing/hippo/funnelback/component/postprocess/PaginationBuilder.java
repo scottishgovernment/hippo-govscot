@@ -1,30 +1,20 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scot.gov.publishing.hippo.funnelback.component.Search;
 import scot.gov.publishing.hippo.funnelback.model.Page;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.HashSet;
 import java.util.Set;
 
 public class PaginationBuilder {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PaginationBuilder.class);
-
     private static final int PAGES = 3;
 
-    Search search;
+    private SearchQueryBuilder queryBuilder = new SearchQueryBuilder();
 
-    public PaginationBuilder(Search search) {
-        this.search = search;
-    }
-
-    public Pagination getPagination(ResultsSummary resultsSummary, String query) {
+    public Pagination getPagination(ResultsSummary resultsSummary, Search search) {
 
         if (resultsSummary.getTotalMatching() <= resultsSummary.getNumRanks()) {
             return new Pagination();
@@ -39,30 +29,30 @@ public class PaginationBuilder {
         int lastPage = lastPage(firstPage, maxPage);
         Set<Integer> included = new HashSet<>();
         for (int pageIndex = firstPage; pageIndex <= lastPage; pageIndex++) {
-            Page page = page(search, query, pageIndex);
+            Page page = page(search, pageIndex);
             included.add(pageIndex);
             page.setSelected(pageIndex == currentPage);
             pagination.getPages().add(page);
         }
 
         if (!included.contains(1)) {
-            Page first = page(search, query, 1);
+            Page first = page(search, 1);
             pagination.setFirst(first);
         }
 
         if (!included.contains(maxPage)) {
-            Page last = page(search, query, maxPage);
+            Page last = page(search, maxPage);
             pagination.setLast(last);
         }
 
         if (currentPage != 1) {
-            Page previous = page(search, query, currentPage - 1);
+            Page previous = page(search, currentPage - 1);
             previous.setLabel("Previous");
             pagination.setPrevious(previous);
         }
 
         if (currentPage != maxPage) {
-            Page next = page(search, query, currentPage + 1);
+            Page next = page(search, currentPage + 1);
             next.setLabel("Next");
             pagination.setNext(next);
         }
@@ -106,34 +96,14 @@ public class PaginationBuilder {
         return page;
     }
 
-    Page page(Search search, String query, int index) {
+    Page page(Search search, int index) {
         Page page = new Page();
-        String encodedQuery = encodeParam(query);
-
-        StringBuilder urlBuilder = new StringBuilder(search.getRequestUrl())
-                        .append('?')
-                        .append("q=")
-                        .append(encodedQuery)
-                        .append("&page=")
-                        .append(index);
-        String cat = search.getRequest().getParameter("cat");
-        if (cat != null) {
-            urlBuilder.append("&cat=").append(cat);
-        }
-        String url = urlBuilder.toString();
+        String queryString = queryBuilder.queryParams(search, index);
+        String url = new StringBuffer(search.getRequestUrl()).append('?').append(queryString).toString();
         page.setLabel(Integer.toString(index));
         page.setUrl(url);
         page.setSelected(false);
         return page;
     }
 
-    String encodeParam(String param) {
-        try {
-            return URLEncoder.encode(param, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            LOG.error("Failed to encode param: {}", param, e);
-            return param;
-        }
-
-    }
 }
