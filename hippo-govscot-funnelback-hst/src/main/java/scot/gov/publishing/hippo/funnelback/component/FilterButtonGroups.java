@@ -29,28 +29,31 @@ public class FilterButtonGroups {
     }
 
     public static FilterButtonGroups filterButtonGroups(Search search) {
+        return filterButtonGroups(search, "q");
+    }
 
+    public static FilterButtonGroups filterButtonGroups(Search search, String searchParam) {
         FilterButtonGroups groups = new FilterButtonGroups();
 
         if (!search.getPublicationTypes().isEmpty()) {
-            groups.types = publicationTypesButtonGroup(search);
+            groups.types = publicationTypesButtonGroup(search, searchParam);
         }
 
         if (!search.getTopics().isEmpty()) {
-            groups.topics = topicsButtonGroup(search);
+            groups.topics = topicsButtonGroup(search, searchParam);
         }
 
         if (search.getFromDate() != null || search.getToDate() != null) {
-            groups.dates = datesGroup(search);
+            groups.dates = datesGroup(search, searchParam);
         }
 
         return groups;
     }
 
-    static Map<String, FilterButton> datesGroup(Search search) {
+    static Map<String, FilterButton> datesGroup(Search search, String searchParam) {
         Map<String, FilterButton> buttons = new HashMap<>();
 
-        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -70,9 +73,9 @@ public class FilterButtonGroups {
         return buttons;
     }
 
-    static List<FilterButton> topicsButtonGroup(Search search) {
+    static List<FilterButton> topicsButtonGroup(Search search, String searchParam) {
         List<FilterButton> buttons = new ArrayList<>();
-        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
         search.getTopics().entrySet().stream().forEach(e -> {
             FilterButton button = new FilterButton();
             button.setLabel(e.getValue());
@@ -83,9 +86,9 @@ public class FilterButtonGroups {
         return buttons;
     }
 
-    static List<FilterButton> publicationTypesButtonGroup(Search search) {
+    static List<FilterButton> publicationTypesButtonGroup(Search search, String searchParam) {
         List<FilterButton> buttons = new ArrayList<>();
-        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
         search.getPublicationTypes().entrySet().stream().forEach(e -> {
             FilterButton button = new FilterButton();
             button.setLabel(e.getValue());

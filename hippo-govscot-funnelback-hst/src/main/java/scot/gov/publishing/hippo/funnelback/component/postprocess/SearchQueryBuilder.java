@@ -11,11 +11,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.util.stream.Collectors.joining;
-import static org.apache.commons.lang.StringUtils.isNotBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 public class SearchQueryBuilder {
 
     private static final Logger LOG = LoggerFactory.getLogger(SearchQueryBuilder.class);
+
+    private String queryParam = "q";
+
+    public SearchQueryBuilder() {
+        // nothing required, default tio using "q" as the query param
+    }
+
+    public SearchQueryBuilder(String queryParam) {
+        this.queryParam = queryParam;
+    }
 
     public String queryParams(Search search) {
         return toParamString(params(search));
@@ -57,7 +67,9 @@ public class SearchQueryBuilder {
 
     List<String> params(Search search) {
         List<String> params = new ArrayList<>();
-        params.add(param("q", encodeParam(search.getQuery())));
+        if (isNotBlank(search.getQuery())) {
+            params.add(param(queryParam, encodeParam(search.getQuery())));
+        }
         params.add(param("page", Integer.toString(search.getPage())));
 
         if (search.getSort() != null) {
