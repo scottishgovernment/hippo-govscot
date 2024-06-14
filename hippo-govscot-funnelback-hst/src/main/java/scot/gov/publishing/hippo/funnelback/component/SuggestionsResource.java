@@ -43,7 +43,7 @@ public class SuggestionsResource {
     @Path("search/suggestions")
     @Produces(APPLICATION_JSON)
     @GET
-    public List<String> getSuggestions(@QueryParam("partial_query") String partialQuery) {
+    public List<String> getSuggestions(@QueryParam("q") String partialQuery) {
         SearchSettings searchSettings = searchSettingSource.get();
         String mount = mountSupplier.get();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
