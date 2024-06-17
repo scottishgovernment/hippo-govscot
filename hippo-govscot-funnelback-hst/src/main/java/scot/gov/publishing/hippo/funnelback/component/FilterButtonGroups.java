@@ -76,7 +76,7 @@ public class FilterButtonGroups {
     static List<FilterButton> topicsButtonGroup(Search search, String searchParam) {
         List<FilterButton> buttons = new ArrayList<>();
         SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
-        search.getTopics().entrySet().stream().forEach(e -> {
+        search.getTopics().entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(e -> {
             FilterButton button = new FilterButton();
             button.setLabel(e.getValue());
             button.setUrl(searchQueryBuilder.queryParamsWithoutTopic(search, e.getKey()));
@@ -89,7 +89,7 @@ public class FilterButtonGroups {
     static List<FilterButton> publicationTypesButtonGroup(Search search, String searchParam) {
         List<FilterButton> buttons = new ArrayList<>();
         SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
-        search.getPublicationTypes().entrySet().stream().forEach(e -> {
+        search.getPublicationTypes().entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(e -> {
             FilterButton button = new FilterButton();
             button.setLabel(e.getValue());
             button.setUrl(searchQueryBuilder.queryParamsWithoutPublicationType(search, e.getKey()));

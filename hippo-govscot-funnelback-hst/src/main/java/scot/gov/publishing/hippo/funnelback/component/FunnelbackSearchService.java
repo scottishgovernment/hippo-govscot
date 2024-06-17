@@ -56,7 +56,7 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DefaultsPostProcessor DEFAULTS_POST_PROCESSOR = new DefaultsPostProcessor();
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMYYYY");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMyyyy");
 
     private Map<String, String> collections;
 
@@ -187,12 +187,12 @@ public class FunnelbackSearchService implements SearchService {
         // f.Date|d=d>1Feb2023<3Feb2023
         StringBuilder dateParam = new StringBuilder("f.Date|d=d");
         if (search.getFromDate() != null) {
-            LocalDate from = search.getFromDate().minusDays(1);
-            dateParam.append(">").append(from.format(DATE_TIME_FORMATTER));
+            LocalDate fromMinusOneDay = search.getFromDate().minusDays(1);
+            dateParam.append(">").append(DATE_TIME_FORMATTER.format(fromMinusOneDay));
         }
         if (search.getToDate() != null) {
-            LocalDate to = search.getToDate().plusDays(1);
-            dateParam.append("<").append(to.format(DATE_TIME_FORMATTER));
+            LocalDate toPlusOneDaye = search.getToDate().plusDays(1);
+            dateParam.append("<").append(DATE_TIME_FORMATTER.format(toPlusOneDaye));
         }
         return dateParam.toString();
     }
