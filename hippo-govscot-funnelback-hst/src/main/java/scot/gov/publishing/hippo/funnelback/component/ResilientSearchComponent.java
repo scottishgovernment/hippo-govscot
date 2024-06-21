@@ -194,9 +194,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     }
 
     String getRequestParam(HstRequest request, String param) {
-        if (!supportedParams.contains(param)) {
-            LOG.warn("Ignoring unsupported param: {}", param);
-        }
         return supportedParams.contains(param) ? getAnyParameter(request, param) : null;
     }
 
