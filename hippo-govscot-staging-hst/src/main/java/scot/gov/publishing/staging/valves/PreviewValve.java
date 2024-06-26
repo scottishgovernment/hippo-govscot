@@ -127,7 +127,15 @@ public class PreviewValve extends AbstractOrderableValve {
     }
 
     boolean hasValidStagingKey(HippoBean contentBean, Set<String> previewKeys) throws RepositoryException {
+        if (contentBean.isHippoFolderBean()) {
+            return false;
+        }
+
         Node unpublishedNode = getUnpublishedNode(contentBean);
+        if (unpublishedNode == null) {
+            return false;
+        }
+
         NodeIterator iterator = unpublishedNode.getNodes("previewId");
         while (iterator.hasNext()) {
             Node node = iterator.nextNode();
