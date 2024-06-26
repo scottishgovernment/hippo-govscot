@@ -8,6 +8,8 @@ import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.commons.lang3.StringUtils.substringBeforeLast;
+
 public class PaginationBuilder {
 
     private static final int PAGES = 3;
@@ -99,11 +101,15 @@ public class PaginationBuilder {
     Page page(Search search, int index) {
         Page page = new Page();
         String queryString = queryBuilder.queryParams(search, index);
-        String url = new StringBuffer(search.getRequestUrl()).append('?').append(queryString).toString();
+        String url = new StringBuffer(url(search.getRequestUrl())).append('?').append(queryString).toString();
         page.setLabel(Integer.toString(index));
         page.setUrl(url);
         page.setSelected(false);
         return page;
     }
 
+    String url(String url) {
+        // remove results from the end of the url
+        return substringBeforeLast(url, "results");
+    }
 }
