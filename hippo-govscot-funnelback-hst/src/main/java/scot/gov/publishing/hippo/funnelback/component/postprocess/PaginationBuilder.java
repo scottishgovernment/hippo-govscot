@@ -109,7 +109,8 @@ public class PaginationBuilder {
     }
 
     String url(String url) {
-        // remove results from the end of the url
-        return substringBeforeLast(url, "results");
+        // remove results from the end of the url, but retain training slash if present
+        String removedResults = substringBeforeLast(url, "results");
+        return url.endsWith("/") ? removedResults + '/' : removedResults;
     }
 }
