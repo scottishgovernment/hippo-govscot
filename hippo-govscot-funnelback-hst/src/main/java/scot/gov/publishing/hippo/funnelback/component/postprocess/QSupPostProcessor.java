@@ -1,6 +1,7 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
 import scot.gov.publishing.hippo.funnelback.component.Search;
+import scot.gov.publishing.hippo.funnelback.component.SearchBuilder;
 import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;
 import scot.gov.publishing.hippo.funnelback.model.QSup;
 
@@ -20,6 +21,14 @@ public class QSupPostProcessor implements PostProcessor {
     }
 
     void rewrite(QSup qsup) {
-        qsup.setUrl(queryBuilder.queryParams(search, search.getPage()));
+        // set query to be the original search but with qsup=false, do not include any filters or pagination in the query
+        qsup.setQsupSuppressedQuery(queryBuilder.queryParamsSuppressQSup(searchWithoutFilters(search.getQuery())));
+
+        // the url with the corrected term but with no filters or pagination
+        qsup.setSpellSugestionQuery(queryBuilder.queryParams(searchWithoutFilters(qsup.getQuery())));
+    }
+
+    Search searchWithoutFilters(String query) {
+         return new SearchBuilder().query(query).request(search.getRequest()).build();
     }
 }

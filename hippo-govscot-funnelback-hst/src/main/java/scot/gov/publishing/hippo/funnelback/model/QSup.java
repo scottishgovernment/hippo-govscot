@@ -11,6 +11,10 @@ public class QSup {
 
     String url;
 
+    String qsupSuppressedQuery;
+
+    String spellSugestionQuery;
+
     public String getSrc() {
         return src;
     }
@@ -33,5 +37,21 @@ public class QSup {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getQsupSuppressedQuery() {
+        return qsupSuppressedQuery;
+    }
+
+    public void setQsupSuppressedQuery(String qsupSuppressedQuery) {
+        this.qsupSuppressedQuery = qsupSuppressedQuery;
+    }
+
+    public String getSpellSugestionQuery() {
+        return spellSugestionQuery;
+    }
+
+    public void setSpellSugestionQuery(String spellSugestionQuery) {
+        this.spellSugestionQuery = spellSugestionQuery;
     }
 }

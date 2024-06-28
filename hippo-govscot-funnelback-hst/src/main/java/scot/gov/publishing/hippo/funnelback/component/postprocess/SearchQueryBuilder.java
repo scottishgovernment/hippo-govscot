@@ -31,10 +31,24 @@ public class SearchQueryBuilder {
         return toParamString(params(search));
     }
 
+    public String queryParams(Search search, String query) {
+        Search modifiedSearch = new Search(search);
+        modifiedSearch.setQuery(query);
+        return toParamString(params(modifiedSearch));
+    }
+
     public String queryParams(Search search, int page) {
         Search modifiedSearch = new Search(search);
         modifiedSearch.setPage(page);
         return toParamString(params(modifiedSearch));
+    }
+
+    public String queryParamsSuppressQSup(Search search) {
+        Search modifiedSearch = new Search(search);
+        modifiedSearch.setPage(1);
+        List<String> params = params(modifiedSearch);
+        params.add(param("qsup", "off"));
+        return toParamString(params);
     }
 
     public String queryParamsNoFromDate(Search search) {
@@ -84,23 +98,35 @@ public class SearchQueryBuilder {
             params.add(param("end", dateString(search.getToDate())));
         }
 
-        if (!search.getPublicationTypes().isEmpty()) {
-            for (String key : search.getPublicationTypes().keySet()) {
-                params.add(param("type", key));
-            }
-        }
+        addPublicationTypes(search, params);
+        addTopics(search, params);
 
-        if (!search.getTopics().isEmpty()) {
-            for (String key : search.getTopics().keySet()) {
-                params.add(param("topic", key));
-            }
+        if (search.isEnableSuplimentaryQueries()) {
+            params.add(param("qsup", "off"));
         }
 
         String cat = search.getRequest().getParameter("cat");
         if (isNotBlank(cat)) {
             params.add(param("cat", cat));
         }
+
         return params;
+    }
+
+    void addPublicationTypes(Search search, List<String> params) {
+        if (!search.getPublicationTypes().isEmpty()) {
+            for (String key : search.getPublicationTypes().keySet()) {
+                params.add(param("type", key));
+            }
+        }
+    }
+
+    void addTopics(Search search, List<String> params) {
+        if (!search.getTopics().isEmpty()) {
+            for (String key : search.getTopics().keySet()) {
+                params.add(param("topic", key));
+            }
+        }
     }
 
     String param(String name, String value) {
