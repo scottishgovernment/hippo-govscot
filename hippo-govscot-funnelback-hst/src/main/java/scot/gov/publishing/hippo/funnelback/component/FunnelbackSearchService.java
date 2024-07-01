@@ -156,7 +156,7 @@ public class FunnelbackSearchService implements SearchService {
             params.add(dateRangeParam(search));
         }
 
-        if (search.getSort() != Sort.RELEVANCE) {
+        if (search.getSort() != null && search.getSort() != Sort.RELEVANCE) {
             params.add(sortParam(search.getSort()));
         }
 

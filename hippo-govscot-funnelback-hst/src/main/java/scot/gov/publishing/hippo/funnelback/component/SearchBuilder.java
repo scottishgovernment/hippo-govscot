@@ -21,7 +21,7 @@ public class SearchBuilder {
 
     private LocalDate toDate;
 
-    private Sort sort = Sort.RELEVANCE;
+    private Sort sort = null;
 
     private Map<String, String> topics = new HashMap<>();
 

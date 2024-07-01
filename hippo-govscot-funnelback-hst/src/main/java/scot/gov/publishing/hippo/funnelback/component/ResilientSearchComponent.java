@@ -75,7 +75,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     @Override
     public void doBeforeRender(HstRequest request, HstResponse response) {
         super.doBeforeRender(request, response);
-
         SearchSettings searchsettings = searchSettings();
         if (isEnabled(searchsettings)) {
             Search search = search(request);
@@ -208,7 +207,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     Sort sort(HstRequest request) {
         String sortParam = getRequestParam(request,"sort");
         if (isBlank(sortParam)) {
-            return Sort.RELEVANCE;
+            return null;
         }
         try {
             return Sort.valueOf(sortParam.toUpperCase());
