@@ -24,7 +24,7 @@ public class Search {
 
     private int page;
 
-    private boolean enableSuplimentaryQueries;
+    private boolean enableSuplimentaryQueries = true;
 
     private String requestUrl = "";
 

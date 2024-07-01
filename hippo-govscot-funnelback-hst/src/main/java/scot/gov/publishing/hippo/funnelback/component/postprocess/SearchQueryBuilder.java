@@ -46,9 +46,8 @@ public class SearchQueryBuilder {
     public String queryParamsSuppressQSup(Search search) {
         Search modifiedSearch = new Search(search);
         modifiedSearch.setPage(1);
-        List<String> params = params(modifiedSearch);
-        params.add(param("qsup", "off"));
-        return toParamString(params);
+        modifiedSearch.setEnableSuplimentaryQueries(false);
+        return toParamString(params(modifiedSearch));
     }
 
     public String queryParamsNoFromDate(Search search) {
@@ -101,7 +100,7 @@ public class SearchQueryBuilder {
         addPublicationTypes(search, params);
         addTopics(search, params);
 
-        if (search.isEnableSuplimentaryQueries()) {
+        if (!search.isEnableSuplimentaryQueries()) {
             params.add(param("qsup", "off"));
         }
 

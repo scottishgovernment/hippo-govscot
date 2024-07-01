@@ -112,7 +112,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         Sort sort = sort(request);
         SearchBuilder searchBuilder = new SearchBuilder()
                 .query(query)
-                .enableSuplimentaryQueries(qsupOff)
+                .enableSuplimentaryQueries(!qsupOff)
                 .page(page)
                 .fromDate(begin)
                 .toDate(end)

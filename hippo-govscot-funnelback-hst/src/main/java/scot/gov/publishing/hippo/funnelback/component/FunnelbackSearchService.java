@@ -142,7 +142,7 @@ public class FunnelbackSearchService implements SearchService {
     String getUrlTemplate(Search search) {
 
         List<String> params = new ArrayList<>();
-        if (search.isEnableSuplimentaryQueries()) {
+        if (!search.isEnableSuplimentaryQueries()) {
             params.add("qsup=off");
         }
 
