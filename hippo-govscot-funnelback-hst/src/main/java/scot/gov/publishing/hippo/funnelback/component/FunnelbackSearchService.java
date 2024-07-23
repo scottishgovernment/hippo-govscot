@@ -56,6 +56,8 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DefaultsPostProcessor DEFAULTS_POST_PROCESSOR = new DefaultsPostProcessor();
 
+    private static final RelatedSearchLogger RELATED_SEARCH_LOGGER = new RelatedSearchLogger();
+
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMyyyy");
 
     private Map<String, String> collections;
@@ -245,6 +247,7 @@ public class FunnelbackSearchService implements SearchService {
         DEFAULTS_POST_PROCESSOR.process(response);
         new RelatedSearchesPostProcessor(search).process(response);
         new QSupPostProcessor(search).process(response);
+        RELATED_SEARCH_LOGGER.process(response);
     }
 
     void removeDuplucateQSups(FunnelbackSearchResponse response) {

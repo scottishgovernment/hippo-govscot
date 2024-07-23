@@ -167,7 +167,6 @@ public class ResilientSearchService implements SearchService {
      */
     void throwExceptionAtSpecifiedRate(String label, double rate) {
 
-        LOG.info("throwExceptionAtSpecifiedRate {}, {}", label, rate);
         if (rate == 0) {
             return;
         }
