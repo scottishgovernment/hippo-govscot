@@ -8,6 +8,7 @@ import scot.gov.publishing.hippo.funnelback.model.Result;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Rewrite result links so that they link to pages on this environment
@@ -16,45 +17,42 @@ public class ResultLinkRewriter implements PostProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResultLinkRewriter.class);
 
-    // derived from the name of the mount - live / origin / production should be empty
-    // empty (prod) or name of env (dev, int, exp etc.)
-    String prefix;
+    private final Map<String, String> sitesByAlias;
 
-    List<String> sites;
+    private final Map<String, String> aliasesBySite;
 
-    public ResultLinkRewriter(String prefix, List<String> sites) {
-        this.prefix = prefix;
-        this.sites = sites;
+    public ResultLinkRewriter(Map<String, String> sitesByAlias, Map<String, String> aliasesBySite) {
+        this.sitesByAlias = sitesByAlias;
+        this.aliasesBySite = aliasesBySite;
     }
 
     @Override
     public void process(FunnelbackSearchResponse response) {
-        for (Result result : response.getResponse().getResultPacket().getResults()) {
-            String liveUrl = rewriteUrl(result.getLiveUrl());
-            result.setLiveUrl(liveUrl);
+        List<Result> results = response.getResponse().getResultPacket().getResults();
+        for (Result result : results) {
+            String rewritten = rewrite(result.getLiveUrl());
+            result.setLiveUrl(rewritten);
         }
     }
 
-    String rewriteUrl(String url) {
+    private String rewrite(String url) {
         URI uri = URI.create(url);
-        String liveHost = uri.getHost();
-        for (String site : sites) {
-            if (liveHost.endsWith(site)) {
-                return doRewrite(uri, prefix, site);
-            }
+        String alias = aliasesBySite.get(uri.getHost());
+        if (alias == null) {
+            return url;
         }
-        return url;
-    }
-
-    String doRewrite(URI uri, String prefix, String site) {
-        String newHost = prefix + "." + site;
+        String linkedHost = sitesByAlias.get(alias);
+        if (linkedHost == null) {
+            return url;
+        }
         try {
-            URI newURI = new URI(uri.getScheme(), newHost, uri.getPath(), uri.getQuery(), uri.getFragment());
+            URI newURI = new URI(uri.getScheme(), linkedHost, uri.getPath(), uri.getQuery(), uri.getFragment());
             return newURI.toString();
         } catch (URISyntaxException e) {
             LOG.error("Unable to rewrite result links. url: {}, scheme: {}, host: {}, path: {}",
-                    uri.toString(), uri.getScheme(), newHost, uri.getPath(), e);
+                    uri, uri.getScheme(), linkedHost, uri.getPath(), e);
             return uri.toString();
         }
     }
+
 }

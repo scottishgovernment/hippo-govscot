@@ -5,8 +5,9 @@ import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;
 import scot.gov.publishing.hippo.funnelback.model.Result;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -15,10 +16,16 @@ import static org.junit.Assert.assertEquals;
  */
 public class ResultLinkRewriterTest {
 
+    private final Map<String, String> sitesByAlias = new HashMap<>();
+
+    private final Map<String, String> aliasesBySite = new HashMap<>();
 
     @Test
     public void rewritesDevToExp() {
-        ResultLinkRewriter sut = new ResultLinkRewriter("exp", Arrays.asList("www.mygov.scot"));
+        sitesByAlias.put("mygov", "exp.www.mygov.scot");
+        aliasesBySite.put("dev.www.mygov.scot", "mygov");
+        aliasesBySite.put("exp.www.mygov.scot", "mygov");
+        ResultLinkRewriter sut = new ResultLinkRewriter(sitesByAlias, aliasesBySite);
         FunnelbackSearchResponse response = new FunnelbackSearchResponse();
         List<Result> results = new ArrayList<>();
         results.add(result("https://dev.www.mygov.scot/"));
@@ -41,7 +48,10 @@ public class ResultLinkRewriterTest {
     
     @Test
     public void doesNotRewriteUrlsFromOtherSites() {
-        ResultLinkRewriter sut = new ResultLinkRewriter("exp", Arrays.asList("www.mygov.scot"));
+        sitesByAlias.put("mygov", "exp.www.mygov.scot");
+        aliasesBySite.put("dev.www.mygov.scot", "mygov");
+        aliasesBySite.put("exp.www.mygov.scot", "mygov");
+        ResultLinkRewriter sut = new ResultLinkRewriter(sitesByAlias, aliasesBySite);
         FunnelbackSearchResponse response = new FunnelbackSearchResponse();
         List<Result> results = new ArrayList<>();
         results.add(result("https://digital.jobs.gov.scot/"));

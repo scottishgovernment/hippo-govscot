@@ -1,7 +1,9 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.configuration.hosting.VirtualHost;
+import org.hippoecm.hst.configuration.hosting.VirtualHosts;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.request.HstRequestContext;
 import org.hippoecm.hst.site.HstServices;
@@ -26,6 +28,7 @@ import java.util.*;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.defaultIfBlank;
 import static org.apache.commons.lang3.StringUtils.defaultString;
@@ -60,9 +63,9 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMyyyy");
 
-    private Map<String, String> collections;
+    private Map<String, String> aliasesBySite;
 
-    private Map<String, List<String>> sites;
+    private Map<String, String> collections;
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
@@ -262,15 +265,49 @@ public class FunnelbackSearchService implements SearchService {
 
     void rewriteLinks(FunnelbackSearchResponse response, HstRequest request) {
         HstRequestContext context = request.getRequestContext();
-        VirtualHost virtualHost = context.getResolvedMount().getMount().getVirtualHost();
-        String hostGroupName = virtualHost.getHostGroupName();
-        String mountname = mountName(request.getRequestContext());
-        if (useRewriter(hostGroupName)) {
-            PostProcessor postProcessor = new ResultLinkRewriter(virtualHost.getName(), sites.get(mountname));
-            postProcessor.process(response);
+        VirtualHost host = context.getVirtualHost();
+        String hostGroupName = host.getHostGroupName();
+        if (!useRewriter(hostGroupName)) {
+            return;
         }
+
+        VirtualHosts hosts = host.getVirtualHosts();
+        // fqdn -> alias map can be reused across multiple requests
+        Map<String, String> aliases = aliasesBySite(hosts);
+
+        // alias -> fqdn map is environment specific and depends on host in current request
+        Map<String, String> sitesByAlias = hosts.getMountsByHostGroup(hostGroupName).stream()
+                .filter(m -> Objects.nonNull(m.getAlias()))
+                .collect(toMap(Mount::getAlias, m -> m.getVirtualHost().getHostName()));
+
+        // prefer host name in current request if it is an alias for a site
+        Mount mount = context.getResolvedMount().getMount();
+        String publishingAlias = mount.getProperty("publishing:alias");
+        if (publishingAlias != null) {
+            String type = mount.getType();
+            Mount aliased = hosts.getMountByGroupAliasAndType(hostGroupName, publishingAlias, type);
+            sitesByAlias.put(aliased.getAlias(), mount.getVirtualHost().getHostName());
+        }
+
+        PostProcessor postProcessor = new ResultLinkRewriter(sitesByAlias, aliases);
+        postProcessor.process(response);
     }
 
+    synchronized Map<String, String> aliasesBySite(VirtualHosts hosts) {
+        if (aliasesBySite != null) {
+            return aliasesBySite;
+        }
+        aliasesBySite = hosts.getHostGroupNames().stream()
+                .map(hosts::getMountsByHostGroup)
+                .flatMap(Collection::stream)
+                .filter(m -> m.getMountPath().isEmpty())
+                .filter(m -> "live".equals(m.getType()))
+                .filter(m -> !"localhost".equals(m.getVirtualHost().getHostName()))
+                .filter(m -> Objects.nonNull(m.getAlias()))
+                .collect(toMap(m -> m.getVirtualHost().getHostName(), Mount::getAlias));
+        LOG.debug("Aliases by site: {}", aliasesBySite);
+        return aliasesBySite;
+    }
 
     boolean useRewriter(String hostGroupName) {
         return !equalsAny(hostGroupName, "production", "dev-localhost", "www");
@@ -296,14 +333,6 @@ public class FunnelbackSearchService implements SearchService {
 
     public void setCollections(Map<String, String> collections) {
         this.collections = collections;
-    }
-
-    public Map<String, List<String>> getSites() {
-        return sites;
-    }
-
-    public void setSites(Map<String, List<String>> sites) {
-        this.sites = sites;
     }
 
     Map<String, Object> suggestionsParamMap(String partialQuery, String mount) {
