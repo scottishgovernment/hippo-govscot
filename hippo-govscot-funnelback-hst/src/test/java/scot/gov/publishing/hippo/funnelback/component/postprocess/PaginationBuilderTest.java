@@ -55,22 +55,6 @@ public class PaginationBuilderTest {
         assertNull(pagination.getLast());
     }
 
-//    @Test
-//    public void blah() {
-//        // ARRANGE
-//        ResultsSummary resultsSummary = resultsSummary(95, 41);
-//
-//        // ACT
-//        Pagination pagination = sut.getPagination(resultsSummary, searchWithDates());
-//
-//        // ASSERT
-//        assertEquals("wrong number of pages", 3, pagination.getPages().size());
-//        assertTrue("wrong item selected", pagination.getPages().get(1).isSelected());
-//        assertEquals("https://www.mygov.scot/search?q=anyQuery&page=5&cat=sitesearch", pagination.getPages().get(1).getUrl());
-//        assertEquals(pagination.getFirst().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=1&cat=sitesearch");
-//        assertEquals(pagination.getLast().getUrl(), "https://www.mygov.scot/search?q=anyQuery&page=10&cat=sitesearch");
-//    }
-
     @Test
     public void tenPagesOfResultsWithCurrentPage5() {
         // ARRANGE
@@ -117,6 +101,24 @@ public class PaginationBuilderTest {
         assertEquals("https://www.mygov.scot/search?q=anyQuery&page=8&cat=sitesearch", pagination.getPages().get(1).getUrl());
         assertNull("last should be null", pagination.getLast());
         assertEquals("https://www.mygov.scot/search?q=anyQuery&page=1&cat=sitesearch", pagination.getFirst().getUrl());
+    }
+
+    @Test
+    public void trailingSlashUrlDoesNotAddExtraSlashes() {
+        // ARRANGE
+        ResultsSummary resultsSummary = resultsSummary(95, 21);
+
+        // ACT
+        Search search = anySearch();
+        search.setRequestUrl("https://www.mygov.scot/search/");
+        Pagination pagination = sut.getPagination(resultsSummary, search);
+
+        // ASSERT
+        assertEquals("wrong number of pages", 4, pagination.getPages().size());
+        assertTrue("wrong item selected", pagination.getPages().get(2).isSelected());
+        assertEquals("https://www.mygov.scot/search/?q=anyQuery&page=3&cat=sitesearch", pagination.getPages().get(2).getUrl());
+        assertNull("first should be null", pagination.getFirst());
+        assertEquals("https://www.mygov.scot/search/?q=anyQuery&page=10&cat=sitesearch", pagination.getLast().getUrl());
     }
 
     String anyQuery() {
