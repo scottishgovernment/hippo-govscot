@@ -46,7 +46,9 @@ public class SlugLookups {
 
     public void removeLookup(String path, String site, String type, String mountType) throws RepositoryException {
         Node existingLookup = findLookupForPath(site, type, mountType, path);
-        clearLookup(existingLookup);
+        if (existingLookup != null) {
+            clearLookup(existingLookup);
+        }
     }
 
     public Node ensureLookupPath(String slug, String path, String site, String type, String mountType) throws RepositoryException {
