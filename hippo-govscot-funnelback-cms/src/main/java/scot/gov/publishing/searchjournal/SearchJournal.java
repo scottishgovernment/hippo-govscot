@@ -1,6 +1,7 @@
 package scot.gov.publishing.searchjournal;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.hippoecm.repository.util.DateTools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,11 @@ public class SearchJournal {
 
     public List<SearchJournalEntry> getPendingEntries(Calendar position, long lastSequence, int limit) throws RepositoryException {
         Query query = query(position, lastSequence, limit);
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         QueryResult queryResult = query.execute();
+        stopWatch.stop();
+        LOG.info("getPendingEntries took {}", stopWatch.getTime());
         List<SearchJournalEntry> entries = new ArrayList<>();
         NodeIterator nodeIterator = queryResult.getNodes();
 
@@ -99,14 +104,17 @@ public class SearchJournal {
         Calendar to = (Calendar) from.clone();
         to.add(Calendar.YEAR, 1);
 
-        String xpath = String.format("" +
-                        "//element(*, searchjournal:entry)" +
+        String toProperty = DateTools.getPropertyForResolution(TIMESTAMP, DateTools.Resolution.DAY);
+        String xpath = String.format(
+                "//element(*, searchjournal:entry)" +
                         "[@searchjournal:timestamp >= %s]" +
-                        "[@searchjournal:timestamp <= %s] " +
-                        "order by @searchjournal:timestamp, @searchjournal:sequence",
+                        "[@%s <= %s] " +
+                        "order by @%s, @searchjournal:sequence",
                 DateTools.createXPathConstraint(session, from),
-                DateTools.createXPathConstraint(session, to));
-        LOG.info("query: {}", xpath);
+                toProperty,
+                DateTools.createXPathConstraint(session, to, DateTools.Resolution.DAY),
+                toProperty);
+        LOG.info("journal query: {}", xpath);
         Query query = session.getWorkspace().getQueryManager().createQuery(xpath, Query.XPATH);
         query.setLimit(limit);
         return query;
