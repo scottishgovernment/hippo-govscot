@@ -43,7 +43,6 @@ public class LookupPathSource implements PathForSlugSource {
         Node lookupNode = session.getNode(slugLookupPath);
         if (!lookupNode.hasProperty("sluglookup:path")) {
             // this is the case that is failing, use the queryBackup if one exists
-            LOG.warn("path prop does not exist: {} {} {} {}", slug, site, type, mount);
             return queryBackup.get(slug, site, type, mount);
         }
         return lookupNode.getProperty("sluglookup:path").getString();
