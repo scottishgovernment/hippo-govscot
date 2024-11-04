@@ -2,8 +2,6 @@ package scot.gov.publishing.sluglookup;
 
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.core.request.HstRequestContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -12,8 +10,6 @@ import javax.jcr.Session;
 import static scot.gov.publishing.sluglookup.SlugLookupPaths.slugLookupPath;
 
 public class LookupPathSource implements PathForSlugSource {
-
-    private static final Logger LOG = LoggerFactory.getLogger(LookupPathSource.class);
 
     PathForSlugSource queryBackup = (slug, site, type, mount) -> null;
 
