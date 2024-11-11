@@ -6,6 +6,7 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.onehippo.cms7.crisp.api.resource.ResourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -13,6 +14,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -121,12 +123,14 @@ public class ResilientSearchService implements SearchService {
 
         @Override
         protected SearchResponse run() {
+            LOG.info("run {}", search.getQuery());
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
             return funnelbackSearchService.performSearch(search, searchsettings);
         }
 
         @Override
         protected SearchResponse getFallback() {
+            LOG.info("getFallback {}", search.getQuery());
             throwExceptionAtSpecifiedRate("bloomreach", searchsettings.getBloomreachErrorRate());
             return bloomreachSearchService.performSearch(search, searchsettings);
         }
@@ -174,7 +178,7 @@ public class ResilientSearchService implements SearchService {
         double random = randomNumberSource.get();
         if (random < rate) {
             LOG.warn("Generating manufactured exception, label is {}, rate is {}", label, rate);
-            throw new ManafacturedException(label);
+            throw new ResourceException(label);
         }
     }
 
