@@ -110,6 +110,10 @@ public class SlugLookups {
     }
 
     void clearLookup(Node node) throws RepositoryException {
+        if (node == null) {
+            return;
+        }
+
         LOG.info("clearing lookup path for node {}", node.getPath());
         node.getProperty(PATH).remove();
     }
