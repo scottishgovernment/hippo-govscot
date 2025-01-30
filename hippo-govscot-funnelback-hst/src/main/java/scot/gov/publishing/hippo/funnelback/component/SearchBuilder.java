@@ -122,7 +122,7 @@ public class SearchBuilder {
 
     public Search build() {
         Search search = new Search();
-        search.setQuery(query);
+        search.setQuery(query == null ? "" : query);
         search.setFromDate(fromDate);
         search.setToDate(toDate);
         search.setSort(sort);
