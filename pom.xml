@@ -31,7 +31,7 @@
   </modules>
 
   <properties>
-    <hippo.version>15.6.0</hippo.version>
+    <hippo.version>15.7.1</hippo.version>
   </properties>
 
   <build>
