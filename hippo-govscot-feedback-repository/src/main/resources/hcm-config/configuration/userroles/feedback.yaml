@@ -1,0 +1,9 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:userroles:
+      /scotgov.feedback.viewer:
+        jcr:primaryType: hipposys:userrole
+        hipposys:system: true
+        hipposys:description: Read access to user feedback
+        hipposys:userroles:
+          - xm.cms.user

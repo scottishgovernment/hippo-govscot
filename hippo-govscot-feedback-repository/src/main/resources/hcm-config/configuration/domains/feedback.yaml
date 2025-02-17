@@ -1,0 +1,17 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:domains/feedback:
+      jcr:primaryType: hipposys:domain
+      /readonly:
+        jcr:primaryType: hipposys:authrole
+        hipposys:role: readonly
+        hipposys:userrole: scotgov.feedback.viewer
+      /hosts:
+        jcr:primaryType: hipposys:domainrule
+        /hosts-configuration:
+          jcr:primaryType: hipposys:facetrule
+          hipposys:equals: true
+          hipposys:facet: jcr:path
+          hipposys:filter: false
+          hipposys:type: Reference
+          hipposys:value: /hst:hst/hst:hosts
