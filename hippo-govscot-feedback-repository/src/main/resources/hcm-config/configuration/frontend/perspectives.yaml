@@ -1,0 +1,10 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:frontend/cms/cms-static:
+      /feedback-perspective:
+        jcr:primaryType: frontend:plugin
+        jcr:mixinTypes: ['frontend:navigationitem']
+        frontend:appPath: feedback
+        hipposys:userrole: scotgov.feedback.viewer
+        plugin.class: scot.gov.perspectives.FeedbackPerspective
+        wicket.id: service.tab

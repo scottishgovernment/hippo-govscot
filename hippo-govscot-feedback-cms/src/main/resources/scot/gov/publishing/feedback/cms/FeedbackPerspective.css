@@ -1,0 +1,11 @@
+.feedback-frame {
+  border: 0;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+.feedback-content-item-link {
+  position: absolute;
+  left: -999em;
+}
