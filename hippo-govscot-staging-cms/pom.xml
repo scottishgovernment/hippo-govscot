@@ -9,7 +9,6 @@
   </parent>
 
   <artifactId>hippo-govscot-staging-cms</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
 
   <properties>
     <sonar.exclusions>
