@@ -1,5 +1,7 @@
 package scot.gov.publishing.hippo.hst.request;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.container.valves.AbstractOrderableValve;
 import org.hippoecm.hst.core.container.ContainerException;
@@ -9,14 +11,12 @@ import org.hippoecm.hst.util.HstRequestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import static jakarta.servlet.http.HttpServletResponse.SC_MOVED_PERMANENTLY;
 import static java.time.temporal.ChronoUnit.MINUTES;
-import static javax.servlet.http.HttpServletResponse.SC_MOVED_PERMANENTLY;
 
 /**
  * Redirects URLs with upper-case letters to lower case URLs.

@@ -2,10 +2,8 @@ package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
 import org.hippoecm.hst.core.component.HstRequest;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import scot.gov.publishing.hippo.funnelback.component.Search;
-import scot.gov.publishing.hippo.funnelback.component.Sort;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
 import scot.gov.publishing.hippo.funnelback.model.ResultPacket;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;

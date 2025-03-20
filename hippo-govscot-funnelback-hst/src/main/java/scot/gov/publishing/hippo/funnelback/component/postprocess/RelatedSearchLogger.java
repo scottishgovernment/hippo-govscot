@@ -2,7 +2,9 @@ package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scot.gov.publishing.hippo.funnelback.model.*;
+import scot.gov.publishing.hippo.funnelback.model.ContextualNavigation;
+import scot.gov.publishing.hippo.funnelback.model.ContextualNavigationCategory;
+import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;
 
 import java.util.List;
 

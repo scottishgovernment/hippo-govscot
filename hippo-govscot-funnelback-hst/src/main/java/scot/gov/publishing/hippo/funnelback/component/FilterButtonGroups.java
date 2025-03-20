@@ -2,11 +2,11 @@ package scot.gov.publishing.hippo.funnelback.component;
 
 import scot.gov.publishing.hippo.funnelback.component.postprocess.SearchQueryBuilder;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.time.format.DateTimeFormatter;
 
 public class FilterButtonGroups {
 

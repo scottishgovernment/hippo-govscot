@@ -1,11 +1,12 @@
 package scot.gov.publishing.hippo.funnelback.client;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.http.HttpException;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
-import org.apache.http.RequestLine;
-import org.apache.http.protocol.HttpContext;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.HttpResponseInterceptor;
+import org.apache.hc.core5.http.message.RequestLine;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +20,14 @@ public class LoggingHttpResponseInterceptor implements HttpResponseInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingHttpResponseInterceptor.class);
 
     @Override
-    public void process(HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
-        StopWatch stopwatch = (StopWatch) httpContext.getAttribute(STOPWATCH);
+    public void process(HttpResponse response, EntityDetails entity, HttpContext context) throws HttpException, IOException {
+        StopWatch stopwatch = (StopWatch) context.getAttribute(STOPWATCH);
         stopwatch.stop();
-        RequestLine requestLine = (RequestLine) httpContext.getAttribute(REQUEST_LINE);
-        LOG.info("funnelback-http-request {} {}, took {}", requestLine.getUri(), httpResponse.getStatusLine().getStatusCode(), stopwatch.getTime());
+        RequestLine requestLine = (RequestLine) context.getAttribute(REQUEST_LINE);
+        LOG.info("funnelback-http-request {} {}, took {}",
+                requestLine.getUri(),
+                response.getCode(),
+                stopwatch.getTime());
     }
+
 }

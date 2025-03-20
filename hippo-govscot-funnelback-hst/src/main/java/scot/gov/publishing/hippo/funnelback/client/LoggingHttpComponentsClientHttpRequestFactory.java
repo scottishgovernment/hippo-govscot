@@ -1,15 +1,16 @@
 package scot.gov.publishing.hippo.funnelback.client;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.HttpClients;
+
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 public class LoggingHttpComponentsClientHttpRequestFactory extends HttpComponentsClientHttpRequestFactory {
 
     public LoggingHttpComponentsClientHttpRequestFactory() {
         HttpClient client = HttpClients.custom()
-                .addInterceptorFirst(new LoggingHttpRequestInterceptor())
-                .addInterceptorFirst(new LoggingHttpResponseInterceptor())
+                .addRequestInterceptorFirst(new LoggingHttpRequestInterceptor())
+                .addResponseInterceptorFirst(new LoggingHttpResponseInterceptor())
                 .build();
         setHttpClient(client);
     }
