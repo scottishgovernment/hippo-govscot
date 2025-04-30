@@ -2,7 +2,7 @@ definitions:
   config:
     /hippo:configuration/hippo:modules/feedback:
       jcr:primaryType: hipposys:module
-      hipposys:className: scot.gov.publishing.feedback.FeedbackModule
+      hipposys:className: scot.gov.publishing.feedback.cms.FeedbackModule
       hipposys:cmsonly: true
       /hippo:moduleconfig:
         jcr:primaryType: hipposys:moduleconfig

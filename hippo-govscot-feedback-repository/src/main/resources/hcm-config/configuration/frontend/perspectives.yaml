@@ -6,5 +6,5 @@ definitions:
         jcr:mixinTypes: ['frontend:navigationitem']
         frontend:appPath: feedback
         hipposys:userrole: scotgov.feedback.viewer
-        plugin.class: scot.gov.perspectives.FeedbackPerspective
+        plugin.class: scot.gov.publishing.feedback.cms.FeedbackPerspective
         wicket.id: service.tab
