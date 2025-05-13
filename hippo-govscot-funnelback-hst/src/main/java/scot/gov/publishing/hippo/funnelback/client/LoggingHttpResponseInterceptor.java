@@ -23,11 +23,8 @@ public class LoggingHttpResponseInterceptor implements HttpResponseInterceptor {
     public void process(HttpResponse response, EntityDetails entity, HttpContext context) throws HttpException, IOException {
         StopWatch stopwatch = (StopWatch) context.getAttribute(STOPWATCH);
         stopwatch.stop();
-        RequestLine requestLine = (RequestLine) context.getAttribute(REQUEST_LINE);
-        LOG.info("funnelback-http-request {} {}, took {}",
-                requestLine.getUri(),
-                response.getCode(),
-                stopwatch.getTime());
+        String requestLine = (String)context .getAttribute("requestLine");
+        LOG.info("funnelback-http-request {}, took {}", new Object[]{requestLine, stopwatch.getTime()});
     }
 
 }
