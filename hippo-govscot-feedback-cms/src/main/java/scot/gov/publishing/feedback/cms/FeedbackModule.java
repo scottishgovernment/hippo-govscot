@@ -22,17 +22,20 @@ public class FeedbackModule extends AbstractReconfigurableDaemonModule {
 
     private String hostGroup;
 
+    private String hstNode;
+
     @Override
     protected void doConfigure(Node moduleConfig) throws RepositoryException {
         // moduleConfig refers to relevant hippo:moduleconfig node under
         // /hippo:configuration/hippo:modules
         this.hostGroup = moduleConfig.getProperty("hostgroup").getString();
+        this.hstNode = moduleConfig.getProperty("hstnode").getString();
     }
 
     @Override
     protected void doInitialize(Session session) throws RepositoryException {
         LOG.info("Initialising feedback API");
-        FeedbackResource resource = new FeedbackResource(hostGroup);
+        FeedbackResource resource = new FeedbackResource(hostGroup, hstNode);
         ManagedUserSessionInvoker invoker = new ManagedUserSessionInvoker(session);
         JacksonJsonProvider jacksonJsonProvider = new JacksonJsonProvider(new ObjectMapper());
         RepositoryJaxrsEndpoint endpoint  = new CXFRepositoryJaxrsEndpoint(PATH)

@@ -40,8 +40,11 @@ public class FeedbackResource {
      */
     private final String hostGroup;
 
-    public FeedbackResource(String hostGroup) {
+    private final String hstNode;
+
+    public FeedbackResource(String hostGroup, String hstNode) {
         this.hostGroup = hostGroup;
+        this.hstNode = hstNode;
     }
 
     /**
@@ -88,13 +91,15 @@ public class FeedbackResource {
         Set<String> roles = user.getUserRoles();
         String role = "scotgov.feedback.viewer";
         boolean inRole = session.isUserInRole(role);
+
+        boolean inGroup = user.getMemberships().contains(alias + "-feedback");
         LOG.debug("Feedback access to {} for user {} with groups {} and roles {}: {}",
                 alias,
                 user.getId(),
                 groups,
                 roles,
                 inRole);
-        return inRole;
+        return inRole && inGroup;
     }
 
     private String getSiteAlias(Session session, String site) throws RepositoryException {
@@ -102,7 +107,8 @@ public class FeedbackResource {
         ArrayUtils.reverse(segments);
         String path = StringUtils.join(segments, "/");
         String jcrPath = String.format(
-                "/hst:hst/hst:hosts/%s/%s/hst:root",
+                "/%s/hst:hosts/%s/%s/hst:root",
+                hstNode,
                 hostGroup,
                 path);
         try {
@@ -139,7 +145,7 @@ public class FeedbackResource {
     }
 
     private Map<String, String> getSites(HippoSession session) throws RepositoryException {
-        String prefix = String.format("/hst:hst/hst:hosts/%s", hostGroup);
+        String prefix = String.format("/%s/hst:hosts/%s", hstNode, hostGroup);
         String sql = String.format("SELECT [hst:alias] FROM [hst:mount] " +
                 "WHERE ISDESCENDANTNODE('%s') " +
                 "AND [hst:type] IS NULL " +
