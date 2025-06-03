@@ -40,8 +40,11 @@ public class FeedbackResource {
      */
     private final String hostGroup;
 
-    public FeedbackResource(String hostGroup) {
+    private final String hstRoot;
+
+    public FeedbackResource(String hostGroup, String hstRoot) {
         this.hostGroup = hostGroup;
+        this.hstRoot = hstRoot;
     }
 
     /**
@@ -102,7 +105,8 @@ public class FeedbackResource {
         ArrayUtils.reverse(segments);
         String path = StringUtils.join(segments, "/");
         String jcrPath = String.format(
-                "/hst:hst/hst:hosts/%s/%s/hst:root",
+                "/%s/hst:hosts/%s/%s/hst:root",
+                hstRoot,
                 hostGroup,
                 path);
         try {
@@ -139,7 +143,7 @@ public class FeedbackResource {
     }
 
     private Map<String, String> getSites(HippoSession session) throws RepositoryException {
-        String prefix = String.format("/hst:hst/hst:hosts/%s", hostGroup);
+        String prefix = String.format("/%s/hst:hosts/%s", hstRoot, hostGroup);
         String sql = String.format("SELECT [hst:alias] FROM [hst:mount] " +
                 "WHERE ISDESCENDANTNODE('%s') " +
                 "AND [hst:type] IS NULL " +
