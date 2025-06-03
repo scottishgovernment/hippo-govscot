@@ -92,7 +92,7 @@ public class FeedbackResource {
         String role = "scotgov.feedback.viewer";
         boolean inRole = session.isUserInRole(role);
 
-        boolean inGroup = user.getMemberships().contains(alias + "-feedback");
+        boolean inGroup = groups.contains(alias + "-feedback") || groups.contains("cmsadmin");
         LOG.debug("Feedback access to {} for user {} with groups {} and roles {}: {}",
                 alias,
                 user.getId(),
