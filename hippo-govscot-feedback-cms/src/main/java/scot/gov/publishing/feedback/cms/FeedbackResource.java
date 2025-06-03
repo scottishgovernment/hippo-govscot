@@ -91,13 +91,15 @@ public class FeedbackResource {
         Set<String> roles = user.getUserRoles();
         String role = "scotgov.feedback.viewer";
         boolean inRole = session.isUserInRole(role);
+
+        boolean inGroup = user.getMemberships().contains(alias + "-feedback");
         LOG.debug("Feedback access to {} for user {} with groups {} and roles {}: {}",
                 alias,
                 user.getId(),
                 groups,
                 roles,
                 inRole);
-        return inRole;
+        return inRole && inGroup;
     }
 
     private String getSiteAlias(Session session, String site) throws RepositoryException {
