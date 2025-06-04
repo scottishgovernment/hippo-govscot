@@ -65,7 +65,7 @@
     <dependency>
       <groupId>org.wicketstuff</groupId>
       <artifactId>wicketstuff-clipboardjs</artifactId>
-      <version>10.0.0</version>
+      <version>10.4.0</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -73,7 +73,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
 
   </dependencies>
 

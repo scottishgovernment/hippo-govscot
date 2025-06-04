@@ -1,7 +1,7 @@
 package scot.gov.publishing.feedback.cms;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.frontend.session.UserSession;
 import org.hippoecm.repository.api.HippoSession;
 import org.onehippo.repository.security.SessionUser;
