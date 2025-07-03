@@ -33,7 +33,7 @@
   </modules>
 
   <properties>
-    <hippo.version>16.3.1</hippo.version>
+    <hippo.version>16.4.0</hippo.version>
   </properties>
 
   <build>
