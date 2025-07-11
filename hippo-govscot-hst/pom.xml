@@ -67,7 +67,7 @@
       <artifactId>spring-test</artifactId>
       <version>6.1.20</version>
 <!--      Version 6.2.0+ seems to break MediaType / MockHttpServletResponse?-->
-<!--      <version>6.2.7</version>-->
+<!--      <version>6.2.8</version> brXM 16.4.1 version-->
       <scope>test</scope>
     </dependency>
 
