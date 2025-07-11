@@ -1,5 +1,6 @@
 package scot.gov.publishing.staging.valves;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.container.valves.AbstractOrderableValve;
@@ -18,8 +19,6 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
-import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.List;

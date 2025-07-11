@@ -37,7 +37,7 @@
       <artifactId>hippo-govscot-feedback-repository</artifactId>
       <version>${project.version}</version>
     </dependency>
-
+    
   </dependencies>
 
 </project>

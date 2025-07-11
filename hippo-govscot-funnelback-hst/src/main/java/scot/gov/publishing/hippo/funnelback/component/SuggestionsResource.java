@@ -1,5 +1,11 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -7,17 +13,11 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.Collections.emptyList;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.SuggestionsResource")

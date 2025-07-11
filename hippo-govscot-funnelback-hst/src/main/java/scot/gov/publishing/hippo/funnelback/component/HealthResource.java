@@ -1,15 +1,17 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
 
-import com.netflix.hystrix.*;
+import com.netflix.hystrix.HystrixCircuitBreaker;
+import com.netflix.hystrix.HystrixCommandKey;
+import com.netflix.hystrix.HystrixCommandMetrics;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
-
-import static com.netflix.hystrix.HystrixEventType.*;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static com.netflix.hystrix.HystrixEventType.FAILURE;
+import static com.netflix.hystrix.HystrixEventType.TIMEOUT;
+import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SEARCH_COMMAND_KEY;
 import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SUGGESTIONS_COMMAND_KEY;
 

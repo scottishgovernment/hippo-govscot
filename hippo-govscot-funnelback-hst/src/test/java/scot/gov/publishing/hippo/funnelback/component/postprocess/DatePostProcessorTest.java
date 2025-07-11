@@ -1,6 +1,5 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
-import org.junit.Assert;
 import org.junit.Test;
 import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;
 import scot.gov.publishing.hippo.funnelback.model.Result;

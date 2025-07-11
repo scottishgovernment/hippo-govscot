@@ -1,11 +1,10 @@
 package scot.gov.publishing.hippo.hst.request;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.hippoecm.hst.container.valves.AbstractOrderableValve;
 import org.hippoecm.hst.core.container.ContainerException;
 import org.hippoecm.hst.core.container.PageCacheKey;
 import org.hippoecm.hst.core.container.ValveContext;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * Adds the value of the X-User-Type header to the page cache key.

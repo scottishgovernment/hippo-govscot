@@ -1,11 +1,10 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
+import jakarta.servlet.ServletContext;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
-
-import javax.servlet.ServletContext;
 
 /**
  * Component suitable for the base of a search page.

@@ -1,7 +1,7 @@
 package scot.gov.publishing.bulkpublish;
 
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
@@ -37,15 +37,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.commons.lang.ArrayUtils.*;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.hippoecm.frontend.plugins.reviewedactions.model.Request.CANCEL_REQUEST;
 import static org.hippoecm.repository.HippoStdNodeType.NT_DIRECTORY;
 import static org.hippoecm.repository.HippoStdNodeType.NT_FOLDER;
 import static org.hippoecm.repository.HippoStdPubWfNodeType.DEPUBLISH;
 import static org.hippoecm.repository.HippoStdPubWfNodeType.PUBLISH;
 import static org.hippoecm.repository.api.HippoNodeType.*;
-import static org.hippoecm.repository.api.HippoNodeType.HIPPO_REQUEST;
-import static org.hippoecm.repository.api.HippoNodeType.NT_HANDLE;
 import static org.hippoecm.repository.quartz.HippoSchedJcrConstants.HIPPOSCHED_WORKFLOW_JOB;
 
 public class ScheduledWorkflowPlugin extends RenderPlugin<WorkflowDescriptor> {

@@ -2,10 +2,9 @@ package scot.gov.publishing.hippo.funnelback.component;
 
 import com.netflix.hystrix.contrib.servopublisher.HystrixServoMetricsPublisher;
 import com.netflix.hystrix.strategy.HystrixPlugins;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import org.onehippo.repository.events.PersistedHippoEventListenerRegistry;
-
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
 
 public class FunnelbackInitialisingServletContextListener implements ServletContextListener {
 
