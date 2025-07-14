@@ -5,14 +5,12 @@ import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpResponseInterceptor;
-import org.apache.hc.core5.http.message.RequestLine;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import static scot.gov.publishing.hippo.funnelback.client.LoggingHttpRequestInterceptor.REQUEST_LINE;
 import static scot.gov.publishing.hippo.funnelback.client.LoggingHttpRequestInterceptor.STOPWATCH;
 
 public class LoggingHttpResponseInterceptor implements HttpResponseInterceptor {
