@@ -5,10 +5,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import scot.gov.publishing.hippo.funnelback.component.Search;
 import scot.gov.publishing.hippo.funnelback.model.Pagination;
-import scot.gov.publishing.hippo.funnelback.model.ResultPacket;
 import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
-
-import java.time.LocalDate;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.eq;
@@ -17,8 +14,6 @@ import static org.mockito.ArgumentMatchers.eq;
  * Created by z418868 on 17/06/2022.
  */
 public class PaginationBuilderTest {
-
-
 
     PaginationBuilder sut = new PaginationBuilder();
 
@@ -132,29 +127,7 @@ public class PaginationBuilderTest {
         HstRequest request = Mockito.mock(HstRequest.class);
         Mockito.when(request.getParameter(eq("cat"))).thenReturn("sitesearch");
         search.setRequest(request);
-
         return search;
-    }
-
-    Search searchWithDates() {
-        Search search = anySearch();
-        search.setFromDate(LocalDate.now().minusDays(10));
-        search.setToDate(LocalDate.now());
-        return search;
-    }
-
-    ResultPacket resultPacket(int matches) {
-        ResultPacket resultPacket = new ResultPacket();
-        //resultPacket.setResults(results(matches));
-        resultPacket.setResultsSummary(summary(matches));
-        return resultPacket;
-    }
-
-    ResultsSummary summary(int totalMatching) {
-        ResultsSummary summary = new ResultsSummary();
-        summary.setTotalMatching(totalMatching);
-        summary.setNumRanks(10);
-        return summary;
     }
 
     ResultsSummary resultsSummary(int matches, int start) {
