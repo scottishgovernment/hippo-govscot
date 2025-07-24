@@ -84,7 +84,7 @@ public class FeedbackResource {
         }
     }
 
-    private boolean authorised(SessionUser user, String alias) {
+    private boolean authorised(SessionUser user, String alias) throws RepositoryException {
         HippoSession session = UserSession.get().getJcrSession();
 
         Set<String> groups = user.getMemberships();
@@ -92,7 +92,13 @@ public class FeedbackResource {
         String role = "scotgov.feedback.viewer";
         boolean inRole = session.isUserInRole(role);
 
-        boolean inGroup = groups.contains(alias + "-feedback") || groups.contains("cmsadmin");
+        String groupName = alias + "-feedback";
+        boolean inGroup = groups.contains(groupName);
+        if (!inGroup && groups.contains("cmsadmin")) {
+            String groupNode = "/hippo:configuration/hippo:groups/" + groupName;
+            inGroup = session.nodeExists(groupNode);
+        }
+
         LOG.debug("Feedback access to {} for user {} with groups {} and roles {}: {}",
                 alias,
                 user.getId(),
