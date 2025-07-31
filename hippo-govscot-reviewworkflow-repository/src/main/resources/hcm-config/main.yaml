@@ -1,0 +1,5 @@
+definitions:
+  namespace:
+    reviewworkflow:
+      uri: http://www.onehippo.org/reviewworkflow/nt/1.0
+      cnd: namespaces/reviewworkflow.cnd

@@ -1,0 +1,6 @@
+definitions:
+  config:
+    /hippo:namespaces/reviewworkflow:
+      jcr:primaryType: hipposysedit:namespace
+      jcr:mixinTypes: ['mix:referenceable']
+      jcr:uuid: 577353c7-4bd9-4024-9f7d-ad318142de63

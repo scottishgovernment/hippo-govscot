@@ -1,0 +1,6 @@
+group:
+  name: bloomreach-forge
+  after: hippo-cms
+project: review-workflow
+module:
+  name: review-workflow-repository

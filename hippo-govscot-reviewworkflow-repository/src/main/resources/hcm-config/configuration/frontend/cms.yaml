@@ -1,0 +1,24 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:frontend/cms:
+      /cms-reports:
+        /todoReport:
+          /reporting:query:
+            jcr:language:
+              operation: override
+              type: string
+              value: xpath
+            jcr:statement:
+              operation: override
+              type: string
+              value: content/documents//element(*,hippo:request)[(@jcr:primaryType='hippostdpubwf:request'
+                and (not(@hippostdpubwf:type = 'rejected') or @hippostdpubwf:username='__USER__'))
+                or (@jcr:primaryType='reviewworkflow:request' and not(@reviewworkflow:owner='__USER__')
+                and ( @reviewworkflow:state='request'
+                or @reviewworkflow:state='rejected'))] order by @hippostdpubwf:creationDate,
+                @reviewworkflow:creationdate DESC
+          /reporting:plugin:
+            plugin.class:
+              operation: override
+              type: string
+              value: org.bloomreach.forge.reviewworkflow.cms.dashboard.todo.TodoPlugin

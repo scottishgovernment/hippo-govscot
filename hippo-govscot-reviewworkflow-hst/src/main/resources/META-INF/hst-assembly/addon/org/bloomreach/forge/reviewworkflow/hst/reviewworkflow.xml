@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
+
+
+    <bean id="addALLUsersJvmEnabled" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="hstJmvEnabledUsers"/>
+        <property name="targetMethod" value="addAll"/>
+        <property name="arguments">
+            <list>
+                <value>${reviewworkflowuser.repository.user.name}</value>
+            </list>
+        </property>
+    </bean>
+
+
+    <bean id="javax.jcr.Credentials.reviewworkflowuser" class="org.hippoecm.hst.core.jcr.SimpleCredentialsFactoryBean"
+          depends-on="addALLUsersJvmEnabled">
+        <property name="userId" value="${reviewworkflowuser.repository.user.name}"/>
+        <property name="separator" value="${repository.pool.user.name.separator}"/>
+        <property name="poolName" value="${reviewworkflowuser.repository.pool.name}"/>
+        <property name="password" value="${reviewworkflowuser.repository.password}"/>
+        <property name="hstJmvEnabledUsers" ref="hstJmvEnabledUsers"/>
+    </bean>
+
+
+    <bean id="_abstractUserSessionPool" abstract="true" class="org.hippoecm.hst.core.jcr.pool.BasicPoolingRepository"
+          init-method="initialize" destroy-method="close" depends-on="addALLUsersJvmEnabled">
+        <!-- delegated JCR repository -->
+        <property name="repositoryProviderClassName" value="${repositoryProviderClassName}"/>
+        <property name="repositoryAddress" value="${default.repository.address}"/>
+        <property name="defaultCredentialsUserIDSeparator" value="${repository.pool.user.name.separator}"/>
+        <property name="hstJmvEnabledUsers" ref="hstJmvEnabledUsers"/>
+        <!-- Pool properties. Refer to the GenericObjectPool of commons-pool library. -->
+        <property name="maxActive" value="${default.repository.maxActive}"/>
+        <property name="maxIdle" value="${default.repository.maxIdle}"/>
+        <property name="minIdle" value="${default.repository.minIdle}"/>
+        <property name="initialSize" value="${default.repository.initialSize}"/>
+        <property name="maxWait" value="${default.repository.maxWait}"/>
+        <property name="whenExhaustedAction" value="${default.repository.whenExhaustedAction}"/>
+        <property name="testOnBorrow" value="${default.repository.testOnBorrow}"/>
+        <property name="testOnReturn" value="${default.repository.testOnReturn}"/>
+        <property name="testWhileIdle" value="${default.repository.testWhileIdle}"/>
+        <property name="timeBetweenEvictionRunsMillis" value="${default.repository.timeBetweenEvictionRunsMillis}"/>
+        <property name="numTestsPerEvictionRun" value="${default.repository.numTestsPerEvictionRun}"/>
+        <property name="minEvictableIdleTimeMillis" value="${default.repository.minEvictableIdleTimeMillis}"/>
+        <property name="refreshOnPassivate" value="${default.repository.refreshOnPassivate}"/>
+        <property name="maxRefreshIntervalOnPassivate" value="${sessionPool.maxRefreshIntervalOnPassivate}"/>
+        <property name="poolingCounter" ref="defaultPoolingCounter"/>
+        <property name="maxTimeToLiveMillis" value="${default.repository.maxTimeToLiveMillis}"/>
+    </bean>
+
+    <bean id="_reviewWorkflowUserSessionPool" parent="_abstractUserSessionPool"
+          class="org.hippoecm.hst.core.jcr.pool.BasicPoolingRepository"
+          init-method="initialize" destroy-method="close" depends-on="addALLUsersJvmEnabled">
+        <!-- delegated JCR repository -->
+        <property name="defaultCredentialsUserID"
+                  value="${reviewworkflowuser.repository.user.name}${repository.pool.user.name.separator}${reviewworkflowuser.repository.pool.name}"/>
+        <property name="defaultCredentialsPassword" value="${reviewworkflowuser.repository.password}"/>
+    </bean>
+
+
+    <bean id="addReviewWorkflowUserSessionPool"
+          class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetObject" ref="javax.jcr.Repository"/>
+        <property name="targetMethod" value="addRepository"/>
+        <property name="arguments">
+            <list>
+                <ref bean="javax.jcr.Credentials.reviewworkflowuser"/>
+                <ref bean="_reviewWorkflowUserSessionPool"/>
+            </list>
+        </property>
+    </bean>
+
+
+    <!-- end -->
+
+    <bean id="resourceLifecycleManagementList" class="org.springframework.beans.factory.config.ListFactoryBean"
+          depends-on="addReviewWorkflowUserSessionPool">
+        <property name="sourceList">
+            <bean class="org.springframework.beans.factory.config.PropertyPathFactoryBean">
+                <property name="targetBeanName" value="javax.jcr.Repository"/>
+                <property name="propertyPath" value="resourceLifecycleManagements"/>
+            </bean>
+        </property>
+    </bean>
+
+    <bean id="scot.gov.publishing.reviewworkflow.hst.ReviewWorkflowActions"
+          class="scot.gov.publishing.reviewworkflow.hst.ReviewWorkflowActions">
+        <property name="reviewWorkflowCredentials" ref="javax.jcr.Credentials.reviewworkflowuser"/>
+    </bean>
+
+</beans>

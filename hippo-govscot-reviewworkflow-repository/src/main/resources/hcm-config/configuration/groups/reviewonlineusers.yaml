@@ -1,0 +1,8 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:groups/reviewonlineusers:
+      jcr:primaryType: hipposys:group
+      hipposys:members: [reviewonlineuser]
+      hipposys:securityprovider: internal
+      hipposys:system: true
+      hipposys:userroles: [xm.default-user.author]

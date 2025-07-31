@@ -1,0 +1,10 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:workflows/editing:
+      /handle:
+        /hipposys:config:
+          documentHandleFactoryClass: org.bloomreach.forge.reviewworkflow.repository.documentworkflow.ReviewWorkflowDocumentHandleFactory
+          scxml-definition:
+            operation: override
+            type: string
+            value: reviewworkflow

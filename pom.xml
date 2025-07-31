@@ -30,6 +30,9 @@
     <module>hippo-govscot-sluglookup-hst</module>
     <module>hippo-govscot-bulkpublish-cms</module>
     <module>hippo-govscot-bulkpublish-repository</module>
+    <module>hippo-govscot-reviewworkflow-hst</module>
+    <module>hippo-govscot-reviewworkflow-cms</module>
+    <module>hippo-govscot-reviewworkflow-repository</module>
   </modules>
 
   <properties>

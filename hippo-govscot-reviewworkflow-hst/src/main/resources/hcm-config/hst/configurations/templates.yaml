@@ -1,0 +1,5 @@
+definitions:
+  config:
+    /hst:hst/hst:configurations/hst:default/hst:templates/reviewworkflow:
+      jcr:primaryType: hst:template
+      hst:renderpath: classpath:/org/bloomreach/forge/cms/reviewworkflow/hst/workflow.ftl
