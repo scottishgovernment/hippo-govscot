@@ -33,6 +33,7 @@
     <module>hippo-govscot-reviewworkflow-hst</module>
     <module>hippo-govscot-reviewworkflow-cms</module>
     <module>hippo-govscot-reviewworkflow-repository</module>
+    <module>workflow-notifications</module>
   </modules>
 
   <properties>
