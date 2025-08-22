@@ -13,6 +13,8 @@ public class SearchSettings {
 
     private boolean enabled;
 
+    private boolean showFilters;
+
     double funnelbackErrorRate = 0;
 
     double bloomreachErrorRate = 0;
@@ -47,6 +49,14 @@ public class SearchSettings {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public boolean isShowFilters() {
+        return showFilters;
+    }
+
+    public void setShowFilters(boolean showFilters) {
+        this.showFilters = showFilters;
     }
 
     public double getFunnelbackErrorRate() {

@@ -20,7 +20,7 @@ definitions:
             hipposysedit:path: search:searchtype
             hipposysedit:primary: false
             hipposysedit:type: StaticDropdown
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
           /timeoutMillis:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -29,7 +29,7 @@ definitions:
             hipposysedit:path: search:timeoutMillis
             hipposysedit:primary: false
             hipposysedit:type: Long
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
           /suggestTimeoutMillis:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -38,7 +38,7 @@ definitions:
             hipposysedit:path: search:suggestTimeoutMillis
             hipposysedit:primary: false
             hipposysedit:type: Long
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
           /enabled:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -47,7 +47,16 @@ definitions:
             hipposysedit:path: search:enabled
             hipposysedit:primary: false
             hipposysedit:type: Boolean
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
+          /showFilters:
+            jcr:primaryType: hipposysedit:field
+            hipposysedit:mandatory: false
+            hipposysedit:multiple: false
+            hipposysedit:ordered: false
+            hipposysedit:path: search:showFilters
+            hipposysedit:primary: false
+            hipposysedit:type: Boolean
+            hipposysedit:validators: [optional]
           /bloomreachErrorRate:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -56,7 +65,7 @@ definitions:
             hipposysedit:path: search:bloomreachErrorRate
             hipposysedit:primary: false
             hipposysedit:type: Double
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
           /funnelbackErrorRate:
             jcr:primaryType: hipposysedit:field
             hipposysedit:mandatory: false
@@ -65,7 +74,7 @@ definitions:
             hipposysedit:path: search:funnelbackErrorRate
             hipposysedit:primary: false
             hipposysedit:type: Double
-            hipposysedit:validators: [required]
+            hipposysedit:validators: [optional]
       /hipposysedit:prototypes:
         jcr:primaryType: hipposysedit:prototypeset
         /hipposysedit:prototype:
@@ -79,6 +88,7 @@ definitions:
           hippostdpubwf:creationDate: 2022-07-01T16:13:44.917+01:00
           search:searchtype: resilient
           search:enabled: true
+          search:showFilters: true
           search:timeoutMillis: 500
       /editor:templates:
         jcr:primaryType: editor:templateset
@@ -97,6 +107,15 @@ definitions:
             field: enabled
             hint: Is the search enabled? Can be used to disable the search page entirely
               if we are experiencing an attack or other operational issue.
+            plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
+            wicket.id: ${cluster.id}.field
+            /cluster.options:
+              jcr:primaryType: frontend:pluginconfig
+          /showFilters:
+            jcr:primaryType: frontend:plugin
+            caption: Show filters
+            field: showFilters
+            hint: Should search page include filters?
             plugin.class: org.hippoecm.frontend.editor.plugins.field.PropertyFieldPlugin
             wicket.id: ${cluster.id}.field
             /cluster.options:

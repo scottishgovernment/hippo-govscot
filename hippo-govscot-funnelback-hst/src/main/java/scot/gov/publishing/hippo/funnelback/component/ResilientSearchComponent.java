@@ -1,8 +1,10 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
 import jakarta.servlet.ServletContext;
+import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
+import org.hippoecm.hst.content.beans.standard.HippoFolder;
 import org.hippoecm.hst.content.beans.standard.HippoFolderBean;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.component.HstResponse;
@@ -25,13 +27,22 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static java.lang.Class.*;
+import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
 
+/**
+ *
+ * todo:
+ *  - issue is that topics an publication types need to be site specific
+ *  - subcalssing does not work due to autowiring issues
+ */
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -58,16 +69,37 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
 
     private Set<String> supportedParams = new HashSet<>();
 
+    MapProvider topicsProvider = request -> emptyMap();
+    MapProvider publicationTypesProvider = request -> emptyMap();
+
     @Override
     public void init(ServletContext servletContext, ComponentConfiguration componentConfig) {
         super.init(servletContext, componentConfig);
 
         searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
+        createProviders(componentConfig);
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
         Collections.addAll(supportedParams,
             componentConfig.getRawParameters().getOrDefault("supportedparams", "q,qsup,page").split(","));
+    }
+
+    void createProviders(ComponentConfiguration componentConfig) {
+        topicsProvider = createProvider(componentConfig, "topicsProvider");
+        publicationTypesProvider = createProvider(componentConfig, "publicationTypesProvider");
+    }
+
+    MapProvider createProvider(ComponentConfiguration componentConfig, String param) {
+        String topicProviderClass = componentConfig.getRawParameters().get(param);
+        try {
+            Class<?> clazz = Class.forName(topicProviderClass);
+            return (MapProvider) clazz.getDeclaredConstructor().newInstance();
+        } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
+                 InvocationTargetException e) {
+            LOG.error("Unable to create map provider {}", topicProviderClass);
+            return request -> Map.of();
+        }
     }
 
     @Override
@@ -76,12 +108,12 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         SearchSettings searchsettings = searchSettings();
         if (isEnabled(searchsettings)) {
             Search search = search(request);
-
             String useSearchType = searchType(searchsettings);
-            SearchService searchService = searchService(useSearchType);
             request.setAttribute("enabled", searchsettings.isEnabled());
+            request.setAttribute("showFilters", searchsettings.isShowFilters());
             request.setAttribute("searchType", useSearchType);
 
+            SearchService searchService = searchService(useSearchType);
             SearchResponse searchResponse =
                     isBlank(search.getQuery())
                             ? blankSearchResponse()
@@ -124,7 +156,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
 
         //  - topics: a ; separated list of topics
         //  - topic: multiple topic params can be supplied and each one will be added
-        Map<String, String> topicsMap = topics();
+        Map<String, String> topicsMap = topicsProvider.get(request.getRequestContext());
         searchBuilder.topics(getRequestParam(request, "topics"), topicsMap);
 
         String [] topics = request.getParameterMap().get("topic");
@@ -139,7 +171,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         // we support type publication types paramaters:
         //  - publicationsTypes: a ; separated list of publications types
         //  - type: multiple type params can be supplied and each one will be added
-        Map<String, String> typesMap = publicationTypes();
+        Map<String, String> typesMap = publicationTypesProvider.get(request.getRequestContext());
         String publicationTypes = getRequestParam(request, "publicationTypes");
         searchBuilder.publicationTypes(publicationTypes, typesMap);
         String [] types = request.getParameterMap().get("type");
@@ -150,7 +182,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         }
     }
 
-    Map<String, String> publicationTypes() {
+    public Map<String, String> publicationTypes(HstRequest request) {
         ValueList valueList = SelectionUtil.getValueListByIdentifier("publicationTypes", RequestContextProvider.get());
         if (valueList == null) {
             return Collections.emptyMap();
@@ -161,7 +193,33 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         return map;
     }
 
-    Map<String, String> topics() {
+    public Map<String, String> topics(HstRequest request) {
+        HippoBean siteBean = request.getRequestContext().getSiteContentBaseBean();
+        if (StringUtils.equals(siteBean.getName(), "govscot")) {
+            return govscotTopics(request);
+        }
+         return topicsMap(request.getRequestContext());
+    }
+
+    Map<String, String> topicsMap(HstRequestContext context) {
+        HippoBean baseBean = context.getSiteContentBaseBean();
+        HippoBean topicsList = getTopicsList(baseBean);
+        if (topicsList == null) {
+            return emptyMap();
+        }
+        return SelectionUtil.valueListAsMap((ValueList) topicsList);
+    }
+
+    HippoBean getTopicsList(HippoBean baseBean) {
+        HippoFolder administration = baseBean.getBean("administration");
+        if (administration == null) {
+            return null;
+        }
+
+        return administration.getBean("topics");
+    }
+
+    Map<String, String> govscotTopics(HstRequest request) {
         HashMap<String, String> topics = new HashMap<>();
 
         try {
@@ -190,6 +248,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         }
     }
 
+
     String getRequestParam(HstRequest request, String param) {
         return supportedParams.contains(param) ? getAnyParameter(request, param) : null;
     }
@@ -215,38 +274,51 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         }
     }
 
-
     public static SearchSettings searchSettings() {
-        HippoBean bean = getSearchSettingsBean();
+        HippoBean global = getGlobalSearchSettingsBean();
+        HippoBean site = getSiteSpecificSearchSettingsBean();
         SearchSettings searchsettings = new SearchSettings();
-        if (bean != null) {
-            searchsettings.setSearchType(bean.getSingleProperty("search:searchtype"));
-            searchsettings.setEnabled(bean.getSingleProperty("search:enabled"));
-            searchsettings.setTimeoutMillis(bean.getSingleProperty("search:timeoutMillis"));
-            searchsettings.setSugestTimeoutMillis(bean.getSingleProperty("search:suggestTimeoutMillis", 300L));
-            searchsettings.setBloomreachErrorRate(bean.getSingleProperty("search:bloomreachErrorRate", 0.0));
-            searchsettings.setFunnelbackErrorRate(bean.getSingleProperty("search:funnelbackErrorRate", 0.0));
-        } else {
-            LOG.warn("unable to find search settings document");
+        searchsettings.setSearchType(getValue("search:searchtype", global, site, SEARCH_TYPE_RESILIENT));
+        searchsettings.setEnabled(getValue("search:enabled", global, site, true));
+        searchsettings.setShowFilters(getValue("search:showFilters", global, site, false));
+        searchsettings.setTimeoutMillis(getValue("search:timeoutMillis", global, site, 4000L));
+        searchsettings.setSugestTimeoutMillis(getValue("search:suggestTimeoutMillis", global, site, 300L));
+        searchsettings.setBloomreachErrorRate(getValue("search:bloomreachErrorRate", global, site,0.0));
+        searchsettings.setFunnelbackErrorRate(getValue("search:funnelbackErrorRate", global, site, 0.0));
+        return searchsettings;
+    }
+
+    static <T> T getValue(String property, HippoBean global, HippoBean site, T defaultValue) {
+        T globalValue = global.getSingleProperty(property);
+        T siteValue = site != null ? site.getSingleProperty(property) : null;
+
+        // if there is a site specific value then use that
+        if (siteValue != null) {
+            return siteValue;
         }
 
-        return searchsettings;
+        // if there is a global value then use that
+        if (globalValue != null) {
+            return globalValue;
+        }
+
+        // fallback to a default value
+        return defaultValue;
     }
 
     /**
      * In publishing each site has its own search settings document, and for gov it lives under the root
      * administration folder
      */
-    static HippoBean getSearchSettingsBean() {
+    static HippoBean getGlobalSearchSettingsBean() {
         HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
-        HippoBean searchSettingsBean = siteBaseBean.getBean("administration/search-settings");
-        if (searchSettingsBean != null) {
-            return searchSettingsBean;
-        }
-
         HippoBean root = siteBaseBean.getParentBean();
-        searchSettingsBean = root.getBean("administration/search-settings");
-        return searchSettingsBean;
+        return root.getBean("administration/search-settings");
+    }
+
+    static HippoBean getSiteSpecificSearchSettingsBean() {
+        HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
+        return siteBaseBean.getBean("administration/search-settings");
     }
 
     String searchType(SearchSettings searchsettings) {

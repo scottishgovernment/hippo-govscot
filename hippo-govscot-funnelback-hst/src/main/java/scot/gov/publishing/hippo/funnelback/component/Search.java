@@ -3,7 +3,9 @@ package scot.gov.publishing.hippo.funnelback.component;
 import org.hippoecm.hst.core.component.HstRequest;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +23,8 @@ public class Search {
     private Map<String, String> topics = new HashMap<>();
 
     private Map<String, String> publicationTypes = new HashMap<>();
+
+    private Map<String, String> languages = new HashMap<>();
 
     private int page;
 
@@ -40,6 +44,7 @@ public class Search {
         this.sort = search.getSort();
         this.topics.putAll(search.getTopics());
         this.publicationTypes.putAll(search.getPublicationTypes());
+        this.languages.putAll(search.getLanguages());
         this.page = search.getPage();
         this.enableSuplimentaryQueries = search.isEnableSuplimentaryQueries();
         this.requestUrl = search.getRequestUrl();
@@ -92,6 +97,14 @@ public class Search {
 
     public void setPublicationTypes(Map<String, String> publicationTypes) {
         this.publicationTypes = publicationTypes;
+    }
+
+    public Map<String, String> getLanguages() {
+        return languages;
+    }
+
+    public void setLanguages(Map<String, String> languages) {
+        this.languages = languages;
     }
 
     public int getPage() {

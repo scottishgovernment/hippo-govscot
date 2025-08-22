@@ -7,9 +7,7 @@ import org.hippoecm.hst.core.request.HstRequestContext;
 import org.hippoecm.hst.util.HstRequestUtils;
 
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -26,6 +24,8 @@ public class SearchBuilder {
     private Map<String, String> topics = new HashMap<>();
 
     private Map<String, String> publicationTypes = new HashMap<>();
+
+    private Map<String, String> languages = new HashMap<>();
 
     private int page = 1;
 
@@ -99,6 +99,11 @@ public class SearchBuilder {
         return this;
     }
 
+    public SearchBuilder language(String lang, Map<String, String> lookups) {
+        languages.put(lang, lookups.get(lang));
+        return this;
+    }
+
     public SearchBuilder enableSuplimentaryQueries(boolean enableSuplimentaryQueries) {
         this.enableSuplimentaryQueries = enableSuplimentaryQueries;
         return this;
@@ -128,6 +133,7 @@ public class SearchBuilder {
         search.setSort(sort);
         search.setTopics(topics);
         search.setPublicationTypes(publicationTypes);
+        search.setLanguages(languages);
         search.setPage(page);
         search.setRequest(request);
         search.setRequestUrl(requestUrl);

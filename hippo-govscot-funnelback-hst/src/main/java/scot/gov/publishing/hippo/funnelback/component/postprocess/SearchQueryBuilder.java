@@ -75,6 +75,12 @@ public class SearchQueryBuilder {
         return toParamString(params(modifiedSearch));
     }
 
+    public String queryParamsWithoutLanguage(Search search, String excludeLanguage) {
+        Search modifiedSearch = new Search(search);
+        modifiedSearch.getLanguages().remove(excludeLanguage);
+        return toParamString(params(modifiedSearch));
+    }
+
     String toParamString(List<String> params) {
         return params.stream().collect(joining("&"));
     }

@@ -6,6 +6,8 @@ import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
 
+import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent.searchSettings;
+
 /**
  * Component suitable for the base of a search page.
  */
@@ -26,10 +28,12 @@ public class SearchComponent extends EssentialsContentComponent {
         super.doBeforeRender(request, response);
 
         // each page has a designated search type, and then there are the search settings for the site.
-        // the specific funnelback and bloomreach pages are for testing and sholdhave their auto complete
+        // the specific funnelback and bloomreach pages are for testing and should have their auto complete
         // value hard coded.
         //
         // otherwise the value is determined from the search settings document
+        SearchSettings searchsettings = searchSettings();
+        request.setAttribute("showFilters", searchsettings.isShowFilters());
         switch (searchType) {
             case "bloomreach":
                 request.setAttribute(AUTO_COMPLETE_ENABLED, false);
@@ -39,7 +43,7 @@ public class SearchComponent extends EssentialsContentComponent {
                 break;
             default:
                 // defer to the type specific in search settings
-                request.setAttribute(AUTO_COMPLETE_ENABLED, ResilientSearchComponent.searchSettings().isEnabled());
+                request.setAttribute(AUTO_COMPLETE_ENABLED, searchSettings().isEnabled());
         }
     }
 

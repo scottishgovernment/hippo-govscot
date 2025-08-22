@@ -14,6 +14,8 @@ public class FilterButtonGroups {
 
     List<FilterButton> topics = new ArrayList<>();
 
+    List<FilterButton> languages = new ArrayList<>();
+
     Map<String, FilterButton> dates = new HashMap<>();
 
     public List<FilterButton> getTypes() {
@@ -22,6 +24,10 @@ public class FilterButtonGroups {
 
     public List<FilterButton> getTopics() {
         return topics;
+    }
+
+    public List<FilterButton> getLanguages() {
+        return languages;
     }
 
     public Map<String, FilterButton> getDates() {
@@ -41,6 +47,10 @@ public class FilterButtonGroups {
 
         if (!search.getTopics().isEmpty()) {
             groups.topics = topicsButtonGroup(search, searchParam);
+        }
+
+        if (!search.getLanguages().isEmpty()) {
+            groups.languages = languagesButtonGroup(search, searchParam);
         }
 
         if (search.getFromDate() != null || search.getToDate() != null) {
@@ -93,6 +103,19 @@ public class FilterButtonGroups {
             FilterButton button = new FilterButton();
             button.setLabel(e.getValue());
             button.setUrl(searchQueryBuilder.queryParamsWithoutPublicationType(search, e.getKey()));
+            button.setId(e.getKey());
+            buttons.add(button);
+        });
+        return buttons;
+    }
+
+    static List<FilterButton> languagesButtonGroup(Search search, String searchParam) {
+        List<FilterButton> buttons = new ArrayList<>();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
+        search.getLanguages().entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(e -> {
+            FilterButton button = new FilterButton();
+            button.setLabel(e.getValue());
+            button.setUrl(searchQueryBuilder.queryParamsWithoutLanguage(search, e.getKey()));
             button.setId(e.getKey());
             buttons.add(button);
         });
