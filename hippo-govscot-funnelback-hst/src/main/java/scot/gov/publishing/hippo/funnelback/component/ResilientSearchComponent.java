@@ -64,6 +64,8 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
 
     private static final String SEARCH_TYPE_BLOOMREACH = "bloomreach";
 
+    private static final String TOPICS = "topics";
+
     // the type of search that this component is configured to provide in the sitemap
     private String searchType;
 
@@ -97,7 +99,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
             return (MapProvider) clazz.getDeclaredConstructor().newInstance();
         } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException |
                  InvocationTargetException e) {
-            LOG.error("Unable to create map provider {}", topicProviderClass);
+            LOG.error("Unable to create map provider {}", topicProviderClass, e);
             return request -> Map.of();
         }
     }
@@ -157,7 +159,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         //  - topics: a ; separated list of topics
         //  - topic: multiple topic params can be supplied and each one will be added
         Map<String, String> topicsMap = topicsProvider.get(request.getRequestContext());
-        searchBuilder.topics(getRequestParam(request, "topics"), topicsMap);
+        searchBuilder.topics(getRequestParam(request, TOPICS), topicsMap);
 
         String [] topics = request.getParameterMap().get("topic");
         if (topics != null) {
@@ -216,7 +218,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
             return null;
         }
 
-        return administration.getBean("topics");
+        return administration.getBean(TOPICS);
     }
 
     Map<String, String> govscotTopics(HstRequest request) {
@@ -227,7 +229,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
             Session session = context.getSession();
             if (session.nodeExists("/content/documents/govscot")) {
                 HippoBean baseBean = context.getSiteContentBaseBean();
-                HippoFolderBean topicsFolder = baseBean.getBean("topics", HippoFolderBean.class);
+                HippoFolderBean topicsFolder = baseBean.getBean(TOPICS, HippoFolderBean.class);
 
                 String xpath = String.format("//*[(@hippo:paths='%s') and (@hippo:availability='live') and not(@jcr:primaryType='nt:frozenNode') and ((@jcr:primaryType='govscot:Issue' or @jcr:primaryType='govscot:AboutTopic' or @jcr:primaryType='govscot:Topic' or @jcr:primaryType='govscot:DynamicIssue'))]", topicsFolder.getIdentifier());
                 Query queryObj = session

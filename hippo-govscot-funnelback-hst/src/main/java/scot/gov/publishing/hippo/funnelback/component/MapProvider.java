@@ -1,6 +1,5 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
-import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.request.HstRequestContext;
 
 import java.util.Map;
