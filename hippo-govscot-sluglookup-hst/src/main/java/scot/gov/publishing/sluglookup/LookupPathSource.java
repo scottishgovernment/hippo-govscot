@@ -2,6 +2,8 @@ package scot.gov.publishing.sluglookup;
 
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.core.request.HstRequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
@@ -10,6 +12,8 @@ import javax.jcr.Session;
 import static scot.gov.publishing.sluglookup.SlugLookupPaths.slugLookupPath;
 
 public class LookupPathSource implements PathForSlugSource {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LookupPathSource.class);
 
     PathForSlugSource queryBackup = (slug, site, type, mount) -> null;
 
@@ -33,6 +37,7 @@ public class LookupPathSource implements PathForSlugSource {
         HstRequestContext req = RequestContextProvider.get();
         Session session = req.getSession();
         String slugLookupPath = slugLookupPath(slug, site, type, mount);
+        LOG.info("lookupPath {} {}", slug, slugLookupPath);
         if (!session.nodeExists(slugLookupPath)) {
             return null;
         }
@@ -41,6 +46,7 @@ public class LookupPathSource implements PathForSlugSource {
             // this is the case that is failing, use the queryBackup if one exists
             return queryBackup.get(slug, site, type, mount);
         }
+        LOG.warn("using {}", lookupNode.getProperty("sluglookup:path").getString());
         return lookupNode.getProperty("sluglookup:path").getString();
     }
 
