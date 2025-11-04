@@ -17,12 +17,21 @@ public class LoggingHttpResponseInterceptor implements HttpResponseInterceptor {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoggingHttpResponseInterceptor.class);
 
+    String requestPrefix;
+
+    public LoggingHttpResponseInterceptor() {
+        this("funnelback-http-request");
+    }
+
+    public LoggingHttpResponseInterceptor(String requestPrefix) {
+        this.requestPrefix = requestPrefix;
+    }
     @Override
     public void process(HttpResponse response, EntityDetails entity, HttpContext context) throws HttpException, IOException {
         StopWatch stopwatch = (StopWatch) context.getAttribute(STOPWATCH);
         stopwatch.stop();
         String requestLine = (String)context .getAttribute("requestLine");
-        LOG.info("funnelback-http-request {}, took {}", new Object[]{requestLine, stopwatch.getTime()});
+        LOG.info("{} {}, took {}", new Object[]{requestPrefix, requestLine, stopwatch.getTime()});
     }
 
 }
