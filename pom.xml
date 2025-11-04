@@ -22,6 +22,7 @@
     <module>hippo-govscot-funnelback-hst</module>
     <module>hippo-govscot-funnelback-cms</module>
     <module>hippo-govscot-funnelback-repository</module>
+    <module>hippo-govscot-health</module>
     <module>hippo-govscot-staging-hst</module>
     <module>hippo-govscot-staging-cms</module>
     <module>hippo-govscot-staging-repository</module>
