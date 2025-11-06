@@ -3,10 +3,7 @@ package scot.gov.publishing.hippo.funnelback.component;
 import scot.gov.publishing.hippo.funnelback.component.postprocess.SearchQueryBuilder;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FilterButtonGroups {
 
@@ -15,6 +12,8 @@ public class FilterButtonGroups {
     List<FilterButton> topics = new ArrayList<>();
 
     List<FilterButton> languages = new ArrayList<>();
+
+    List<FilterButton> accessibilityFeatures = new ArrayList<>();
 
     Map<String, FilterButton> dates = new HashMap<>();
 
@@ -28,6 +27,10 @@ public class FilterButtonGroups {
 
     public List<FilterButton> getLanguages() {
         return languages;
+    }
+
+    public List<FilterButton> getAccessibilityFeatures() {
+        return accessibilityFeatures;
     }
 
     public Map<String, FilterButton> getDates() {
@@ -51,6 +54,10 @@ public class FilterButtonGroups {
 
         if (!search.getLanguages().isEmpty()) {
             groups.languages = languagesButtonGroup(search, searchParam);
+        }
+
+        if (!search.getAccessibilityFeatures().isEmpty()) {
+            groups.accessibilityFeatures = accessibilityFeaturesButtonGroup(search, searchParam);
         }
 
         if (search.getFromDate() != null || search.getToDate() != null) {
@@ -121,4 +128,18 @@ public class FilterButtonGroups {
         });
         return buttons;
     }
+
+    static List<FilterButton> accessibilityFeaturesButtonGroup(Search search, String searchParam) {
+        List<FilterButton> buttons = new ArrayList<>();
+        SearchQueryBuilder searchQueryBuilder = new SearchQueryBuilder(searchParam);
+        search.getAccessibilityFeatures().entrySet().stream().sorted(Map.Entry.comparingByValue()).forEach(e -> {
+            FilterButton button = new FilterButton();
+            button.setLabel(e.getValue());
+            button.setUrl(searchQueryBuilder.queryParamsWithoutAccessibilityFeature(search, e.getKey()));
+            button.setId(e.getKey());
+            buttons.add(button);
+        });
+        return buttons;
+    }
+
 }

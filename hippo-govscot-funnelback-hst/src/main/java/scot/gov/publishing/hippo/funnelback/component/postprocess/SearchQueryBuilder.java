@@ -81,6 +81,12 @@ public class SearchQueryBuilder {
         return toParamString(params(modifiedSearch));
     }
 
+    public String queryParamsWithoutAccessibilityFeature(Search search, String excluded) {
+        Search modifiedSearch = new Search(search);
+        modifiedSearch.getAccessibilityFeatures().remove(excluded);
+        return toParamString(params(modifiedSearch));
+    }
+
     String toParamString(List<String> params) {
         return params.stream().collect(joining("&"));
     }

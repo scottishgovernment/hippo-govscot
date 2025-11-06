@@ -27,6 +27,8 @@ public class SearchBuilder {
 
     private Map<String, String> languages = new HashMap<>();
 
+    private Map<String, String> accessibilityFeatures = new HashMap<>();
+
     private int page = 1;
 
     private boolean enableSuplimentaryQueries = true;
@@ -104,6 +106,11 @@ public class SearchBuilder {
         return this;
     }
 
+    public SearchBuilder accessibilityFeature(String accessibilityFeature, Map<String, String> lookups) {
+        accessibilityFeatures.put(accessibilityFeature, lookups.get(accessibilityFeature));
+        return this;
+    }
+
     public SearchBuilder enableSuplimentaryQueries(boolean enableSuplimentaryQueries) {
         this.enableSuplimentaryQueries = enableSuplimentaryQueries;
         return this;
@@ -134,6 +141,7 @@ public class SearchBuilder {
         search.setTopics(topics);
         search.setPublicationTypes(publicationTypes);
         search.setLanguages(languages);
+        search.setAccessibilityFeatures(accessibilityFeatures);
         search.setPage(page);
         search.setRequest(request);
         search.setRequestUrl(requestUrl);

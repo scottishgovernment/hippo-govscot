@@ -37,12 +37,6 @@ import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
 
-/**
- *
- * todo:
- *  - issue is that topics an publication types need to be site specific
- *  - subcalssing does not work due to autowiring issues
- */
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
