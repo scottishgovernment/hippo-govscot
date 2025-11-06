@@ -24,6 +24,8 @@ public class Search {
 
     private Map<String, String> languages = new HashMap<>();
 
+    private Map<String, String> accessibilityFeatures = new HashMap<>();
+
     private int page;
 
     private boolean enableSuplimentaryQueries = true;
@@ -105,6 +107,14 @@ public class Search {
         this.languages = languages;
     }
 
+    public Map<String, String> getAccessibilityFeatures() {
+        return accessibilityFeatures;
+    }
+
+    public void setAccessibilityFeatures(Map<String, String> accessibilityFeatures) {
+        this.accessibilityFeatures = accessibilityFeatures;
+    }
+
     public int getPage() {
         return page;
     }
@@ -135,5 +145,23 @@ public class Search {
 
     public void setRequest(HstRequest request) {
         this.request = request;
+    }
+
+    @Override
+    public String toString() {
+        return "Search{" +
+                "query='" + query + '\'' +
+                ", fromDate=" + fromDate +
+                ", toDate=" + toDate +
+                ", sort=" + sort +
+                ", topics=" + topics +
+                ", publicationTypes=" + publicationTypes +
+                ", languages=" + languages +
+                ", accessibilityFeatures=" + accessibilityFeatures +
+                ", page=" + page +
+                ", enableSuplimentaryQueries=" + enableSuplimentaryQueries +
+                ", requestUrl='" + requestUrl + '\'' +
+                ", request=" + request +
+                '}';
     }
 }
