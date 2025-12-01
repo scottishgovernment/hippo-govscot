@@ -1,13 +1,13 @@
 package scot.gov.publishing.hippo.funnelback.scheduler;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.hippoecm.hst.core.container.ComponentManager;
-import org.hippoecm.hst.core.container.ContainerConfiguration;
 import org.hippoecm.hst.site.HstServices;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoWorkspace;
@@ -18,23 +18,27 @@ import org.onehippo.repository.scheduling.RepositoryJob;
 import org.onehippo.repository.scheduling.RepositoryJobExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import scot.gov.publishing.hippo.funnelback.SearchType;
 
 import javax.jcr.Node;
-import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.util.Calendar;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static scot.gov.publishing.hippo.funnelback.HippoUtils.findPublished;
 
 public class PollFunnelbackCurator implements RepositoryJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(PollFunnelbackCurator.class);
+
+    public static final String FUNNELBACK = "funnelback";
 
     private static final String HASH = "search:hash";
 
@@ -47,23 +51,48 @@ public class PollFunnelbackCurator implements RepositoryJob {
             return;
         }
 
-        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
-        if (isBlank(token)) {
-            return;
-        }
-
         Session session = context.createSystemSession();
-        String pollPaths = context.getAttribute("pollPaths");
-
         try {
-            String storedHash = getStoredHash(session);
-            String newhash = getPageHash(pollPaths, token);
-            if (!storedHash.equals(newhash)) {
-                touchFunnelbackCacheFile(session, newhash);
-            }
+            doExecute(context, session);
         } finally {
             session.logout();
         }
+    }
+
+
+    void doExecute(RepositoryJobExecutionContext context, Session session) throws RepositoryException {
+        String searchType = SearchType.getSearchType(session);
+        LOG.info("PollFunnelbackCurator searchtype {}", searchType);
+        if (!StringUtils.startsWith(searchType, FUNNELBACK)) {
+            LOG.info("Searchtype not funneback, skipping");
+            return;
+        }
+
+        String token = getToken(searchType);
+        if (isBlank(token)) {
+            LOG.info("no token, skipping");
+            return;
+        }
+        String collections = context.getAttribute("collections");
+        LOG.info("PollFunnelbackCurator collections {}", collections);
+        String storedHash = getStoredHash(session);
+        String newhash = getPageHash(collections, token, searchType);
+        if (!storedHash.equals(newhash)) {
+            touchFunnelbackCacheFile(session, newhash);
+        }
+    }
+
+    String getToken(String searchtype) {
+        if ("funnelback-dxp".equals(searchtype)) {
+            return HstServices.getComponentManager().getContainerConfiguration().getString("squiz.admin.token");
+        }
+
+        if (FUNNELBACK.equals(searchtype)) {
+            return HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+        }
+
+        LOG.error("unsupported search type {}", searchtype);
+        return "";
     }
 
     boolean isComponentManagerReady() {
@@ -83,35 +112,25 @@ public class PollFunnelbackCurator implements RepositoryJob {
                 : "";
     }
 
-    Node findPublished(Node handle) throws RepositoryException {
-        NodeIterator it = handle.getNodes(handle.getName());
-        while (it.hasNext()) {
-            Node variant = it.nextNode();
-            if (isPublished(variant)) {
-                return variant;
-            }
-        }
-        return null;
-    }
-
-    boolean isPublished(Node node) throws RepositoryException {
-        return "published".equals(node.getProperty("hippostd:state").getString());
-    }
-
-    String getPageHash(String pollPaths, String token) throws RepositoryException {
+    String getPageHash(String collections, String token, String searchType) throws RepositoryException {
         try {
             StringBuilder allContent = new StringBuilder();
-            for (String pollPath : pollPaths.split(",")) {
-                allContent.append(doGetPageContentHash(pollPath, token));
+            for (String collection : collections.split(",")) {
+                String hash = doGetPageContentHash(collection, token, searchType);
+                LOG.info("{}, hash is {}", collection, hash);
+                allContent.append(hash);
             }
             return allContent.toString();
         } catch (IOException | URISyntaxException e) {
+            LOG.error("arg", e);
             throw new RepositoryException(e);
         }
     }
 
-    String doGetPageContentHash(String pollPath, String token) throws IOException, URISyntaxException {
-        URI uri = curatorURI(pollPath);
+    String doGetPageContentHash(String collection, String token, String searchType) throws IOException, URISyntaxException {
+        URI uri = curatorURI(collection, searchType);
+        LOG.info("doGetPageContentHash uri {}", uri);
+        LOG.info("doGetPageContentHash {}, {}, {}", collection, searchType, token);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet request = new HttpGet(uri);
         try {
@@ -119,7 +138,9 @@ public class PollFunnelbackCurator implements RepositoryJob {
             CloseableHttpResponse response = httpClient.execute(request);
             try {
                 InputStream pageInputStream = response.getEntity().getContent();
-                return DigestUtils.sha1Hex(pageInputStream);
+                String tmp = IOUtils.toString(pageInputStream, StandardCharsets.UTF_8);
+                LOG.info("{}", tmp);
+                return DigestUtils.sha1Hex(tmp);
             } finally {
                 response.close();
             }
@@ -128,11 +149,20 @@ public class PollFunnelbackCurator implements RepositoryJob {
         }
     }
 
-    URI curatorURI(String pollPath) throws URISyntaxException {
-        ContainerConfiguration containerConfiguration = HstServices.getComponentManager().getContainerConfiguration();
-        // "/admin-api/curator/v2/collections/govscot~sp-mygov/profiles/_default/curator/"
-        String baseUrl = containerConfiguration.getString("funnelback.url");
-        return new URIBuilder(baseUrl).setPath(pollPath).build();
+    URI curatorURI(String collection, String searchtype) throws URISyntaxException {
+        if ("funnelback-dxp".equals(searchtype)) {
+            String baseUrl = HstServices.getComponentManager().getContainerConfiguration().getString("squiz.admin.url");
+            String clientId = HstServices.getComponentManager().getContainerConfiguration().getString("squiz.clientId");
+            return new URI(String.format("%s/admin-api/curator/v2/collections/%s~sp-%s/profiles/search/curator/", baseUrl, clientId, collection));
+        }
+
+        if (FUNNELBACK.equals(searchtype)) {
+            String baseUrl = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.url");
+            return new URI(String.format("%s/admin-api/curator/v2/collections/govscot~sp-%s/profiles/search/curator/", baseUrl, collection));
+        }
+
+        LOG.error("unsupported search type {}", searchtype);
+        return null;
     }
 
     void touchFunnelbackCacheFile(Session session, String hash) throws RepositoryException {

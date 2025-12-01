@@ -6,6 +6,7 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -18,6 +19,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
+import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.SEARCH_TYPE_FUNNELBACK_DXP;
+import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
@@ -33,6 +36,8 @@ public class ResilientSearchService implements SearchService {
     static final HystrixCommandKey FUNNELBACK_SUGGESTIONS_COMMAND_KEY = HystrixCommandKey.Factory.asKey("suggestionsWithTimeout");
 
     private SearchService funnelbackSearchService;
+
+    private SearchService funnelbackSearchServiceDXP;
 
     private SearchService bloomreachSearchService;
 
@@ -92,8 +97,16 @@ public class ResilientSearchService implements SearchService {
         return funnelbackSearchService;
     }
 
+    public SearchService getFunnelbackSearchServiceDXP() {
+        return funnelbackSearchServiceDXP;
+    }
+
     public void setFunnelbackSearchService(FunnelbackSearchService funnelbackSearchService) {
         this.funnelbackSearchService = funnelbackSearchService;
+    }
+
+    public void setFunnelbackSearchServiceDXP(FunnelbackSearchService funnelbackSearchServiceDXP) {
+        this.funnelbackSearchServiceDXP = funnelbackSearchServiceDXP;
     }
 
     public SearchService getBloomreachSearchService() {
@@ -122,7 +135,11 @@ public class ResilientSearchService implements SearchService {
         @Override
         protected SearchResponse run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            return funnelbackSearchService.performSearch(search, searchsettings);
+            if (StringUtils.equalsAny(searchsettings.getSearchType(), SEARCH_TYPE_FUNNELBACK_DXP, SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP)) {
+                return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
+            } else {
+                return funnelbackSearchService.performSearch(search, searchsettings);
+            }
         }
 
         @Override
@@ -153,7 +170,11 @@ public class ResilientSearchService implements SearchService {
         @Override
         protected List<String> run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            return funnelbackSearchService.getSuggestions(query, mount, searchsettings);
+            if (StringUtils.equalsAny(searchsettings.getSearchType(), SEARCH_TYPE_FUNNELBACK_DXP, SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP)) {
+                return funnelbackSearchServiceDXP.getSuggestions(query, mount, searchsettings);
+            } else {
+                return funnelbackSearchService.getSuggestions(query, mount, searchsettings);
+            }
         }
 
         @Override

@@ -5,6 +5,7 @@ import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.configuration.hosting.VirtualHost;
 import org.hippoecm.hst.configuration.hosting.VirtualHosts;
 import org.hippoecm.hst.core.component.HstRequest;
+import org.hippoecm.hst.core.container.ContainerConfiguration;
 import org.hippoecm.hst.core.request.HstRequestContext;
 import org.hippoecm.hst.site.HstServices;
 import org.onehippo.cms7.crisp.api.broker.ResourceServiceBroker;
@@ -37,14 +38,6 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final Logger LOG = LoggerFactory.getLogger(FunnelbackSearchService.class);
 
-    private static final String URL_TEMPLATE
-            = "/search.json?query={query}&start_rank={rank}&collection={collection}";
-
-    private static final String SUGGEST_URL
-            = "/suggest.json?partial_query={partial_query}&show={show}&sort={sort}&fmt={fmt}&collection={collection}&profile=search";
-
-    private static final String FUNNELBACK_RESOURCE_SPACE = "funnelback";
-
     private static final String INTERNAL = "internal";
 
     private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
@@ -59,9 +52,49 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMyyyy");
 
+    String urlTemplate;
+
+    String suggestTemplate;
+
+    String tokenProperty;
+
+    String resourceResolver;
+
     private Map<String, String> aliasesBySite;
 
     private Map<String, String> collections;
+
+    public String getUrlTemplate() {
+        return urlTemplate;
+    }
+
+    public void setUrlTemplate(String urlTemplate) {
+        this.urlTemplate = urlTemplate;
+    }
+
+    public String getSuggestTemplate() {
+        return suggestTemplate;
+    }
+
+    public void setSuggestTemplate(String suggestTemplate) {
+        this.suggestTemplate = suggestTemplate;
+    }
+
+    public String getTokenProperty() {
+        return tokenProperty;
+    }
+
+    public void setTokenProperty(String tokenProperty) {
+        this.tokenProperty = tokenProperty;
+    }
+
+    public String getResourceResolver() {
+        return resourceResolver;
+    }
+
+    public void setResourceResolver(String resourceResolver) {
+        this.resourceResolver = resourceResolver;
+    }
 
     @Override
     public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
@@ -78,34 +111,44 @@ public class FunnelbackSearchService implements SearchService {
      * /site/components/src/main/resources/META-INF/hst-assembly/overrides/spring-managed-components.xml
      */
     void ping(String mount) {
-        if (!HstServices.isAvailable()) {
-            return;
-        }
+        ///  TODO: need to investigat ewhy this was causing an error
+//        if (!HstServices.isAvailable()) {
+//            return;
+//        }
+//
+//        if (!isFunnelbackTokenAvailable()) {
+//            return;
+//        }
+//
+//        String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
+//        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
+//
+//        if (broker != null) {
+//            LOG.error("----- suggestTemplate {} tokenProperty {} resourceResolver {}", suggestTemplate, tokenProperty, resourceResolver);
+//            Resource results = broker.findResources(resourceResolver, suggestTemplate, suggestionsParamMap(query, mount));
+//            ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
+//            resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
+//        }
 
-        if (!isFunnelbackTokenAvailable()) {
-            return;
-        }
-
-        String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
-        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-        if (broker != null) {
-            Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, suggestionsParamMap(query, mount));
-            ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
-            resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
-        }
+//        Map<String, Object> params = suggestionsParamMap(partialQuery, mount);
+//        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
+//        Resource results = broker.findResources(resourceResolver, suggestTemplate, params);
+//        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
+//        Collection<Suggestion> suggestions = resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
+//        return suggestions.stream().map(Suggestion::getDisp).collect(toList());
     }
 
     public boolean isFunnelbackTokenAvailable() {
-        String token = HstServices.getComponentManager().getContainerConfiguration().getString("funnelback.token");
+        String token = HstServices.getComponentManager().getContainerConfiguration().getString(tokenProperty);
         return isNotBlank(token);
     }
 
-    SearchResponse doPerformSearch(Search search, SearchSettings searchsettings) {
+    SearchResponse doPerformSearch(Search search, SearchSettings searcxhsettings) {
         Map<String, Object> params = searchParamMap(search);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
         String urlTemplate = getUrlTemplate(search);
-        Resource results = broker.resolve(FUNNELBACK_RESOURCE_SPACE, urlTemplate, params);
-        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
+        Resource results = broker.resolve(resourceResolver, urlTemplate, params);
+        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
         FunnelbackSearchResponse response = resourceBeanMapper.map(results, FunnelbackSearchResponse.class);
         postProcessSearchresponse(search, response);
         Pagination pagination = createPagination(search, response);
@@ -134,8 +177,8 @@ public class FunnelbackSearchService implements SearchService {
     List<String> doGetSuggestions(String partialQuery, String mount) {
         Map<String, Object> params = suggestionsParamMap(partialQuery, mount);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-        Resource results = broker.findResources(FUNNELBACK_RESOURCE_SPACE, SUGGEST_URL, params);
-        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(FUNNELBACK_RESOURCE_SPACE);
+        Resource results = broker.findResources(resourceResolver, suggestTemplate, params);
+        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
         Collection<Suggestion> suggestions = resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
         return suggestions.stream().map(Suggestion::getDisp).collect(toList());
     }
@@ -175,7 +218,7 @@ public class FunnelbackSearchService implements SearchService {
                     .forEach(params::add);
         }
 
-        return params.isEmpty() ? URL_TEMPLATE : URL_TEMPLATE + "&" + params.stream().collect(joining("&"));
+        return params.isEmpty() ? urlTemplate : urlTemplate + "&" + params.stream().collect(joining("&"));
     }
 
     String publicationTypeParam(String publicationType) {
@@ -317,9 +360,14 @@ public class FunnelbackSearchService implements SearchService {
         params.put("query", defaultIfBlank(search.getQuery(), ""));
         params.put("rank", rank);
         params.put("collection", collection);
+        params.put("clientId", clientId());
         return params;
     }
 
+    String clientId() {
+        ContainerConfiguration containerConfiguration = HstServices.getComponentManager().getContainerConfiguration();
+        return containerConfiguration.getString("squiz.clientId");
+    }
     public static String mountName(HstRequestContext context) {
         return context.getResolvedMount().getMount().getHstSite().getName();
     }
@@ -336,6 +384,7 @@ public class FunnelbackSearchService implements SearchService {
         String collection = collections.get(mount);
         params.put("partial_query", defaultIfBlank(partialQuery, ""));
         params.put("collection", collection);
+        params.put("clientId", clientId());
         params.put("show", 6);
         params.put("sort", 0);
         params.put("fmt", "json++");

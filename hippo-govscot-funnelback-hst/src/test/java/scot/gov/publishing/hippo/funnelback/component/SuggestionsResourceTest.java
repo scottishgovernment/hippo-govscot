@@ -23,6 +23,7 @@ public class SuggestionsResourceTest {
         searchSettings.setEnabled(false);
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
+        sut.funnelbackSearchServiceDXP = mock(FunnelbackSearchService.class);
 
         // ACT
         List<String> actual = sut.getSuggestions("query");

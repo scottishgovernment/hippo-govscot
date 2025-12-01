@@ -6,7 +6,7 @@ import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
 
-import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent.searchSettings;
+import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.searchSettings;
 
 /**
  * Component suitable for the base of a search page.

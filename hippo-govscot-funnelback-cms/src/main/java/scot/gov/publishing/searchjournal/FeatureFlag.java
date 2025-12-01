@@ -1,5 +1,7 @@
 package scot.gov.publishing.searchjournal;
 
+import org.hippoecm.hst.core.container.ContainerConfiguration;
+import org.hippoecm.hst.site.HstServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,10 +10,12 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
 /**
- * Lookup feature flags for event listeners and scheduled tasks.  Featured flags are stored as boolean propertries of the
+ * Lookup feature flags for event listeners and scheduled tasks.  Featured flags are stored as boolean properties of the
  * node /content/featureflags/
  *
- * If the featured flags node does not exist or the flag in qwuestion does not exist then the flag will default to false.
+ * For local development the flags can be overridden at the command line
+ *
+ * If the featured flags node does not exist or the flag in question does not exist then the flag will default to false.
  */
 public class FeatureFlag {
 
@@ -34,10 +38,25 @@ public class FeatureFlag {
     }
 
     public boolean isEnabled() {
+        // allow the flag to be overridden at the command line
+        ContainerConfiguration containerConfiguration = HstServices.getComponentManager().getContainerConfiguration();
+        if (containerConfiguration.containsKey(flag)) {
+            String flagValue = containerConfiguration.getString(flag);
+            if ("true".equals(flagValue)) {
+                return true;
+            }
+
+            if ("false".equals(flagValue)) {
+                return false;
+            }
+
+            LOG.warn("featureFlag {} appears as a property but does not have a valid value (true | false).  Value is {}", flag, flagValue);
+        }
+
         try {
             Node featureFlags = getFlagsNode();
             if (!featureFlags.hasProperty(flag)) {
-                LOG.warn("feature flag {} does not exist, defaulting to enabled = false", flag);
+                LOG.info("feature flag {} does not exist, defaulting to enabled = false", flag);
                 return false;
             }
 

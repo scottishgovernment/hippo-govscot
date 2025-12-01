@@ -7,7 +7,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
 import org.hippoecm.hst.container.RequestContextProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,12 +27,19 @@ import static java.util.Collections.emptyList;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SuggestionsResource {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SuggestionsResource.class);
+
     @Autowired
+    @Qualifier("funnelbackSearchService")
     FunnelbackSearchService funnelbackSearchService;
+
+    @Autowired
+    @Qualifier("funnelbackSearchServiceDXP")
+    FunnelbackSearchService funnelbackSearchServiceDXP;
 
     ResilientSearchService resilientSearchService;
 
-    Supplier<SearchSettings> searchSettingSource = () -> ResilientSearchComponent.searchSettings();
+    Supplier<SearchSettings> searchSettingSource = SearchSettings::searchSettings;
 
     Supplier<String> mountSupplier = () -> FunnelbackSearchService.mountName(RequestContextProvider.get());
 
@@ -39,7 +49,9 @@ public class SuggestionsResource {
     public SuggestionsResource() {
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
+        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
     }
+
     @Path("search/suggestions")
     @Produces(APPLICATION_JSON)
     @GET
@@ -47,6 +59,7 @@ public class SuggestionsResource {
         SearchSettings searchSettings = searchSettingSource.get();
         String mount = mountSupplier.get();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
+        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
         if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
             return emptyList();
         } else {

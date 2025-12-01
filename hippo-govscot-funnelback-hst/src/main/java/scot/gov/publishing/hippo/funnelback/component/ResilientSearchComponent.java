@@ -16,6 +16,7 @@ import org.onehippo.forge.selection.hst.util.SelectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -36,6 +37,7 @@ import static java.lang.Class.*;
 import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.StringUtils.*;
 import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
+import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.*;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
@@ -45,18 +47,17 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     private static final Logger LOG = LoggerFactory.getLogger(ResilientSearchComponent.class);
 
     @Autowired
+    @Qualifier("funnelbackSearchService")
     private FunnelbackSearchService funnelbackSearchService;
+
+    @Autowired
+    @Qualifier("funnelbackSearchServiceDXP")
+    private FunnelbackSearchService funnelbackSearchServiceDXP;
 
     @Autowired
     private SearchService bloomreachSearchService;
 
     private ResilientSearchService resilientSearchService;
-
-    private static final String SEARCH_TYPE_RESILIENT = "resilient";
-
-    private static final String SEARCH_TYPE_FUNNELBACK = "funnelback";
-
-    private static final String SEARCH_TYPE_BLOOMREACH = "bloomreach";
 
     private static final String TOPICS = "topics";
 
@@ -76,7 +77,9 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         createProviders(componentConfig);
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
+        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
+
         Collections.addAll(supportedParams,
             componentConfig.getRawParameters().getOrDefault("supportedparams", "q,qsup,page").split(","));
     }
@@ -270,69 +273,25 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         }
     }
 
-    public static SearchSettings searchSettings() {
-        HippoBean global = getGlobalSearchSettingsBean();
-        HippoBean site = getSiteSpecificSearchSettingsBean();
-        SearchSettings searchsettings = new SearchSettings();
-        searchsettings.setSearchType(getValue("search:searchtype", global, site, SEARCH_TYPE_RESILIENT));
-        searchsettings.setEnabled(getValue("search:enabled", global, site, true));
-        searchsettings.setShowFilters(getValue("search:showFilters", global, site, false));
-        searchsettings.setTimeoutMillis(getValue("search:timeoutMillis", global, site, 4000L));
-        searchsettings.setSugestTimeoutMillis(getValue("search:suggestTimeoutMillis", global, site, 300L));
-        searchsettings.setBloomreachErrorRate(getValue("search:bloomreachErrorRate", global, site,0.0));
-        searchsettings.setFunnelbackErrorRate(getValue("search:funnelbackErrorRate", global, site, 0.0));
-        return searchsettings;
-    }
 
-    static <T> T getValue(String property, HippoBean global, HippoBean site, T defaultValue) {
-        T globalValue = global.getSingleProperty(property);
-        T siteValue = site != null ? site.getSingleProperty(property) : null;
-
-        // if there is a site specific value then use that
-        if (siteValue != null) {
-            return siteValue;
-        }
-
-        // if there is a global value then use that
-        if (globalValue != null) {
-            return globalValue;
-        }
-
-        // fallback to a default value
-        return defaultValue;
-    }
-
-    /**
-     * In publishing each site has its own search settings document, and for gov it lives under the root
-     * administration folder
-     */
-    static HippoBean getGlobalSearchSettingsBean() {
-        HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
-        HippoBean root = siteBaseBean.getParentBean();
-        return root.getBean("administration/search-settings");
-    }
-
-    static HippoBean getSiteSpecificSearchSettingsBean() {
-        HippoBean siteBaseBean = RequestContextProvider.get().getSiteContentBaseBean();
-        return siteBaseBean.getBean("administration/search-settings");
-    }
-
-    String searchType(SearchSettings searchsettings) {
-        // if this component is configured to provide a 'resilient' search then the search type should be the one
-        // specified in the searchsettings - this allows us to provide an override.
-        return SEARCH_TYPE_RESILIENT.equals(searchType)
-                ? searchsettings.getSearchType()
-                : searchType;
-    }
 
     SearchService searchService(String searchtype) {
         switch (searchtype) {
+            case SEARCH_TYPE_FUNNELBACK_DXP: return funnelbackSearchServiceDXP;
             case SEARCH_TYPE_FUNNELBACK: return funnelbackSearchService;
             case SEARCH_TYPE_BLOOMREACH: return bloomreachSearchService;
             case SEARCH_TYPE_RESILIENT :
             default:
                 return resilientSearchService;
         }
+    }
+
+    public String searchType(SearchSettings searchsettings) {
+        // if this component is configured to provide a 'resilient' search then the search type should be the one
+        // specified in the searchsettings - this allows us to provide an override.
+        return SEARCH_TYPE_RESILIENT.equals(searchType)
+                ? searchsettings.getSearchType()
+                : searchType;
     }
 
     boolean autoCompleteEnabled(SearchSettings searchSettings) {
