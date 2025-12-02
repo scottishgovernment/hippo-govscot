@@ -133,11 +133,10 @@ public class FunnelbackSearchService implements SearchService {
         return isNotBlank(token);
     }
 
-    SearchResponse doPerformSearch(Search search, SearchSettings searcxhsettings) {
+    SearchResponse doPerformSearch(Search search, SearchSettings searchsettings) {
         Map<String, Object> params = searchParamMap(search);
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-        String urlTemplate = getUrlTemplate(search);
-        Resource results = broker.resolve(resourceResolver, urlTemplate, params);
+        Resource results = broker.resolve(resourceResolver, getUrlTemplate(search), params);
         ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
         FunnelbackSearchResponse response = resourceBeanMapper.map(results, FunnelbackSearchResponse.class);
         postProcessSearchresponse(search, response);

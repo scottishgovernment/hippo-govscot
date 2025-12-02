@@ -7,8 +7,6 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.UriInfo;
 import org.hippoecm.hst.container.RequestContextProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -26,8 +24,6 @@ import static java.util.Collections.emptyList;
 @Component("scot.gov.publishing.hippo.funnelback.component.SuggestionsResource")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SuggestionsResource {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SuggestionsResource.class);
 
     @Autowired
     @Qualifier("funnelbackSearchService")
