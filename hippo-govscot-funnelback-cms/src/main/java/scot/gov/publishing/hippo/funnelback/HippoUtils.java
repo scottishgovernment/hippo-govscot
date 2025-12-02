@@ -6,6 +6,10 @@ import javax.jcr.RepositoryException;
 
 public class HippoUtils {
 
+    private HippoUtils() {
+        // hide default constructor
+    }
+
     public static Node findPublished(Node handle) throws RepositoryException {
         NodeIterator it = handle.getNodes(handle.getName());
         while (it.hasNext()) {

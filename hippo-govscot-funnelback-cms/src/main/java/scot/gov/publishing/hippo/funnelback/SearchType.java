@@ -11,6 +11,10 @@ import static scot.gov.publishing.hippo.funnelback.scheduler.PollFunnelbackCurat
 
 public class SearchType {
 
+    private SearchType() {
+        // hide default constructor
+    }
+
     public static String getSearchType(Session session) throws RepositoryException {
         Node handle = session.getNode("/content/documents/administration/search-settings");
         Node published = findPublished(handle);

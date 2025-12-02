@@ -117,7 +117,6 @@ public class PollFunnelbackCurator implements RepositoryJob {
             StringBuilder allContent = new StringBuilder();
             for (String collection : collections.split(",")) {
                 String hash = doGetPageContentHash(collection, token, searchType);
-                LOG.info("{}, hash is {}", collection, hash);
                 allContent.append(hash);
             }
             return allContent.toString();
@@ -129,8 +128,6 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
     String doGetPageContentHash(String collection, String token, String searchType) throws IOException, URISyntaxException {
         URI uri = curatorURI(collection, searchType);
-        LOG.info("doGetPageContentHash uri {}", uri);
-        LOG.info("doGetPageContentHash {}, {}, {}", collection, searchType, token);
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet request = new HttpGet(uri);
         try {
@@ -139,7 +136,6 @@ public class PollFunnelbackCurator implements RepositoryJob {
             try {
                 InputStream pageInputStream = response.getEntity().getContent();
                 String tmp = IOUtils.toString(pageInputStream, StandardCharsets.UTF_8);
-                LOG.info("{}", tmp);
                 return DigestUtils.sha1Hex(tmp);
             } finally {
                 response.close();

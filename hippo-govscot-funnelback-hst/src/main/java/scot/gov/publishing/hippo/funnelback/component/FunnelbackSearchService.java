@@ -111,31 +111,21 @@ public class FunnelbackSearchService implements SearchService {
      * /site/components/src/main/resources/META-INF/hst-assembly/overrides/spring-managed-components.xml
      */
     void ping(String mount) {
-        ///  TODO: need to investigat ewhy this was causing an error
-//        if (!HstServices.isAvailable()) {
-//            return;
-//        }
-//
-//        if (!isFunnelbackTokenAvailable()) {
-//            return;
-//        }
-//
-//        String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
-//        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-//
-//        if (broker != null) {
-//            LOG.error("----- suggestTemplate {} tokenProperty {} resourceResolver {}", suggestTemplate, tokenProperty, resourceResolver);
-//            Resource results = broker.findResources(resourceResolver, suggestTemplate, suggestionsParamMap(query, mount));
-//            ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
-//            resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
-//        }
+        if (!HstServices.isAvailable()) {
+            return;
+        }
 
-//        Map<String, Object> params = suggestionsParamMap(partialQuery, mount);
-//        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-//        Resource results = broker.findResources(resourceResolver, suggestTemplate, params);
-//        ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
-//        Collection<Suggestion> suggestions = resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
-//        return suggestions.stream().map(Suggestion::getDisp).collect(toList());
+        if (!isFunnelbackTokenAvailable()) {
+            return;
+        }
+
+        String query = "funnelback-ping-" + RandomStringUtils.randomAlphabetic(4);
+        ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
+        if (broker != null) {
+            Resource results = broker.resolve(resourceResolver, suggestTemplate, suggestionsParamMap(query, mount));
+            ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
+            resourceBeanMapper.mapCollection(results.getChildren(), Suggestion.class);
+        }
     }
 
     public boolean isFunnelbackTokenAvailable() {
