@@ -1,5 +1,7 @@
 package scot.gov.publishing.searchjournal;
 
+import org.apache.poi.sl.draw.geom.GuideIf;
+import org.hippoecm.hst.core.container.ComponentManager;
 import org.hippoecm.hst.core.container.ContainerConfiguration;
 import org.hippoecm.hst.site.HstServices;
 import org.slf4j.Logger;
@@ -8,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import java.util.Optional;
 
 /**
  * Lookup feature flags for event listeners and scheduled tasks.  Featured flags are stored as boolean properties of the
@@ -39,18 +42,9 @@ public class FeatureFlag {
 
     public boolean isEnabled() {
         // allow the flag to be overridden at the command line
-        ContainerConfiguration containerConfiguration = HstServices.getComponentManager().getContainerConfiguration();
-        if (containerConfiguration.containsKey(flag)) {
-            String flagValue = containerConfiguration.getString(flag);
-            if ("true".equals(flagValue)) {
-                return true;
-            }
-
-            if ("false".equals(flagValue)) {
-                return false;
-            }
-
-            LOG.warn("featureFlag {} appears as a property but does not have a valid value (true | false).  Value is {}", flag, flagValue);
+        Optional<Boolean> propertyValue = getFlagFromContainerConfig();
+        if (propertyValue.isPresent()) {
+            return propertyValue.get();
         }
 
         try {
@@ -65,6 +59,32 @@ public class FeatureFlag {
             LOG.warn("unexpected exception getting feature flag {}, defaulting to enabled = false", flag, e);
             return false;
         }
+    }
+
+    Optional<Boolean> getFlagFromContainerConfig() {
+        ComponentManager componentManager = HstServices.getComponentManager();
+
+        // when calling from publications project no component manager is available
+        if (componentManager == null) {
+            return Optional.empty();
+        }
+
+        ContainerConfiguration containerConfiguration = componentManager.getContainerConfiguration();
+        if (!containerConfiguration.containsKey(flag)) {
+            return Optional.empty();
+        }
+
+        String flagValue = containerConfiguration.getString(flag);
+        if ("true".equals(flagValue)) {
+            return Optional.of(true);
+        }
+
+        if ("false".equals(flagValue)) {
+            return Optional.of(false);
+        }
+
+        LOG.warn("featureFlag {} appears as a property but does not have a valid value (true | false).  Value is {}", flag, flagValue);
+        return Optional.empty();
     }
 
     Node getFlagsNode() throws RepositoryException {
