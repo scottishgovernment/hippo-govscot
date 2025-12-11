@@ -1,6 +1,5 @@
 package scot.gov.publishing.searchjournal;
 
-import org.apache.poi.sl.draw.geom.GuideIf;
 import org.hippoecm.hst.core.container.ComponentManager;
 import org.hippoecm.hst.core.container.ContainerConfiguration;
 import org.hippoecm.hst.site.HstServices;
