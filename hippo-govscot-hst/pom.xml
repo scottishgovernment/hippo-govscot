@@ -70,6 +70,12 @@
 <!--      <version>6.2.8</version> brXM 16.4.1 version-->
       <scope>test</scope>
     </dependency>
+      <dependency>
+          <groupId>commons-io</groupId>
+          <artifactId>commons-io</artifactId>
+          <version>2.19.0</version>
+          <scope>compile</scope>
+      </dependency>
 
   </dependencies>
 
