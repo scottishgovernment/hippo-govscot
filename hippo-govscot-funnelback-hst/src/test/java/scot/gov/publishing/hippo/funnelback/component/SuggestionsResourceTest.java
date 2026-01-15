@@ -22,7 +22,6 @@ public class SuggestionsResourceTest {
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(false);
         sut.searchSettingSource = () -> searchSettings;
-        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
         sut.funnelbackSearchServiceDXP = mock(FunnelbackSearchService.class);
 
         // ACT
@@ -41,7 +40,6 @@ public class SuggestionsResourceTest {
         searchSettings.setEnabled(true);
         searchSettings.setSearchType("bloomreach");
         sut.searchSettingSource = () -> searchSettings;
-        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
 
         // ACT
         List<String> actual = sut.getSuggestions("query");
@@ -60,8 +58,8 @@ public class SuggestionsResourceTest {
         searchSettings.setSugestTimeoutMillis(1000);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
-        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
+        sut.funnelbackSearchServiceDXP = mock(FunnelbackSearchService.class);
+        when(sut.funnelbackSearchServiceDXP.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");
@@ -79,8 +77,8 @@ public class SuggestionsResourceTest {
         searchSettings.setEnabled(true);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
-        sut.funnelbackSearchService = mock(FunnelbackSearchService.class);
-        when(sut.funnelbackSearchService.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
+        sut.funnelbackSearchServiceDXP = mock(FunnelbackSearchService.class);
+        when(sut.funnelbackSearchServiceDXP.getSuggestions(anyString(), anyString(), any(SearchSettings.class))).thenReturn(singletonList("one"));
 
         // ACT
         List<String> actual = sut.getSuggestions("query");

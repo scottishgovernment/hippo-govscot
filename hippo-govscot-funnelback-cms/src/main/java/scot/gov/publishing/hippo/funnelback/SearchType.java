@@ -22,7 +22,7 @@ public class SearchType {
             return "";
         }
         String searchType = published.getProperty("search:searchtype").getString();
-        if (StringUtils.equalsAny(searchType, "funnelback-dxp", "resilient-dxp")) {
+        if (StringUtils.equalsAny(searchType, "funnelback-dxp", "resilient")) {
             return "funnelback-dxp";
         }
 

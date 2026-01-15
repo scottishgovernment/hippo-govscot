@@ -47,10 +47,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     private static final Logger LOG = LoggerFactory.getLogger(ResilientSearchComponent.class);
 
     @Autowired
-    @Qualifier("funnelbackSearchService")
-    private FunnelbackSearchService funnelbackSearchService;
-
-    @Autowired
     @Qualifier("funnelbackSearchServiceDXP")
     private FunnelbackSearchService funnelbackSearchServiceDXP;
 
@@ -76,7 +72,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
         createProviders(componentConfig);
         resilientSearchService = new ResilientSearchService();
-        resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
 
@@ -278,7 +273,6 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     SearchService searchService(String searchtype) {
         switch (searchtype) {
             case SEARCH_TYPE_FUNNELBACK_DXP: return funnelbackSearchServiceDXP;
-            case SEARCH_TYPE_FUNNELBACK: return funnelbackSearchService;
             case SEARCH_TYPE_BLOOMREACH: return bloomreachSearchService;
             case SEARCH_TYPE_RESILIENT :
             default:

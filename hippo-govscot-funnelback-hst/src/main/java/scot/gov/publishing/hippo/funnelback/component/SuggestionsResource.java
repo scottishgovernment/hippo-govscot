@@ -26,10 +26,6 @@ import static java.util.Collections.emptyList;
 public class SuggestionsResource {
 
     @Autowired
-    @Qualifier("funnelbackSearchService")
-    FunnelbackSearchService funnelbackSearchService;
-
-    @Autowired
     @Qualifier("funnelbackSearchServiceDXP")
     FunnelbackSearchService funnelbackSearchServiceDXP;
 
@@ -44,7 +40,6 @@ public class SuggestionsResource {
 
     public SuggestionsResource() {
         resilientSearchService = new ResilientSearchService();
-        resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
     }
 
@@ -54,7 +49,6 @@ public class SuggestionsResource {
     public List<String> getSuggestions(@QueryParam("q") String partialQuery) {
         SearchSettings searchSettings = searchSettingSource.get();
         String mount = mountSupplier.get();
-        resilientSearchService.setFunnelbackSearchService(funnelbackSearchService);
         resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
         if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
             return emptyList();

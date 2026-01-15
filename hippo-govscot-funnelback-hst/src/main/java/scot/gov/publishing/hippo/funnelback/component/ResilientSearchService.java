@@ -35,8 +35,6 @@ public class ResilientSearchService implements SearchService {
 
     static final HystrixCommandKey FUNNELBACK_SUGGESTIONS_COMMAND_KEY = HystrixCommandKey.Factory.asKey("suggestionsWithTimeout");
 
-    private SearchService funnelbackSearchService;
-
     private SearchService funnelbackSearchServiceDXP;
 
     private SearchService bloomreachSearchService;
@@ -93,16 +91,8 @@ public class ResilientSearchService implements SearchService {
                 .withCircuitBreakerErrorThresholdPercentage(50);
     }
 
-    public SearchService getFunnelbackSearchService() {
-        return funnelbackSearchService;
-    }
-
     public SearchService getFunnelbackSearchServiceDXP() {
         return funnelbackSearchServiceDXP;
-    }
-
-    public void setFunnelbackSearchService(FunnelbackSearchService funnelbackSearchService) {
-        this.funnelbackSearchService = funnelbackSearchService;
     }
 
     public void setFunnelbackSearchServiceDXP(FunnelbackSearchService funnelbackSearchServiceDXP) {
@@ -135,11 +125,7 @@ public class ResilientSearchService implements SearchService {
         @Override
         protected SearchResponse run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            if (StringUtils.equalsAny(searchsettings.getSearchType(), SEARCH_TYPE_FUNNELBACK_DXP, SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP)) {
-                return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
-            } else {
-                return funnelbackSearchService.performSearch(search, searchsettings);
-            }
+            return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
         }
 
         @Override
@@ -170,11 +156,7 @@ public class ResilientSearchService implements SearchService {
         @Override
         protected List<String> run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            if (StringUtils.equalsAny(searchsettings.getSearchType(), SEARCH_TYPE_FUNNELBACK_DXP, SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP)) {
-                return funnelbackSearchServiceDXP.getSuggestions(query, mount, searchsettings);
-            } else {
-                return funnelbackSearchService.getSuggestions(query, mount, searchsettings);
-            }
+            return funnelbackSearchServiceDXP.getSuggestions(query, mount, searchsettings);
         }
 
         @Override
