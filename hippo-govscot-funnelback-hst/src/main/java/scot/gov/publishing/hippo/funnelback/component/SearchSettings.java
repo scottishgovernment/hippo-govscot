@@ -10,10 +10,6 @@ public class SearchSettings {
 
     static final String SEARCH_TYPE_RESILIENT = "resilient";
 
-    static final String SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP = "resilient-dxp";
-
-    static final String SEARCH_TYPE_FUNNELBACK = "funnelback";
-
     static final String SEARCH_TYPE_FUNNELBACK_DXP = "funnelback-dxp";
 
     static final String SEARCH_TYPE_BLOOMREACH = "bloomreach";

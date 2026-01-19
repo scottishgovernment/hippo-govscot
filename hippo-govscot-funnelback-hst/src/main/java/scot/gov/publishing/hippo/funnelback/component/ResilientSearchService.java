@@ -6,7 +6,6 @@ import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;
 import com.netflix.hystrix.strategy.HystrixPlugins;
 import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -19,8 +18,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
-import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.SEARCH_TYPE_FUNNELBACK_DXP;
-import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.SEARCH_TYPE_SEARCH_TYPE_RESILIENT_DXP;
 
 @Service
 @Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
