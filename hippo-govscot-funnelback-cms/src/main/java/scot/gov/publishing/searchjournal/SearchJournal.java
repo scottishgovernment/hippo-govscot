@@ -13,10 +13,7 @@ import javax.jcr.Session;
 import javax.jcr.query.Query;
 import javax.jcr.query.QueryResult;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
-import java.util.List;
+import java.util.*;
 
 /**
  * SearchJournal creating a record of actions that need to be taken in order to index content using funnelback.
@@ -88,6 +85,8 @@ public class SearchJournal {
                 LOG.info("leaving out entry {} {} {}", entry.getAction(), entry.getUrl(), entry.getSequence());
             }
         }
+        // the sort done in the query is at day resolutions for performance reasons, so we sort them here
+        entries.sort(Comparator.comparing(SearchJournalEntry::getTimestamp).thenComparing(SearchJournalEntry::getSequence));
         return entries;
     }
 
