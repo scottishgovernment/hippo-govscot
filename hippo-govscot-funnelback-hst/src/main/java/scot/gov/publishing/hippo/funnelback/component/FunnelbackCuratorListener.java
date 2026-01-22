@@ -58,7 +58,7 @@ public class FunnelbackCuratorListener implements PersistedHippoEventListener {
 
     void clearCrispCache() {
         ResourceServiceBroker broker = CrispHstServices.getDefaultResourceServiceBroker(HstServices.getComponentManager());
-        ResourceDataCache crispCache = broker.getResourceDataCache("funnelback");
+        ResourceDataCache crispCache = broker.getResourceDataCache("funnelback-dxp");
         crispCache.clear();
     }
 
