@@ -7,11 +7,8 @@ import org.hippoecm.hst.core.container.ContainerException;
 import org.hippoecm.hst.core.container.ValveContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
@@ -21,10 +18,40 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
 
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
+    public interface NonceSource {
+        String getNonce();
+    }
+
+    String [] cspPolicyParts = null;
+
+    NonceSource nonceSource = () -> {
+        SecureRandom sr = new SecureRandom();
+        byte[] nonceBytes = new byte[16];
+        sr.nextBytes(nonceBytes);
+        return base64Encoder.encodeToString(nonceBytes);
+    };
+
+    CspPolicySource policySource = new ResourceCspPolicySource();
+
     @Override
     public void invoke(ValveContext valveContext) throws ContainerException {
+        initialize(valveContext);
         setCSP(valveContext);
         valveContext.invokeNext();
+    }
+
+    public void initialize(ValveContext valveContext) throws ContainerException {
+        if (cspPolicyParts != null) {
+            return;
+        }
+
+        try {
+            String cspPolicy = policySource.getCspPolicy(valveContext);
+            cspPolicyParts = cspPolicy.split("<nonce>", -1);
+        } catch (IOException e) {
+            LOG.error("Failed to load csp policy", e);
+            throw new ContainerException(e);
+        }
     }
 
     private void setCSP(ValveContext context) {
@@ -33,36 +60,22 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
 
         // Generate the cryptographic nonce, and set an attribute on the request so this is available for use
         // elsewhere, e.g. in freemarker templates with schema.org inline scripts that cannot be easily externalised
-        String nonce = generateNonce();
+        String nonce = nonceSource.getNonce();
         request.setAttribute("nonce", nonce);
 
         // Build a CSP policy template using a text file in the resources directory
-        String cspPolicyTemplate = prepareTemplate();
-
-        // Replace the placeholder nonce with the generated one and set the CSP header
-        if (cspPolicyTemplate != null) {
-            String cspPolicy = cspPolicyTemplate.replace("<nonce>", nonce);
-            response.setHeader("Content-Security-Policy", cspPolicy);
-        }
+        String csp = addNonceToPolicy(nonce);
+        response.setHeader("Content-Security-Policy", csp);
     }
 
-    private String prepareTemplate() {
-        try (InputStream inputStream = ContentSecurityPolicyValve.class.getResourceAsStream("/cspPolicy.txt")) {
-            String policy = IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-            return policy
-                    .replaceAll("\\s+;", "; ")
-                    .replaceAll("\\s+", " ");
-        } catch (IOException e) {
-            LOG.error("Could not read CSP policy", e);
+    String addNonceToPolicy(String nonce) {
+        StringBuilder cspBuilder = new StringBuilder();
+        for (int i = 0; i < cspPolicyParts.length; i++) {
+            cspBuilder.append(cspPolicyParts[i]);
+            if (i < cspPolicyParts.length - 1) {
+                cspBuilder.append(nonce);
+            }
         }
-        LOG.error("Could not prepare CSP template");
-        return null;
-    }
-
-    private String generateNonce() {
-        SecureRandom sr = new SecureRandom();
-        byte[] nonceBytes = new byte[16];
-        sr.nextBytes(nonceBytes);
-        return base64Encoder.encodeToString(nonceBytes);
+        return cspBuilder.toString();
     }
 }
