@@ -11,12 +11,12 @@ import java.io.IOException;
 
 import static org.mockito.Mockito.*;
 
-public class ContentSecurityPolicyValveTest {
+public class CspValveTest {
 
     @Test
     public void setsCspPolicy() throws ContainerException {
         // ARRANGE
-        ContentSecurityPolicyValve sut = new ContentSecurityPolicyValve();
+        CspValve sut = new CspValve();
         sut.nonceSource = () -> "nonce";
         sut.policySource = context -> "policyprefix-<nonce>-policypostfix-<nonce>";
         String expectedPolicy = "policyprefix-nonce-policypostfix-nonce";
@@ -35,12 +35,12 @@ public class ContentSecurityPolicyValveTest {
     }
 
     @Test
-    public void policyOnlyLodedOnce() throws ContainerException, IOException {
+    public void policyOnlyLoadedOnce() throws ContainerException, IOException {
         // ARRANGE
-        ContentSecurityPolicyValve sut = new ContentSecurityPolicyValve();
+        CspValve sut = new CspValve();
         sut.nonceSource = () -> "nonce";
-        sut.policySource = Mockito.mock(CspPolicySource.class);
-        when(sut.policySource.getCspPolicy(any())).thenReturn("policy");
+        sut.policySource = Mockito.mock(CspSource.class);
+        when(sut.policySource.getCsp(any())).thenReturn("policy");
 
         ValveContext valveContext = Mockito.mock(ValveContext.class);
         HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
@@ -53,13 +53,13 @@ public class ContentSecurityPolicyValveTest {
         sut.invoke(valveContext);
 
         // ASSERT
-        Mockito.verify(sut.policySource, times(1)).getCspPolicy(any());
+        Mockito.verify(sut.policySource, times(1)).getCsp(any());
     }
 
     @Test(expected = ContainerException.class)
     public void containerExceptionThrowsIfPolicyNotLoaded() throws ContainerException {
         // ARRANGE
-        ContentSecurityPolicyValve sut = new ContentSecurityPolicyValve();
+        CspValve sut = new CspValve();
         sut.policySource = context -> {
             throw new IOException("fail");
         };

@@ -12,9 +12,9 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-public class ContentSecurityPolicyValve extends AbstractOrderableValve {
+public class CspValve extends AbstractOrderableValve {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ContentSecurityPolicyValve.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CspValve.class);
 
     private static final Base64.Encoder base64Encoder = Base64.getUrlEncoder().withoutPadding();
 
@@ -22,7 +22,7 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
         String getNonce();
     }
 
-    String [] cspPolicyParts = null;
+    String [] cspParts = null;
 
     NonceSource nonceSource = () -> {
         SecureRandom sr = new SecureRandom();
@@ -31,7 +31,7 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
         return base64Encoder.encodeToString(nonceBytes);
     };
 
-    CspPolicySource policySource = new ResourceCspPolicySource();
+    CspSource policySource = new ResourceCspSource();
 
     @Override
     public void invoke(ValveContext valveContext) throws ContainerException {
@@ -41,13 +41,13 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
     }
 
     public void initialize(ValveContext valveContext) throws ContainerException {
-        if (cspPolicyParts != null) {
+        if (cspParts != null) {
             return;
         }
 
         try {
-            String cspPolicy = policySource.getCspPolicy(valveContext);
-            cspPolicyParts = cspPolicy.split("<nonce>", -1);
+            String csp = policySource.getCsp(valveContext);
+            cspParts = csp.split("<nonce>", -1);
         } catch (IOException e) {
             LOG.error("Failed to load csp policy", e);
             throw new ContainerException(e);
@@ -70,9 +70,9 @@ public class ContentSecurityPolicyValve extends AbstractOrderableValve {
 
     String addNonceToPolicy(String nonce) {
         StringBuilder cspBuilder = new StringBuilder();
-        for (int i = 0; i < cspPolicyParts.length; i++) {
-            cspBuilder.append(cspPolicyParts[i]);
-            if (i < cspPolicyParts.length - 1) {
+        for (int i = 0; i < cspParts.length; i++) {
+            cspBuilder.append(cspParts[i]);
+            if (i < cspParts.length - 1) {
                 cspBuilder.append(nonce);
             }
         }

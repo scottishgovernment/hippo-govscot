@@ -4,7 +4,7 @@ import org.hippoecm.hst.core.container.ValveContext;
 
 import java.io.IOException;
 
-public interface CspPolicySource {
+public interface CspSource {
 
-    String getCspPolicy(ValveContext context) throws IOException;
+    String getCsp(ValveContext context) throws IOException;
 }
