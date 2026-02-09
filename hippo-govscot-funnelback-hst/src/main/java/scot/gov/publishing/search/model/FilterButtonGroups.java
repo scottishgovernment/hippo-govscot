@@ -1,6 +1,6 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search.model;
 
-import scot.gov.publishing.hippo.funnelback.component.postprocess.SearchQueryBuilder;
+import scot.gov.publishing.search.SearchQueryBuilder;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;

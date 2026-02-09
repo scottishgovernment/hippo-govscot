@@ -1,6 +1,7 @@
 package scot.gov.publishing.hippo.funnelback.component;
 
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.hst.configuration.hosting.Mount;
 import org.hippoecm.hst.configuration.hosting.VirtualHost;
 import org.hippoecm.hst.configuration.hosting.VirtualHosts;
@@ -20,14 +21,21 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import scot.gov.publishing.hippo.funnelback.component.postprocess.*;
+
 import scot.gov.publishing.hippo.funnelback.model.*;
 import scot.gov.publishing.hippo.hst.request.UserTypeValve;
+import scot.gov.publishing.search.*;
+import scot.gov.publishing.search.model.*;
+import scot.gov.publishing.search.model.Question;
+import scot.gov.publishing.search.model.Result;
+import scot.gov.publishing.search.model.ResultsSummary;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.*;
 
@@ -40,6 +48,12 @@ public class FunnelbackSearchService implements SearchService {
 
     private static final String INTERNAL = "internal";
 
+    private static final String GOVSCOT = "govscot";
+
+    private static final String PERSON = "Person";
+
+    private static final String FEATURED_ROLE = "Featured role";
+
     private static final CuratorPostProcessor CURATOR_POST_PROCESSOR = new CuratorPostProcessor();
 
     private static final RelativeImagesPostProcessor RELATIVE_IMAGES_POST_PROCESSOR = new RelativeImagesPostProcessor();
@@ -51,6 +65,13 @@ public class FunnelbackSearchService implements SearchService {
     private static final RelatedSearchLogger RELATED_SEARCH_LOGGER = new RelatedSearchLogger();
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("ddMMMyyyy");
+
+    private static final Set<String> IMAGE_TYPES = Set.of("News", FEATURED_ROLE, "Role");
+
+    // on gov we suppress the label for some types
+    private static final Set<String> NO_LABEL_TYPES = Set.of(FEATURED_ROLE, "Role", PERSON);
+
+    private static final Set<String> NO_DATE_TYPES = Set.of("", "Group", "Directorate", "Policy", "Role", FEATURED_ROLE, PERSON, "Collection");
 
     String urlTemplate;
 
@@ -103,6 +124,9 @@ public class FunnelbackSearchService implements SearchService {
         } catch (ResourceException e) {
             LOG.error("performSearch failed {}", search.getQuery(), e);
             throw e;
+        } catch (Throwable t) {
+            LOG.error("performSearch failed {}", search.getQuery(), t);
+            throw t;
         }
     }
 
@@ -140,17 +164,176 @@ public class FunnelbackSearchService implements SearchService {
         ResourceBeanMapper resourceBeanMapper = broker.getResourceBeanMapper(resourceResolver);
         FunnelbackSearchResponse response = resourceBeanMapper.map(results, FunnelbackSearchResponse.class);
         postProcessSearchresponse(search, response);
-        Pagination pagination = createPagination(search, response);
-        SearchResponse searchResponse = new SearchResponse();
-        searchResponse.setType(SearchResponse.Type.FUNNELBACK);
-        searchResponse.setQuestion(response.getQuestion());
-        searchResponse.setResponse(response.getResponse());
-        searchResponse.setPagination(pagination);
-        return searchResponse;
+
+        return convert(search, response);
+    }
+
+    SearchResponse convert(Search search, FunnelbackSearchResponse fbresponse) {
+        SearchResponse response = new SearchResponse();
+        response.getQuestion().setOriginalQuery(search.getQuery());
+        response.getQuestion().setQuery(search.getQuery());
+        response.setType(SearchResponse.Type.FUNNELBACK);
+        response.setQueryHighlightRegex(fbresponse.getResponse().getResultPacket().getQueryHighlightRegex());
+        response.setSupplementaryQueries(fbresponse.getResponse().getResultPacket().getQsups().stream().map(this::convert).collect(toList()));
+        response.setResultsSummary(resultsSummary(fbresponse));
+        response.setPagination(new PaginationBuilder().getPagination(response.getResultsSummary(), search));
+        response.setQuestion(question(fbresponse));
+        response.setRelatedResults(convertRelated(fbresponse));
+        response.setResults(fbresponse.getResponse().getResultPacket().getResults().stream().map(this::toResult).collect(toList()));
+        response.setHtmlMessages(fbresponse.getResponse().getCurator().getSimpleHtmlExhibits().stream().map(Exhibit::getMessageHtml).collect(toList()));
+        response.setAdverts(fbresponse.getResponse().getCurator().getAdvertExhibits().stream().map(this::convert).collect(toList()));
+        response.setHasResults(!response.getResults().isEmpty() || !response.getAdverts().isEmpty() || !response.getHtmlMessages().isEmpty());
+        return response;
+    }
+
+    ResultsSummary resultsSummary(FunnelbackSearchResponse fbrespone) {
+        ResultsSummary summary = new ResultsSummary();
+        summary.setCurrStart(fbrespone.getResponse().getResultPacket().getResultsSummary().getCurrStart());
+        summary.setCurrEnd(fbrespone.getResponse().getResultPacket().getResultsSummary().getCurrEnd());
+        summary.setNumRanks(fbrespone.getResponse().getResultPacket().getResultsSummary().getNumRanks());
+        summary.setTotalMatching(fbrespone.getResponse().getResultPacket().getResultsSummary().getTotalMatching());
+        return summary;
+    }
+
+    PromotedResult convert(Exhibit exhibit) {
+        PromotedResult promotedResult = new PromotedResult();
+        promotedResult.setTitleHtml(exhibit.getTitleHtml());
+        promotedResult.setMessageHtml(exhibit.getMessageHtml());
+        promotedResult.setCategory(exhibit.getCategory());
+        promotedResult.setDisplayUrl(exhibit.getDisplayUrl());
+        promotedResult.setLinkUrl(exhibit.getLinkUrl());
+        promotedResult.setDescriptionHtml(exhibit.getDescriptionHtml());
+        return promotedResult;
+    }
+
+    Result toResult(scot.gov.publishing.hippo.funnelback.model.Result fbresult) {
+        Result result = new Result();
+        String type = type(fbresult);
+        result.setLabel(label(type));
+        result.setSummary(summary(fbresult));
+        if (equalsAny(type, "Role", FEATURED_ROLE)) {
+            result.setSubtitle(first(fbresult.getListMetadata().getPersonName()));
+        }
+        if (equalsAny(type, PERSON)) {
+            result.setSubtitle(first(fbresult.getListMetadata().getPersonRole()));
+        }
+        if (collections.containsKey(GOVSCOT) && "News".equals(type)) {
+            result.setDisplayDate(fbresult.getListMetadata().getDisplayDateTime());
+        } else if (!NO_DATE_TYPES.contains(type)) {
+            result.setDisplayDate(fbresult.getListMetadata().getDisplayDate());
+        }
+
+        result.setLink(link(fbresult));
+        setImages(type, fbresult, result);
+
+        for (int i = 0; i < fbresult.getListMetadata().getTitleSeries().size(); i++) {
+            String titleSeries = fbresult.getListMetadata().getTitleSeries().get(i);
+            String titleSeriesLink = fbresult.getListMetadata().getTitleSeriesLink().get(i);
+            result.getPartOf().add(link(titleSeries, titleSeriesLink));
+        }
+        for (int i = 0; i < fbresult.getListMetadata().getPublicationCollection().size(); i++) {
+            String titleSeries = fbresult.getListMetadata().getPublicationCollection().get(i);
+            String titleSeriesLink = fbresult.getListMetadata().getPublicationCollectionLink().get(i);
+            result.getPartOf().add(link(titleSeries, titleSeriesLink));
+        }
+        return result;
+    }
+
+    void setImages(String type, scot.gov.publishing.hippo.funnelback.model.Result fbresult, Result result) {
+
+        if (IMAGE_TYPES.contains(type) && !fbresult.getListMetadata().getImage().isEmpty()) {
+            String prefix = collections.containsKey(GOVSCOT) ? GOVSCOT : "publishing";
+            result.setImage(Image.createImage(fbresult.getListMetadata().getImage().get(0), prefix));
+        }
+    }
+
+    Link link(String label, String url) {
+        Link link = new Link();
+        link.setLabel(label);
+        link.setUrl(url);
+        return link;
+    }
+
+    String first(List<String> vals) {
+        return vals.isEmpty() ? "" : vals.get(0);
+    }
+
+    Link link(scot.gov.publishing.hippo.funnelback.model.Result fbresult) {
+        Link link = new Link();
+        link.setUrl(fbresult.getLiveUrl());
+        link.setLabel(title(fbresult));
+        return link;
+    }
+
+    String type(scot.gov.publishing.hippo.funnelback.model.Result fbresult) {
+        String format = first(fbresult.getListMetadata().getF(), "");
+        if ("Publication".equals(format)) {
+            return first(fbresult.getListMetadata().getPublicationType(), "Publication");
+        }
+        return format;
+    }
+
+    String label(String type) {
+        return NO_LABEL_TYPES.contains(type) ? "" : type;
+    }
+
+    String first(List<String> values, String defaultValue) {
+        return values.isEmpty() ? defaultValue : values.get(0);
+    }
+
+    String title(scot.gov.publishing.hippo.funnelback.model.Result fbresult) {
+        String dcTitle = fbresult.getListMetadata().getDcTitle().isEmpty()
+                ? ""
+                : fbresult.getListMetadata().getDcTitle().get(0);
+        String t = fbresult.getListMetadata().getT().isEmpty()
+                ? ""
+                : fbresult.getListMetadata().getT().get(0);
+        return StringUtils.firstNonBlank(dcTitle, t);
+    }
+
+    String summary(scot.gov.publishing.hippo.funnelback.model.Result fbresult) {
+        return fbresult.getListMetadata().getC().isEmpty()
+                ? ""
+                : fbresult.getListMetadata().getC().get(0);
+    }
+
+    Link toLink(ContextualNavigationCluster cluster) {
+        Link link = new Link();
+        link.setLabel(cluster.getLabel());
+        link.setUrl(cluster.getQuery());
+        return link;
+    }
+
+    Question question(FunnelbackSearchResponse in) {
+        Question q = new Question();
+        q.setQuery(in.getQuestion().getQuery());
+        q.setOriginalQuery(in.getQuestion().getOriginalQuery());
+        return q;
     }
 
     int getRank(int page) {
         return ((page - 1) * 10) + 1;
+    }
+
+    List<Link> convertRelated(FunnelbackSearchResponse fbresponse) {
+        if (fbresponse.getResponse().getResultPacket().getContextualNavigation() == null) {
+            return Collections.emptyList();
+        }
+
+        return fbresponse.getResponse().getResultPacket().getContextualNavigation().getCategories().stream()
+                .flatMap(category -> category.getClusters().stream())
+                .map(this::toLink)
+                .collect(toList());
+    }
+
+    SupplementaryQuery convert(QSup qSup) {
+        SupplementaryQuery supplementaryQuery = new SupplementaryQuery();
+        supplementaryQuery.setQuery(qSup.getQuery());
+        supplementaryQuery.setQsupSuppressedQuery(qSup.getQsupSuppressedQuery());
+        supplementaryQuery.setSpellSugestionQuery(qSup.getSpellSugestionQuery());
+        supplementaryQuery.setSrc(qSup.getSrc());
+        supplementaryQuery.setUrl(qSup.getUrl());
+        return supplementaryQuery;
     }
 
     @Override
@@ -262,11 +445,6 @@ public class FunnelbackSearchService implements SearchService {
                 ? (String) request.getAttribute(UserTypeValve.USERTYPE_REQUEST_ATTR_NAME)
                 : INTERNAL;
         return defaultString(headerUserType, INTERNAL);
-    }
-
-    Pagination createPagination(Search search, FunnelbackSearchResponse response) {
-        ResultsSummary summary = response.getResponse().getResultPacket().getResultsSummary();
-        return new PaginationBuilder().getPagination(summary, search);
     }
 
     void postProcessSearchresponse(Search search, FunnelbackSearchResponse response) {

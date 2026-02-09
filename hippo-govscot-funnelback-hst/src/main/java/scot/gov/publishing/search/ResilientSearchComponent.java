@@ -1,6 +1,7 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import jakarta.servlet.ServletContext;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
@@ -21,6 +22,11 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
+import scot.gov.publishing.search.model.FilterButtonGroups;
+import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.search.model.SearchResponse;
+import scot.gov.publishing.search.model.Sort;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -33,14 +39,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static java.lang.Class.*;
 import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.StringUtils.*;
-import static scot.gov.publishing.hippo.funnelback.component.SearchResponse.blankSearchResponse;
-import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.*;
+import static scot.gov.publishing.search.model.SearchResponse.blankSearchResponse;
+import static scot.gov.publishing.search.SearchSettings.*;
 
 @Service
-@Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchComponent")
+@Component("scot.gov.publishing.search.ResilientSearchComponent")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResilientSearchComponent extends EssentialsContentComponent {
 
@@ -57,8 +62,14 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
 
     private static final String TOPICS = "topics";
 
+    private static final String DISPLAY_DATES = "displayDates";
+    private static final String DISPLAY_LABELS = "displayLabels";
+
     // the type of search that this component is configured to provide in the sitemap
     private String searchType;
+
+    private boolean displayLabels = true;
+    private boolean displayDates = true;
 
     private Set<String> supportedParams = new HashSet<>();
 
@@ -74,6 +85,9 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         resilientSearchService = new ResilientSearchService();
         resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
         resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
+
+        displayLabels = Boolean.getBoolean(componentConfig.getRawParameters().getOrDefault(DISPLAY_LABELS, "true"));
+        displayDates = Boolean.getBoolean(componentConfig.getRawParameters().getOrDefault(DISPLAY_DATES, "true"));
 
         Collections.addAll(supportedParams,
             componentConfig.getRawParameters().getOrDefault("supportedparams", "q,qsup,page").split(","));
@@ -99,24 +113,42 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
     @Override
     public void doBeforeRender(HstRequest request, HstResponse response) {
         super.doBeforeRender(request, response);
-        SearchSettings searchsettings = searchSettings();
-        if (isEnabled(searchsettings)) {
-            Search search = search(request);
-            String useSearchType = searchType(searchsettings);
-            request.setAttribute("enabled", searchsettings.isEnabled());
-            request.setAttribute("showFilters", searchsettings.isShowFilters());
-            request.setAttribute("searchType", useSearchType);
 
-            SearchService searchService = searchService(useSearchType);
-            SearchResponse searchResponse =
-                    isBlank(search.getQuery())
-                            ? blankSearchResponse()
-                            : searchService.performSearch(search, searchsettings);
-            populateRequestAttributes(request, search, searchResponse, searchsettings);
-        } else {
-            request.setAttribute("enabled", false);
-            request.setAttribute("autoCompleteEnabled", false);
-        }
+            SearchSettings searchsettings = searchSettings();
+            if (isEnabled(searchsettings)) {
+                Search search = search(request);
+                String useSearchType = searchType(searchsettings);
+                request.setAttribute("enabled", searchsettings.isEnabled());
+                request.setAttribute("displayFilters",  getProp(request, "displayFilters", true));
+                request.setAttribute(DISPLAY_LABELS, getProp(request, DISPLAY_LABELS, displayLabels));
+                request.setAttribute(DISPLAY_DATES, getProp(request, DISPLAY_DATES, displayDates));
+                request.setAttribute("searchType", useSearchType);
+                request.setAttribute("includeRelevanceSort", true);
+                request.setAttribute("showBlankQueryMessage", true);
+                request.setAttribute("showSort", true);
+
+                SearchService searchService = searchService(useSearchType);
+                SearchResponse searchResponse =
+                        isBlank(search.getQuery())
+                                ? blankSearchResponse()
+                                : searchService.performSearch(search, searchsettings);
+                populateRequestAttributes(request, search, searchResponse, searchsettings);
+            } else {
+                request.setAttribute("enabled", false);
+                request.setAttribute("autoCompleteEnabled", false);
+            }
+
+    }
+
+    /**
+     * get a property, first get it from the component config, and override it with a value in the bean if it is present
+     */
+    boolean getProp(HstRequest request, String propname, boolean defaultVal) {
+        HippoBean bean = request.getRequestContext().getContentBean();
+        Boolean pubProp = bean.getSingleProperty("publishing:" + propname);
+        Boolean govProp = bean.getSingleProperty("govscot:" + propname);
+        Boolean prop = ObjectUtils.firstNonNull(pubProp, govProp);
+        return prop == null ? defaultVal : prop;
     }
 
     boolean isEnabled(SearchSettings searchsettings) {
@@ -298,8 +330,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         request.setAttribute("queryString", defaultString(request.getQueryString()));
         request.setAttribute("searchType", searchResponse.getType().toString());
         request.setAttribute("question", searchResponse.getQuestion());
-        request.setAttribute("response", searchResponse.getResponse());
-        request.setAttribute("bloomreachresults", searchResponse.getBloomreachResults());
+        request.setAttribute("response", searchResponse);
         request.setAttribute("pagination", searchResponse.getPagination());
         request.setAttribute("autoCompleteEnabled", autoCompleteEnabled(searchSettings));
         request.setAttribute("filterButtons", FilterButtonGroups.filterButtonGroups(search));

@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
@@ -12,8 +12,8 @@ import jakarta.ws.rs.core.Response;
 import static com.netflix.hystrix.HystrixEventType.FAILURE;
 import static com.netflix.hystrix.HystrixEventType.TIMEOUT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SEARCH_COMMAND_KEY;
-import static scot.gov.publishing.hippo.funnelback.component.ResilientSearchService.FUNNELBACK_SUGGESTIONS_COMMAND_KEY;
+import static scot.gov.publishing.search.ResilientSearchService.FUNNELBACK_SEARCH_COMMAND_KEY;
+import static scot.gov.publishing.search.ResilientSearchService.FUNNELBACK_SUGGESTIONS_COMMAND_KEY;
 
 @Path("/_search/health")
 public class HealthResource {

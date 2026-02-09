@@ -1,6 +1,7 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import org.junit.Test;
+import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
 
 import java.util.Collections;
 import java.util.List;

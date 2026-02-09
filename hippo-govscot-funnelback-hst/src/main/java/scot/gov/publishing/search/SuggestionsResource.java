@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -13,6 +13,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -21,7 +22,7 @@ import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static java.util.Collections.emptyList;
 
 @Service
-@Component("scot.gov.publishing.hippo.funnelback.component.SuggestionsResource")
+@Component("scot.gov.publishing.search.SuggestionsResource")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SuggestionsResource {
 

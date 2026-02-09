@@ -1,12 +1,13 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import jakarta.servlet.ServletContext;
+import org.hippoecm.hst.content.beans.standard.HippoBean;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
 
-import static scot.gov.publishing.hippo.funnelback.component.SearchSettings.searchSettings;
+import static scot.gov.publishing.search.SearchSettings.searchSettings;
 
 /**
  * Component suitable for the base of a search page.
@@ -26,14 +27,9 @@ public class SearchComponent extends EssentialsContentComponent {
     @Override
     public void doBeforeRender(HstRequest request, HstResponse response) {
         super.doBeforeRender(request, response);
-
-        // each page has a designated search type, and then there are the search settings for the site.
-        // the specific funnelback and bloomreach pages are for testing and should have their auto complete
-        // value hard coded.
-        //
-        // otherwise the value is determined from the search settings document
-        SearchSettings searchsettings = searchSettings();
-        request.setAttribute("showFilters", searchsettings.isShowFilters());
+        HippoBean bean = request.getRequestContext().getContentBean();
+        // handle for gov ...
+        request.setAttribute("displayFilters", bean.getSingleProperty("publishing:displayFilters", true));
         switch (searchType) {
             case "bloomreach":
                 request.setAttribute(AUTO_COMPLETE_ENABLED, false);

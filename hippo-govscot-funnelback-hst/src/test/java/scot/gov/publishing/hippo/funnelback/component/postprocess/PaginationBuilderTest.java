@@ -3,9 +3,10 @@ package scot.gov.publishing.hippo.funnelback.component.postprocess;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.junit.Test;
 import org.mockito.Mockito;
-import scot.gov.publishing.hippo.funnelback.component.Search;
-import scot.gov.publishing.hippo.funnelback.model.Pagination;
-import scot.gov.publishing.hippo.funnelback.model.ResultsSummary;
+import scot.gov.publishing.search.PaginationBuilder;
+import scot.gov.publishing.search.model.Pagination;
+import scot.gov.publishing.search.model.ResultsSummary;
+import scot.gov.publishing.search.model.Search;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.eq;

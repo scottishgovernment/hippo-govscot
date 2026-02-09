@@ -8,6 +8,7 @@
   - search:suggestTimeoutMillis (long)
   - search:enabled (boolean)
   - search:showFilters (boolean)
+  - search:showMetadata (boolean)
   - search:funnelbackErrorRate (double)
   - search:bloomreachErrorRate (double)
 

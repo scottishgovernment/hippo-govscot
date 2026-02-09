@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
@@ -21,8 +21,6 @@ public class SearchSettings {
     private long sugestTimeoutMillis;
 
     private boolean enabled;
-
-    private boolean showFilters;
 
     double funnelbackErrorRate = 0;
 
@@ -60,14 +58,6 @@ public class SearchSettings {
         this.enabled = enabled;
     }
 
-    public boolean isShowFilters() {
-        return showFilters;
-    }
-
-    public void setShowFilters(boolean showFilters) {
-        this.showFilters = showFilters;
-    }
-
     public double getFunnelbackErrorRate() {
         return funnelbackErrorRate;
     }
@@ -90,7 +80,6 @@ public class SearchSettings {
         SearchSettings searchsettings = new SearchSettings();
         searchsettings.setSearchType(getValue("search:searchtype", global, site, SEARCH_TYPE_RESILIENT));
         searchsettings.setEnabled(getValue("search:enabled", global, site, true));
-        searchsettings.setShowFilters(getValue("search:showFilters", global, site, false));
         searchsettings.setTimeoutMillis(getValue("search:timeoutMillis", global, site, 4000L));
         searchsettings.setSugestTimeoutMillis(getValue("search:suggestTimeoutMillis", global, site, 300L));
         searchsettings.setBloomreachErrorRate(getValue("search:bloomreachErrorRate", global, site,0.0));

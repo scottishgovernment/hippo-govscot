@@ -2,42 +2,43 @@ package scot.gov.publishing.hippo.funnelback.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ListMetadata {
 
-    List<String> c;
+    List<String> c = new ArrayList<>();
 
-    List<String> d;
+    List<String> d= new ArrayList<>();
 
-    List<String> dcTitle;
+    List<String> dcTitle= new ArrayList<>();
 
     String displayDate;
 
     String displayDateTime;
 
-    List<String> f;
+    List<String> f= new ArrayList<>();
 
-    List<String> t;
+    List<String> t= new ArrayList<>();
 
-    List<String> image;
+    List<String> image= new ArrayList<>();
 
-    List<String> personRole;
+    List<String> personRole = new ArrayList<>();
 
-    List<String> personName;
+    List<String> personName=  new ArrayList<>();
 
-    List<String> publicationDate;
+    List<String> publicationDate = new ArrayList<>();
 
-    List<String> publicationType;
+    List<String> publicationType = new ArrayList<>();
 
-    List<String> publicationCollection;
+    List<String> publicationCollection = new ArrayList<>();
 
-    List<String> publicationCollectionLink;
+    List<String> publicationCollectionLink = new ArrayList<>();
 
-    List<String> titleSeries;
+    List<String> titleSeries = new ArrayList<>();
 
-    List<String> titleSeriesLink;
+    List<String> titleSeriesLink = new ArrayList<>();
 
     public List<String> getC() {
         return c;
