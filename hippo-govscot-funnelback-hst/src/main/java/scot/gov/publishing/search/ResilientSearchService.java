@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
@@ -12,6 +12,9 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
+import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.search.model.SearchResponse;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -20,7 +23,7 @@ import java.util.function.Supplier;
 import static java.util.Collections.emptyList;
 
 @Service
-@Component("scot.gov.publishing.hippo.funnelback.component.ResilientSearchService")
+@Component("scot.gov.publishing.search.ResilientSearchService")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResilientSearchService implements SearchService {
 
@@ -36,7 +39,7 @@ public class ResilientSearchService implements SearchService {
 
     private SearchService bloomreachSearchService;
 
-    Supplier<Double> randomNumberSource = () -> Math.random();
+    Supplier<Double> randomNumberSource = Math::random;
 
     private static Boolean hystrixPropertiesStrategySet = false;
 
@@ -63,7 +66,7 @@ public class ResilientSearchService implements SearchService {
 
     public static void ensueHystrixPropertiesStrategy() {
         synchronized (hystrixPropertiesStrategySet) {
-            if (!hystrixPropertiesStrategySet.booleanValue()) {
+            if (!hystrixPropertiesStrategySet) {
                 hystrixPropertiesStrategySet = true;
                 HystrixPropertiesStrategy newStrategy = new HystrixPropertiesStrategyWithReloadableCache();
                 HystrixPlugins.getInstance().registerPropertiesStrategy(newStrategy);
@@ -85,7 +88,9 @@ public class ResilientSearchService implements SearchService {
                 .withCircuitBreakerRequestVolumeThreshold(5)
 
                 // 50 percent error rate will cause circuit to trip
-                .withCircuitBreakerErrorThresholdPercentage(50);
+                .withCircuitBreakerErrorThresholdPercentage(50)
+
+                .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
     }
 
     public SearchService getFunnelbackSearchServiceDXP() {
@@ -122,12 +127,18 @@ public class ResilientSearchService implements SearchService {
         @Override
         protected SearchResponse run() {
             throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
+            try {
+                return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
+            } catch (Throwable t) {
+                LOG.error("arg", t);
+                throw t;
+            }
         }
 
         @Override
         protected SearchResponse getFallback() {
             throwExceptionAtSpecifiedRate("bloomreach", searchsettings.getBloomreachErrorRate());
+            LOG.info("falling back to bloomreaech");
             return bloomreachSearchService.performSearch(search, searchsettings);
         }
     }
@@ -178,7 +189,7 @@ public class ResilientSearchService implements SearchService {
         }
     }
 
-    class ManafacturedException extends RuntimeException {
+    static class ManafacturedException extends RuntimeException {
         public ManafacturedException(String msg) {
             super(msg);
         }

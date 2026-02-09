@@ -1,5 +1,7 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
+import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.search.model.SearchResponse;
 
 import java.util.List;
 

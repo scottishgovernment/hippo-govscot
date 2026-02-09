@@ -44,6 +44,7 @@ public class DatePostProcessor implements PostProcessor {
         ListMetadata listMetadata = result.getListMetadata();
         String dateString = listMetadata.getD().get(0);
         LocalDateTime parsedDatetime = parseD(dateString);
+
         if (parsedDatetime != null) {
             listMetadata.setDisplayDate(DISPLAY_DATE_FORMAT.format(parsedDatetime));
             listMetadata.setDisplayDateTime(DISPLAY_DATE_TIME_FORMAT.format(parsedDatetime));

@@ -1,4 +1,5 @@
 definitions:
+  webfilebundle: search
   namespace:
     search:
       uri: http://www.gov.scot/search/1.0

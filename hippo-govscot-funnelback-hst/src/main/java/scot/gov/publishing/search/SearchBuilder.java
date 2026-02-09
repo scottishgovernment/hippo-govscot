@@ -1,10 +1,12 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.StringUtils;
 import org.hippoecm.hst.core.component.HstRequest;
 import org.hippoecm.hst.core.request.HstRequestContext;
 import org.hippoecm.hst.util.HstRequestUtils;
+import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.search.model.Sort;
 
 import java.time.LocalDate;
 import java.util.*;

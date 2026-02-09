@@ -1,8 +1,8 @@
-package scot.gov.publishing.hippo.funnelback.component.postprocess;
+package scot.gov.publishing.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scot.gov.publishing.hippo.funnelback.component.Search;
+import scot.gov.publishing.search.model.Search;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

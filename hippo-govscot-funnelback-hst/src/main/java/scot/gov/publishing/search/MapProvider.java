@@ -1,4 +1,4 @@
-package scot.gov.publishing.hippo.funnelback.component;
+package scot.gov.publishing.search;
 
 import org.hippoecm.hst.core.request.HstRequestContext;
 
