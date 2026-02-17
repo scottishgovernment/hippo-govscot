@@ -12,7 +12,18 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
 
+/**
+ * Adds a Content-Security-Policy header and nonce attribute to the response.
+ * The policy is loaded using a {@link ResourceCspSource}.
+ */
 public class CspValve extends AbstractOrderableValve {
+
+    /**
+     * Name of servlet request attribute to prevent the CSP header being added.
+     * If this is attribute is set to a non-null value by any preceding servlet
+     * filters or other valve, the CSP header will not be added to the response.
+     */
+    public static final String NO_CSP_ATTR = "NO_CSP";
 
     private static final Logger LOG = LoggerFactory.getLogger(CspValve.class);
 
@@ -35,8 +46,11 @@ public class CspValve extends AbstractOrderableValve {
 
     @Override
     public void invoke(ValveContext valveContext) throws ContainerException {
-        initialize(valveContext);
-        setCSP(valveContext);
+        Object noCSPAttr = valveContext.getServletRequest().getAttribute(NO_CSP_ATTR);
+        if (noCSPAttr == null) {
+            initialize(valveContext);
+            setCSP(valveContext);
+        }
         valveContext.invokeNext();
     }
 

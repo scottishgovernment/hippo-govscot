@@ -6,6 +6,7 @@ import org.hippoecm.hst.core.container.ContainerException;
 import org.hippoecm.hst.core.container.ValveContext;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 
@@ -21,10 +22,13 @@ public class CspValveTest {
 
     HttpServletResponse response = mock(HttpServletResponse.class);
 
+    Boolean noCSPAttribute = null;
+
     @Before
     public void setUp() {
         when(valveContext.getServletRequest()).thenReturn(request);
         when(valveContext.getServletResponse()).thenReturn(response);
+        when(request.getAttribute("NO_CSP")).thenAnswer(x -> noCSPAttribute);
     }
 
     @Test
@@ -68,6 +72,18 @@ public class CspValveTest {
         sut.invoke(valveContext);
 
         // ASSERT - expect exception
+    }
+
+    @Test
+    public void noCSPHeaderIfNoCSPAttributeSet() throws ContainerException {
+        // ARRANGE
+        noCSPAttribute = true;
+
+        // ACT
+        sut.invoke(valveContext);
+
+        // ASSERT
+        verify(response, never()).setHeader(eq("Content-Security-Policy"), anyString());
     }
 
 }
