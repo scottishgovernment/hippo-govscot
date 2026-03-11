@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>scot.gov.publishing.hippo</groupId>
+    <artifactId>hippo-govscot</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hippo-govscot-bom</artifactId>
+  <packaging>pom</packaging>
+
+  <name>hippo-govscot-bom</name>
+  <description>Bill of Materials for hippo-govscot modules</description>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-hst</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-feedback-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-feedback-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-funnelback-hst</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-funnelback-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-funnelback-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-health</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-staging-hst</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-staging-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-staging-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-sluglookup-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-sluglookup-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-sluglookup-hst</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-bulkpublish-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-bulkpublish-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+    </dependencies>
+  </dependencyManagement>
+
+</project>

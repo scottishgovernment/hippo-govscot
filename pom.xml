@@ -16,6 +16,7 @@
   <name>hippo-govscot</name>
 
   <modules>
+    <module>hippo-govscot-bom</module>
     <module>hippo-govscot-hst</module>
     <module>hippo-govscot-cms</module>
     <module>hippo-govscot-feedback-cms</module>
