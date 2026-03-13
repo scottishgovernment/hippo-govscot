@@ -31,6 +31,12 @@
 
       <dependency>
         <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-sso-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
         <artifactId>hippo-govscot-feedback-cms</artifactId>
         <version>${project.version}</version>
       </dependency>
