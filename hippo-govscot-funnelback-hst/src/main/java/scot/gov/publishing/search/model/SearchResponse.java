@@ -1,7 +1,5 @@
 package scot.gov.publishing.search.model;
 
-import com.mchange.v2.log.log4j2.Log4j2MLog;
-
 import java.util.ArrayList;
 import java.util.List;
 

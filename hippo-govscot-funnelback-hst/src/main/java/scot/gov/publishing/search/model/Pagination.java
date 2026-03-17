@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Pagination {
-    public Page first;
+    private Page first;
 
-    public Page last;
+    private Page last;
 
-    public Page previous;
+    private Page previous;
 
-    public Page next;
+    private Page next;
 
-    public List<Page> pages = new ArrayList<>();
+    private List<Page> pages = new ArrayList<>();
 
-    public int currentPageIndex = 1;
+    private int currentPageIndex = 1;
 
     public Page getFirst() {
         return first;
