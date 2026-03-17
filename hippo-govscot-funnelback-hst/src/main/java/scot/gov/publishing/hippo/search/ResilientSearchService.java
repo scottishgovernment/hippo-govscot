@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import com.netflix.hystrix.HystrixCommand;
 import com.netflix.hystrix.HystrixCommandGroupKey;
@@ -13,8 +13,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
-import scot.gov.publishing.search.model.Search;
-import scot.gov.publishing.search.model.SearchResponse;
+import scot.gov.publishing.hippo.search.model.Search;
+import scot.gov.publishing.hippo.search.model.SearchResponse;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

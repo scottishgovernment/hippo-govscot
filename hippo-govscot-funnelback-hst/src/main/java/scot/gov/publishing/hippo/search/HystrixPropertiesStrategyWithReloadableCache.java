@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import com.netflix.hystrix.HystrixCommandKey;
 import com.netflix.hystrix.HystrixCommandProperties;

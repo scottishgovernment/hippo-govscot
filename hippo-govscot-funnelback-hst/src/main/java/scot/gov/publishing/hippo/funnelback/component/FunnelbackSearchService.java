@@ -24,11 +24,13 @@ import scot.gov.publishing.hippo.funnelback.component.postprocess.*;
 
 import scot.gov.publishing.hippo.funnelback.model.*;
 import scot.gov.publishing.hippo.hst.request.UserTypeValve;
-import scot.gov.publishing.search.*;
-import scot.gov.publishing.search.model.*;
-import scot.gov.publishing.search.model.Question;
-import scot.gov.publishing.search.model.Result;
-import scot.gov.publishing.search.model.ResultsSummary;
+import scot.gov.publishing.hippo.search.PaginationBuilder;
+import scot.gov.publishing.hippo.search.SearchService;
+import scot.gov.publishing.hippo.search.SearchSettings;
+import scot.gov.publishing.hippo.search.model.*;
+import scot.gov.publishing.hippo.search.model.Question;
+import scot.gov.publishing.hippo.search.model.Result;
+import scot.gov.publishing.hippo.search.model.ResultsSummary;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

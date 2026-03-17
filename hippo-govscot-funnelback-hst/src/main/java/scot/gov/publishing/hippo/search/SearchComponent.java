@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import jakarta.servlet.ServletContext;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
@@ -7,7 +7,7 @@ import org.hippoecm.hst.core.component.HstResponse;
 import org.hippoecm.hst.core.request.ComponentConfiguration;
 import org.onehippo.cms7.essentials.components.EssentialsContentComponent;
 
-import static scot.gov.publishing.search.SearchSettings.searchSettings;
+import static scot.gov.publishing.hippo.search.SearchSettings.searchSettings;
 
 /**
  * Component suitable for the base of a search page.

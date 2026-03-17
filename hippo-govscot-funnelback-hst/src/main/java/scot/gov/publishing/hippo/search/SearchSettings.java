@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.content.beans.standard.HippoBean;

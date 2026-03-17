@@ -1,7 +1,7 @@
 package scot.gov.publishing.hippo.funnelback.component.postprocess;
 
-import scot.gov.publishing.search.SearchQueryBuilder;
-import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.hippo.search.SearchQueryBuilder;
+import scot.gov.publishing.hippo.search.model.Search;
 import scot.gov.publishing.hippo.funnelback.model.ContextualNavigationCategory;
 import scot.gov.publishing.hippo.funnelback.model.ContextualNavigationCluster;
 import scot.gov.publishing.hippo.funnelback.model.FunnelbackSearchResponse;

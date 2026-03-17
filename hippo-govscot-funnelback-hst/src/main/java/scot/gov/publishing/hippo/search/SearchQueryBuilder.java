@@ -1,8 +1,8 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scot.gov.publishing.search.model.Search;
+import scot.gov.publishing.hippo.search.model.Search;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import jakarta.servlet.ServletContext;
 import org.apache.commons.lang3.ObjectUtils;
@@ -23,10 +23,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
-import scot.gov.publishing.search.model.FilterButtonGroups;
-import scot.gov.publishing.search.model.Search;
-import scot.gov.publishing.search.model.SearchResponse;
-import scot.gov.publishing.search.model.Sort;
+import scot.gov.publishing.hippo.search.model.FilterButtonGroups;
+import scot.gov.publishing.hippo.search.model.Search;
+import scot.gov.publishing.hippo.search.model.SearchResponse;
+import scot.gov.publishing.hippo.search.model.Sort;
 
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
@@ -41,8 +41,8 @@ import java.util.*;
 
 import static java.util.Collections.emptyMap;
 import static org.apache.commons.lang3.StringUtils.*;
-import static scot.gov.publishing.search.model.SearchResponse.blankSearchResponse;
-import static scot.gov.publishing.search.SearchSettings.*;
+import static scot.gov.publishing.hippo.search.model.SearchResponse.blankSearchResponse;
+import static scot.gov.publishing.hippo.search.SearchSettings.*;
 
 @Service
 @Component("scot.gov.publishing.search.ResilientSearchComponent")

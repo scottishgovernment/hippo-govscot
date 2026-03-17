@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

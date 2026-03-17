@@ -1,9 +1,9 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
-import scot.gov.publishing.search.model.Pagination;
-import scot.gov.publishing.search.model.Search;
-import scot.gov.publishing.search.model.Page;
-import scot.gov.publishing.search.model.ResultsSummary;
+import scot.gov.publishing.hippo.search.model.Pagination;
+import scot.gov.publishing.hippo.search.model.Search;
+import scot.gov.publishing.hippo.search.model.Page;
+import scot.gov.publishing.hippo.search.model.ResultsSummary;
 
 import java.util.HashSet;
 import java.util.Set;

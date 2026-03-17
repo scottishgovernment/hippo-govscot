@@ -1,6 +1,6 @@
-package scot.gov.publishing.search.model;
+package scot.gov.publishing.hippo.search.model;
 
-import scot.gov.publishing.search.SearchQueryBuilder;
+import scot.gov.publishing.hippo.search.SearchQueryBuilder;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;

@@ -1,7 +1,7 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
-import scot.gov.publishing.search.model.Search;
-import scot.gov.publishing.search.model.SearchResponse;
+import scot.gov.publishing.hippo.search.model.Search;
+import scot.gov.publishing.hippo.search.model.SearchResponse;
 
 import java.util.List;
 

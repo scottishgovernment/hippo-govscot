@@ -1,4 +1,4 @@
-package scot.gov.publishing.search.model;
+package scot.gov.publishing.hippo.search.model;
 
 import java.util.ArrayList;
 import java.util.List;

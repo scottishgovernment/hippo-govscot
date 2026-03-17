@@ -1,4 +1,4 @@
-package scot.gov.publishing.search.model;
+package scot.gov.publishing.hippo.search.model;
 
 public class ResultsSummary {
 

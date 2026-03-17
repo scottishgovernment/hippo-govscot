@@ -1,4 +1,4 @@
-package scot.gov.publishing.search;
+package scot.gov.publishing.hippo.search;
 
 import org.hippoecm.hst.core.component.HstRequest;
 
