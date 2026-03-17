@@ -2,8 +2,6 @@ package scot.gov.publishing.hippo.search;
 
 import org.junit.Test;
 import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
-import scot.gov.publishing.hippo.search.SearchSettings;
-import scot.gov.publishing.hippo.search.SuggestionsResource;
 
 import java.util.Collections;
 import java.util.List;

@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 import static java.util.Collections.emptyList;
 
 @Service
-@Component("scot.gov.publishing.search.ResilientSearchService")
+@Component("scot.gov.publishing.hippo.search.ResilientSearchService")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResilientSearchService implements SearchService {
 

@@ -45,7 +45,7 @@ import static scot.gov.publishing.hippo.search.model.SearchResponse.blankSearchR
 import static scot.gov.publishing.hippo.search.SearchSettings.*;
 
 @Service
-@Component("scot.gov.publishing.search.ResilientSearchComponent")
+@Component("scot.gov.publishing.hippo.search.ResilientSearchComponent")
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ResilientSearchComponent extends EssentialsContentComponent {
 
