@@ -16,14 +16,14 @@ public class RelativeImagesPostProcessorTest {
         RelativeImagesPostProcessor sut = new RelativeImagesPostProcessor();
         FunnelbackSearchResponse response = new FunnelbackSearchResponse();
         Result result = new Result();
-        result.getListMetadata().setImage(singletonList("https://www.gov.scot/binaries/image.jpg"));
+        result.getListMetadata().setImage(singletonList("https://www.gov.scot/binaries/image.jpg/image.jpg"));
         response.getResponse().getResultPacket().getResults().add(result);
 
         // ACT
         sut.process(response);
 
         // ASSERT
-        assertEquals(singletonList("/binaries/image.jpg"), result.getListMetadata().getImage());
+        assertEquals(singletonList("/binaries/image.jpg/image.jpg"), result.getListMetadata().getImage());
     }
 
     @Test
@@ -33,14 +33,14 @@ public class RelativeImagesPostProcessorTest {
         RelativeImagesPostProcessor sut = new RelativeImagesPostProcessor();
         FunnelbackSearchResponse response = new FunnelbackSearchResponse();
         Result result = new Result();
-        result.getListMetadata().setImage(singletonList("https://www.gov.scot/image.jpg"));
+        result.getListMetadata().setImage(singletonList("https://www.gov.scot/image.jpg/image.jpg"));
         response.getResponse().getResultPacket().getResults().add(result);
 
         // ACT
         sut.process(response);
 
         // ASSERT
-        assertEquals(singletonList("https://www.gov.scot/image.jpg"), result.getListMetadata().getImage());
+        assertEquals(singletonList("https://www.gov.scot/image.jpg/image.jpg"), result.getListMetadata().getImage());
     }
 
     @Test
@@ -57,7 +57,7 @@ public class RelativeImagesPostProcessorTest {
         sut.process(response);
 
         // ASSERT
-        assertEquals(singletonList("/binaries/image.jpg"), result.getListMetadata().getImage());
+        assertEquals(singletonList("/binaries/image.jpg/image.jpg"), result.getListMetadata().getImage());
     }
 
 }
