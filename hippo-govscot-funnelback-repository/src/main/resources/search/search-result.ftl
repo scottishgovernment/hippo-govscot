@@ -59,15 +59,13 @@
 
     <#if result.partOf?has_content>
         <dl class="ds_search-result__context">
-            <dl class="ds_search-result__context">
-                <dt class="ds_search-result__context-key">Part of:</dt>
-                    <#list result.partOf as partOf>
-                        <dd class="ds_search-result__context-value">
-                            <a href="${partOf.url}">${partOf.label}</a>
-                        </dd>
-                    </#list>
-                </dt>
-            </dl>
+            <dt class="ds_search-result__context-key">Part of:</dt>
+                <#list result.partOf as partOf>
+                    <dd class="ds_search-result__context-value">
+                        <a href="${partOf.url}">${partOf.label}</a>
+                    </dd>
+                </#list>
+            </dt>
         </dl>
     </#if>
 
