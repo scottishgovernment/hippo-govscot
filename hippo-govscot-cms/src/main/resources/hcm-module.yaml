@@ -1,0 +1,5 @@
+group: hippo-cms
+project:
+    name: hippo-govscot-cms
+    after: [hippo-cms, hippo-repository]
+module: hippo-govscot-cms
