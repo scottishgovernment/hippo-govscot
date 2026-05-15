@@ -19,6 +19,12 @@
 
       <dependency>
         <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-jcrutil</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
         <artifactId>hippo-govscot-hst</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -116,6 +122,18 @@
       <dependency>
         <groupId>scot.gov.publishing.hippo</groupId>
         <artifactId>hippo-govscot-bulkpublish-repository</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-redirects-cms</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>scot.gov.publishing.hippo</groupId>
+        <artifactId>hippo-govscot-redirects-hst</artifactId>
         <version>${project.version}</version>
       </dependency>
 

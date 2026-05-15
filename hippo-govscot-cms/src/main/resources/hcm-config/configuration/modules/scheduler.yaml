@@ -12,3 +12,27 @@ definitions:
           hipposched:cronExpression: 0 0 0 * * ?
           hipposched:enabled: true
           hipposched:nextFireTime: 2026-05-01T00:00:00+01:00
+    /hippo:configuration/hippo:modules/scheduler/hippo:moduleconfig/system/MigrateAliasRedirectsJob:
+      jcr:primaryType: hipposched:repositoryjob
+      hipposched:enabled: true
+      hipposched:repositoryJobClass: scot.gov.publishing.hippo.redirects.MigrateAliasRedirectsJob
+      /hipposched:triggers:
+        jcr:primaryType: hipposched:triggers
+        /everyFiveMinutes:
+          jcr:primaryType: hipposched:crontrigger
+          jcr:mixinTypes: ['mix:lockable']
+          hipposched:cronExpression: 0 0/5 * * * ?
+          hipposched:enabled: true
+          hipposched:nextFireTime: 2026-05-14T00:00:00+01:00
+    /hippo:configuration/hippo:modules/scheduler/hippo:moduleconfig/system/DeleteOldRedirectsJob:
+      jcr:primaryType: hipposched:repositoryjob
+      hipposched:enabled: false
+      hipposched:repositoryJobClass: scot.gov.publishing.hippo.redirects.DeleteOldRedirectsJob
+      /hipposched:triggers:
+        jcr:primaryType: hipposched:triggers
+        /everyFiveMinutes:
+          jcr:primaryType: hipposched:crontrigger
+          jcr:mixinTypes: ['mix:lockable']
+          hipposched:cronExpression: 0 0/5 * * * ?
+          hipposched:enabled: false
+          hipposched:nextFireTime: 2026-05-14T00:00:00+01:00

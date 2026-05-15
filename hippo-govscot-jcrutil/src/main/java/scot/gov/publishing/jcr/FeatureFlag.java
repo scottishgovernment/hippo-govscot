@@ -1,4 +1,4 @@
-package scot.gov.publishing.searchjournal;
+package scot.gov.publishing.jcr;
 
 import org.hippoecm.hst.core.container.ComponentManager;
 import org.hippoecm.hst.core.container.ContainerConfiguration;
@@ -12,12 +12,14 @@ import javax.jcr.Session;
 import java.util.Optional;
 
 /**
- * Lookup feature flags for event listeners and scheduled tasks.  Featured flags are stored as boolean properties of the
- * node /content/featureflags/
+ * Looks up feature flags for event listeners and scheduled tasks.  Flags are stored as boolean
+ * properties of the node {@code /content/featureflags/}.
  *
- * For local development the flags can be overridden at the command line
+ * <p>For local development the flags can be overridden at the command line via container
+ * configuration properties.
  *
- * If the featured flags node does not exist or the flag in question does not exist then the flag will default to false.
+ * <p>If the feature flags node does not exist, or the flag in question does not exist, the flag
+ * defaults to {@code false}.
  */
 public class FeatureFlag {
 
@@ -82,7 +84,7 @@ public class FeatureFlag {
             return Optional.of(false);
         }
 
-        LOG.warn("featureFlag {} appears as a property but does not have a valid value (true | false).  Value is {}", flag, flagValue);
+        LOG.warn("featureFlag {} appears as a property but does not have a valid value (true | false). Value is {}", flag, flagValue);
         return Optional.empty();
     }
 

@@ -1,6 +1,7 @@
 package scot.gov.publishing.searchjournal;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import scot.gov.publishing.jcr.SessionSaver;
 import org.apache.commons.lang3.time.StopWatch;
 import org.hippoecm.repository.util.DateTools;
 import org.slf4j.Logger;

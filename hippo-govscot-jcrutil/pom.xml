@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -8,16 +10,21 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>hippo-govscot-cms</artifactId>
+  <artifactId>hippo-govscot-jcrutil</artifactId>
+
+  <name>hippo-govscot-jcrutil</name>
+  <description>General-purpose JCR utility classes usable from CMS, repository, and delivery tiers</description>
 
   <dependencies>
 
     <dependency>
-      <groupId>scot.gov.publishing.hippo</groupId>
-      <artifactId>hippo-govscot-jcrutil</artifactId>
-      <version>${project.version}</version>
+      <groupId>javax.jcr</groupId>
+      <artifactId>jcr</artifactId>
+      <version>2.0</version>
+      <scope>provided</scope>
     </dependency>
 
+    <!-- Provides hst-api transitively, for FeatureFlag's container-config override support -->
     <dependency>
       <groupId>org.onehippo.cms7</groupId>
       <artifactId>hippo-cms-api</artifactId>
@@ -32,17 +39,15 @@
     </dependency>
 
     <dependency>
-        <groupId>org.onehippo.cms7</groupId>
-        <artifactId>hippo-repository-jaxrs</artifactId>
-        <version>${hippo.version}</version>
-        <scope>provided</scope>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.17.0</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
-        <groupId>org.onehippo.cms7</groupId>
-        <artifactId>hippo-cms-editor-frontend</artifactId>
-        <version>${hippo.version}</version>
-        <scope>provided</scope>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
 
   </dependencies>

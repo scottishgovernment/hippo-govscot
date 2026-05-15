@@ -17,6 +17,7 @@
 
   <modules>
     <module>hippo-govscot-bom</module>
+    <module>hippo-govscot-jcrutil</module>
     <module>hippo-govscot-hst</module>
     <module>hippo-govscot-cms</module>
     <module>hippo-govscot-feedback-cms</module>
@@ -34,6 +35,8 @@
     <module>hippo-govscot-sluglookup-hst</module>
     <module>hippo-govscot-bulkpublish-cms</module>
     <module>hippo-govscot-bulkpublish-repository</module>
+    <module>hippo-govscot-redirects-cms</module>
+    <module>hippo-govscot-redirects-hst</module>
   </modules>
 
   <properties>
