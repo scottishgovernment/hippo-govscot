@@ -64,7 +64,7 @@ public class DeleteOldRedirectsJob implements RepositoryJob {
             deleteTree(session, MigrateAliasRedirectsJob.HISTORICAL_ROOT, saver, flag);
         } catch (DeletionStoppedException e) {
             saver.forceSave();
-            LOG.info("DeleteOldRedirectsJob: stopped early — feature flag was disabled mid-run");
+            LOG.error("DeleteOldRedirectsJob: stopped early — feature flag was disabled mid-run", e);
             return;
         }
         saver.forceSave();
