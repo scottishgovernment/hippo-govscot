@@ -16,8 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static scot.gov.publishing.hippo.redirects.JcrRedirectRepository.*;
-
 /**
  * Scheduled job that migrates URL alias redirects from the legacy path-mirror JCR layout
  * to the new hash-bucketed layout used by {@link JcrRedirectRepository}.
@@ -67,6 +65,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigrateAliasRedirectsJob.class);
 
+    static final String GOVSCOT            = "govscot";
     static final String ALIASES_ROOT       = "/content/redirects/Aliases";
     static final String HISTORICAL_ROOT    = "/content/redirects/HistoricalUrls";
     static final String PRGLOO_ROOT        = "/content/redirects/prgloo";
@@ -104,6 +103,8 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
             }
 
             doExecute(session, flag);
+        } catch (Exception e) {
+            LOG.error("Something went wrong", e);
         } finally {
             session.logout();
         }
@@ -127,7 +128,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         } catch (MigrationPausedException e) {
             saver.forceSave();
             LOG.info("MigrateAliasRedirectsJob: paused by operator (flag '{}') after migrated={}, skipped={}; "
-                    + "job remains enabled and will try again on next scheduled run",
+                            + "job remains enabled and will try again on next scheduled run",
                     PAUSE_FLAG, stats.migrated, stats.skipped, e);
             return;
         }
@@ -164,7 +165,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
                              Stats stats, FeatureFlag pauseFlag, Checkpoint checkpoint, boolean[] skipping)
             throws RepositoryException {
 
-        if (node.hasProperty(PROP_URL)) {
+        if (node.hasProperty(LegacyRedirectsRepository.PROP_URL)) {
             String fromPath = node.getPath().substring(rootPath.length());
             processAlias(fromPath, node, session, repo, stats, pauseFlag, checkpoint, skipping);
         }
@@ -193,7 +194,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
             return;
         }
 
-        String redirectNodePath = RedirectNodePath.path("govscot", fromPath);
+        String redirectNodePath = RedirectNodePath.path(GOVSCOT, fromPath);
         if (session.nodeExists(redirectNodePath)) {
             LOG.info("skipping {} node already exists {}", fromPath, redirectNodePath);
             stats.skipped++;
@@ -202,9 +203,9 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
 
         Redirect redirect = new Redirect();
         redirect.setFrom(fromPath);
-        redirect.setTo(node.getProperty(PROP_URL).getString());
-        if (node.hasProperty(PROP_DESCRIPTION)) {
-            redirect.setDescription(node.getProperty(PROP_DESCRIPTION).getString());
+        redirect.setTo(node.getProperty(LegacyRedirectsRepository.PROP_URL).getString());
+        if (node.hasProperty(LegacyRedirectsRepository.PROP_DESCRIPTION)) {
+            redirect.setDescription(node.getProperty(LegacyRedirectsRepository.PROP_DESCRIPTION).getString());
         }
         repo.doSave(redirect);
         stats.migrated++;
@@ -281,8 +282,8 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
             stats.skipped++;
             return;
         }
-        String description = sourceNode.hasProperty(PROP_DESCRIPTION)
-                ? sourceNode.getProperty(PROP_DESCRIPTION).getString()
+        String description = sourceNode.hasProperty(LegacyRedirectsRepository.PROP_DESCRIPTION)
+                ? sourceNode.getProperty(LegacyRedirectsRepository.PROP_DESCRIPTION).getString()
                 : "Migrated from prgloo news archive (news.gov.scot/news/" + slug + ")";
         Redirect redirect = new Redirect();
         redirect.setFrom(fromPath);
@@ -337,7 +338,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
                 }
                 // already committed — skip without a nodeExists check
             } else {
-                String redirectNodePath = RedirectNodePath.path("govscot", fromPath);
+                String redirectNodePath = RedirectNodePath.path(GOVSCOT, fromPath);
                 if (session.nodeExists(redirectNodePath)) {
                     LOG.info("skipping {} node already exists {}", fromPath, redirectNodePath);
                     stats.skipped++;
@@ -377,7 +378,6 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         mainFlag.setEnabled(false);
         checkpoint.clear();
         new FeatureFlag(session, JcrRedirectRepository.class.getSimpleName()).setEnabled(true);
-        new FeatureFlag(session, LegacyRedirectsRepository.class.getSimpleName()).setEnabled(false);
         unscheduleJob(session);
         enableDeleteOldRedirectsJob(session);
         session.save();

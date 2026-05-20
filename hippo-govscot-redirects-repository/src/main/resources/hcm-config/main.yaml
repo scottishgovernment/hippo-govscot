@@ -1,0 +1,5 @@
+definitions:
+  namespace:
+    redirects:
+      uri: http://www.gov.scot/redirects/nt/1.0
+      cnd: namespace/redirects.cnd

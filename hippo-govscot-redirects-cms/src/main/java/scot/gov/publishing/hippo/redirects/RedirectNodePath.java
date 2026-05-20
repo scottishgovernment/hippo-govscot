@@ -1,7 +1,5 @@
 package scot.gov.publishing.hippo.redirects;
 
-import org.apache.jackrabbit.util.Text;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,22 +21,10 @@ import java.security.NoSuchAlgorithmException;
  *   <li><b>Bucket splitting</b> — the first {@value #BUCKET_DEPTH} hex characters
  *       are each used as a single path segment, creating intermediate nodes with
  *       at most 16 children (one per hex digit {@code 0–f}). This keeps the tree
- *       shallow and balanced across ~65,000 leaf buckets.</li>
- *   <li><b>Leaf node</b> — the full 40-character hash is appended as the final
+ *       shallow and balanced.</li>
+ *   <li><b>Leaf node</b> — the full hash is appended as the final
  *       segment, guaranteeing uniqueness with no collision risk.</li>
- *   <li><b>JCR encoding</b> — the site name is sanitised with
- *       {@link org.apache.jackrabbit.util.Text#escapeIllegalJcrChars} to produce
- *       a valid, reversible JCR node name.</li>
  * </ol>
- *
- * <h2>Capacity</h2>
- * With 4 bucket levels and a ceiling of ~200 redirects per leaf node, the
- * structure comfortably supports approximately 13 million redirects before
- * any performance degradation.
- *
- * <h2>Lookup</h2>
- * Because the same site and URL path always produce the same node path, lookups
- * are O(1) — hash the input and navigate directly, no searching required.
  */
 public class RedirectNodePath {
 
@@ -54,19 +40,13 @@ public class RedirectNodePath {
 
     /**
      * Returns a stable, unique JCR node path for the given site + URL path.
-     *
-     * Structure: {ALIASES_ROOT}/{site}/{b0}/{b1}/{b2}/{fullHash}
-     *
-     * - Bucket levels (b0..b2) spread nodes across 4096 intermediate buckets.
-     * - The leaf node is the full 16-char SHA-1 hex prefix, giving uniqueness.
+     * Structure: {ALIASES_ROOT}/{site}/{b0}/{b1}/{b2}/{b3}/{fullHash}
      */
     public static String path(String site, String urlPath) {
 
         String hash = sha1Hex(urlPath);
         String[] buckets = bucketParts(hash);
-
         StringBuilder b = new StringBuilder(ALIASES_ROOT).append('/').append(site);
-
         for (String bucket : buckets) {
             b.append('/').append(bucket);
         }
@@ -106,5 +86,4 @@ public class RedirectNodePath {
             throw new IllegalStateException("SHA-1 not available", e);
         }
     }
-
 }

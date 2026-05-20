@@ -15,18 +15,25 @@ import static java.util.Arrays.asList;
 import static javax.jcr.nodetype.NodeType.NT_UNSTRUCTURED;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.substringAfter;
-import static scot.gov.publishing.hippo.redirects.JcrRedirectRepository.*;
 
 /**
  * Legacy path-mirror implementation of {@link RedirectRepository}.
  *
  * <p>Stores redirects as JCR nodes whose path mirrors the URL:
  * {@code /content/redirects/Aliases/old/page → govscot:url = "/new/target"}.
+ * Properties on these legacy nodes use the {@code govscot:} namespace prefix.
  *
  * <p>Used by {@link SwitchingRedirectRepository} during the migration period.
  * Retire once all data has been moved to the hash-bucketed layout.
  */
 public class LegacyRedirectsRepository implements RedirectRepository {
+
+    // Property names used by legacy redirect nodes — these use the govscot: namespace,
+    // not the redirects: namespace used by JcrRedirectRepository.
+    public static final String PROP_URL         = "govscot:url";
+    public static final String PROP_FROM        = "govscot:from";
+    public static final String PROP_HISTORICAL  = "govscot:historical";
+    public static final String PROP_DESCRIPTION = "govscot:description";
 
     private static final String REDIRECTS = "redirects";
     private static final String ALIASES = "Aliases";

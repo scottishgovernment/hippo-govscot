@@ -35,6 +35,7 @@
     <module>hippo-govscot-sluglookup-hst</module>
     <module>hippo-govscot-bulkpublish-cms</module>
     <module>hippo-govscot-bulkpublish-repository</module>
+    <module>hippo-govscot-redirects-repository</module>
     <module>hippo-govscot-redirects-cms</module>
     <module>hippo-govscot-redirects-hst</module>
   </modules>

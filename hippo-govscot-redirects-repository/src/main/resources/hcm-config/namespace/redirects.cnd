@@ -1,0 +1,19 @@
+<'redirects'='http://www.gov.scot/redirects/nt/1.0'>
+<nt='http://www.jcp.org/jcr/nt/1.0'>
+
+/**
+ * Intermediate bucket node in the hash-bucketed redirect tree.
+ * Each level holds at most 16 children (one per hex digit 0–f).
+ * Using a dedicated type makes it straightforward to query for
+ * redirect leaf nodes without matching bucket containers.
+ */
+[redirects:bucket] > nt:unstructured
+
+/**
+ * Leaf node holding a single redirect entry.
+ */
+[redirects:redirect] > nt:unstructured
+  - redirects:url (string)
+  - redirects:from (string)
+  - redirects:historical (boolean)
+  - redirects:description (string)

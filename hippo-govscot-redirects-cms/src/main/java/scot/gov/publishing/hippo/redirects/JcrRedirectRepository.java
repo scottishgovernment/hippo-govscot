@@ -2,6 +2,8 @@ package scot.gov.publishing.hippo.redirects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.hippoecm.repository.util.JcrUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scot.gov.publishing.jcr.SessionSaver;
 
 import javax.jcr.Node;
@@ -11,30 +13,45 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 
-import static javax.jcr.nodetype.NodeType.NT_UNSTRUCTURED;
 import static org.apache.jackrabbit.commons.JcrUtils.getOrCreateByPath;
 
 /**
  * JCR-backed implementation of {@link RedirectRepository} using a hash-bucketed node layout.
  *
- * <p>Redirects are stored as {@code nt:unstructured} leaf nodes under a 2-level hex-character
+ * <p>Redirects are stored as {@code redirects:redirect} leaf nodes under a 2-level hex-character
  * bucket derived from the SHA-1 hash of the redirect path. This ensures no single JCR node
  * accumulates more than 16 structural children regardless of data volume.
  *
  * <p>Each leaf node carries:
  * <ul>
- *   <li>{@code govscot:url} — the redirect target</li>
- *   <li>{@code govscot:from} — the original source path (for verification)</li>
- *   <li>{@code govscot:description} — optional description</li>
+ *   <li>{@code redirects:url} — the redirect target</li>
+ *   <li>{@code redirects:from} — the original source path (for verification)</li>
+ *   <li>{@code redirects:description} — optional description</li>
+ *   <li>{@code redirects:historical} — {@code true} when this is a historical URL entry</li>
  * </ul>
+ *
+ * <p>The {@code redirects} namespace and {@code redirects:redirect} node type are registered
+ * via {@code hippo-govscot-redirects-repository}.
  */
 public class JcrRedirectRepository implements RedirectRepository {
 
-    public static final String PROP_URL = "govscot:url";
-    public static final String PROP_FROM = "govscot:from";
-    public static final String PROP_HISTORICAL = "govscot:historical";
-    public static final String PROP_DESCRIPTION = "govscot:description";
-    static final String GOVSCOT = "govscot";
+    private static final Logger LOG = LoggerFactory.getLogger(JcrRedirectRepository.class);
+
+    public static final String PROP_URL = "redirects:url";
+    public static final String PROP_FROM = "redirects:from";
+    public static final String PROP_HISTORICAL = "redirects:historical";
+    public static final String PROP_DESCRIPTION = "redirects:description";
+
+    /**
+     * Site identifier used as the first path segment under {@code /content/redirects/}.
+     * This scopes the hash-bucketed tree to a single site and allows multiple sites to
+     * coexist under the same root in future (e.g. {@code /content/redirects/mygov/...}).
+     */
+    static final String SITE = "govscot";
+
+    private static final String NODE_TYPE        = "redirects:redirect";
+    private static final String BUCKET_NODE_TYPE = "redirects:bucket";
+
     private final Session session;
 
     private final SessionSaver saver;
@@ -50,15 +67,20 @@ public class JcrRedirectRepository implements RedirectRepository {
 
     @Override
     public Optional<Redirect> lookup(String path) throws RepositoryException {
-        String nodePath = RedirectNodePath.path(GOVSCOT, path);
+        Optional<Redirect> redirect = doLookup(path);
+        LOG.info("lookup {} -> {}", path, redirect.isEmpty() ? "empty" : redirect.get().getTo());
+        return redirect;
+    }
+
+    Optional<Redirect> doLookup(String path) throws RepositoryException {
+        String nodePath = RedirectNodePath.path(SITE, path);
+
         if (!session.nodeExists(nodePath)) {
             return Optional.empty();
         }
         Node node = session.getNode(nodePath);
-        if (!node.hasProperty(PROP_URL)) {
-            return Optional.empty();
-        }
-        return Optional.of(result(node, path));
+        Redirect redirect = result(node, path);
+        return Optional.of(redirect);
     }
 
     @Override
@@ -70,7 +92,7 @@ public class JcrRedirectRepository implements RedirectRepository {
 
     @Override
     public boolean delete(String path) throws RepositoryException {
-        String nodePath = RedirectNodePath.path(GOVSCOT, path);
+        String nodePath = RedirectNodePath.path(SITE, path);
         if (!session.nodeExists(nodePath)) {
             return false;
         }
@@ -85,7 +107,7 @@ public class JcrRedirectRepository implements RedirectRepository {
 
     @Override
     public RedirectResult list(String path) throws RepositoryException {
-        String nodePath = RedirectNodePath.path(GOVSCOT, path);
+        String nodePath = RedirectNodePath.path(SITE, path);
         if (!session.nodeExists(nodePath)) {
             return null;
         }
@@ -127,8 +149,20 @@ public class JcrRedirectRepository implements RedirectRepository {
         }
     }
 
+    /**
+     * Finds or creates the {@code redirects:redirect} leaf node for the given path,
+     * placing it under the hash-bucketed tree rooted at
+     * {@code /content/redirects/govscot/&hellip;}.
+     *
+     * <p>Each intermediate node (the site node and the 4 hex-digit bucket levels) is created
+     * as {@code redirects:bucket} so it can be distinguished from redirect leaves in JCR
+     * queries (e.g. {@code SELECT * FROM [redirects:redirect]} returns only leaf nodes).
+     */
     Node ensureRedirectNode(String path) throws RepositoryException {
-        String redirectPath = RedirectNodePath.path(GOVSCOT, path);
-        return getOrCreateByPath(redirectPath, NT_UNSTRUCTURED, session);
+        String redirectPath = RedirectNodePath.path(SITE, path);
+        String parentPath = redirectPath.substring(0, redirectPath.lastIndexOf('/'));
+        String leafName   = redirectPath.substring(redirectPath.lastIndexOf('/') + 1);
+        Node parent = getOrCreateByPath(parentPath, BUCKET_NODE_TYPE, session);
+        return parent.hasNode(leafName) ? parent.getNode(leafName) : parent.addNode(leafName, NODE_TYPE);
     }
 }

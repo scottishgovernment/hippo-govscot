@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>scot.gov.publishing.hippo</groupId>
+    <artifactId>hippo-govscot</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>hippo-govscot-redirects-repository</artifactId>
+  <packaging>jar</packaging>
+
+  <name>hippo-govscot-redirects-repository</name>
+  <description>JCR namespace and node-type definitions for the redirects module</description>
+
+</project>
