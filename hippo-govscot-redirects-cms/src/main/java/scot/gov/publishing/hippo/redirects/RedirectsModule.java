@@ -36,9 +36,10 @@ public class RedirectsModule extends AbstractReconfigurableDaemonModule {
         JacksonJsonProvider jacksonJsonProvider = new JacksonJsonProvider(new ObjectMapper());
         SwitchingRedirectRepository switchingRepo =
                 new SwitchingRedirectRepository(session);
+        PublicationArchiver publicationArchiver = new PublicationArchiver(session, switchingRepo);
         RepositoryJaxrsService.addEndpoint(new CXFRepositoryJaxrsEndpoint(PATH)
                 .invoker(invoker)
-                .singleton(new RedirectsResource(switchingRepo))
+                .singleton(new RedirectsResource(switchingRepo, publicationArchiver))
                 .singleton(jacksonJsonProvider));
     }
 

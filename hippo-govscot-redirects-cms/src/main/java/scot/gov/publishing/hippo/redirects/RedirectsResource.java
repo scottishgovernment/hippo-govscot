@@ -22,7 +22,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -36,11 +39,14 @@ public class RedirectsResource {
 
     private final RedirectValidator redirectValidator = new RedirectValidator();
 
+    private final PublicationArchiver publicationArchiver;
+
     @Context
     UriInfo uriInfo;
 
-    public RedirectsResource(RedirectRepository redirectRepository) {
+    public RedirectsResource(RedirectRepository redirectRepository, PublicationArchiver publicationArchiver) {
         this.redirectRepository = redirectRepository;
+        this.publicationArchiver = publicationArchiver;
     }
 
     @POST
@@ -66,21 +72,41 @@ public class RedirectsResource {
     @Consumes("text/csv")
     @Produces({MediaType.APPLICATION_JSON})
     public Response uploadCsv(@Multipart("file") File file) throws IOException {
+        List<Redirect> parsed;
         try (Reader in = new FileReader(file);
              CSVParser csvParser = new CSVParser(in, CSVFormat.DEFAULT)) {
-            List<CSVRecord> records = csvParser.getRecords();
-            List<Redirect> redirects = records.stream().map(this::toRedirect).collect(Collectors.toList());
-            List<String> violations = redirectValidator.validateRedirects(redirects);
-            if (!violations.isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST).entity(violations).build();
-            }
+            parsed = csvParser.getRecords().stream().map(this::toRedirect).collect(Collectors.toList());
+        }
+
+        List<String> violations = redirectValidator.validateRedirects(parsed);
+        if (!violations.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(violations).build();
+        }
+
+        try {
+            List<Redirect> redirects = expandRedirects(parsed);
             redirectRepository.save(redirects);
             logRedirects(redirects);
             return Response.status(Response.Status.OK).entity(redirects).build();
-        } catch (IOException | RepositoryException e) {
+        } catch (RepositoryException e) {
             LOG.error("Unexpected exception uploading csv", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Unexpected exception uploading csv").build();
         }
+    }
+
+    private List<Redirect> expandRedirects(List<Redirect> parsed) throws RepositoryException {
+        Set<String> explicitPaths = parsed.stream().map(Redirect::getFrom).collect(Collectors.toSet());
+        List<Redirect> redirects = new ArrayList<>();
+        for (Redirect r : parsed) {
+            for (Redirect expanded : publicationArchiver.expand(r)) {
+                boolean overriddenByExplicitRow = !expanded.getFrom().equals(r.getFrom())
+                        && explicitPaths.contains(expanded.getFrom());
+                if (!overriddenByExplicitRow) {
+                    redirects.add(expanded);
+                }
+            }
+        }
+        return redirects;
     }
 
     @GET
@@ -95,6 +121,33 @@ public class RedirectsResource {
     public Response get() {
         String path = uriInfo.getPathParameters().getFirst("path");
         return doGet(path);
+    }
+
+    @POST
+    @Path("archive-publication")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces({MediaType.APPLICATION_JSON})
+    public Response archivePublication(ArchivePublicationRequest request) {
+        LOG.info("archive publication: {}", request.getUrl());
+        List<String> violations = publicationArchiver.validate(request);
+        if (!violations.isEmpty()) {
+            return Response.status(Response.Status.BAD_REQUEST).entity(violations).build();
+        }
+        try {
+            List<Redirect> redirects = publicationArchiver.archive(request);
+            if (redirects == null) {
+                String slug = publicationArchiver.extractSlug(request.getUrl());
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(Collections.singletonList("No publication found with slug: " + slug))
+                        .build();
+            }
+            logRedirects(redirects);
+            return Response.status(Response.Status.OK).entity(redirects).build();
+        } catch (RepositoryException e) {
+            LOG.error("Unexpected exception archiving publication", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Unexpected exception archiving publication").build();
+        }
     }
 
     @DELETE

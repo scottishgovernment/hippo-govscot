@@ -11,7 +11,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 public class RedirectValidator extends UrlValidator {
 
     public RedirectValidator() {
-        super(new String[]{"http", "https"});
+        super(new String[]{"http", "https"}, UrlValidator.ALLOW_2_SLASHES);
     }
 
     public List<String> validateRedirects(List<Redirect> redirects) {
