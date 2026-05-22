@@ -12,6 +12,7 @@ import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+import javax.jcr.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -65,6 +66,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
 
     private static final Logger LOG = LoggerFactory.getLogger(MigrateAliasRedirectsJob.class);
 
+    static final String INDEX              = "index";
     static final String GOVSCOT            = "govscot";
     static final String ALIASES_ROOT       = "/content/redirects/Aliases";
     static final String HISTORICAL_ROOT    = "/content/redirects/HistoricalUrls";
@@ -80,12 +82,16 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
      */
     static final String PAUSE_FLAG = "MigrateAliasRedirectsJobPaused";
 
-    static final String PHASE_ALIASES    = "aliases";
-    static final String PHASE_PRGLOO     = "prgloo";
-    static final String PHASE_HISTORICAL = "historical";
+    static final String PHASE_ALIASES      = "aliases";
+    static final String PHASE_GOVSCOT_URLS = "govscotUrls";
+    static final String PHASE_PRGLOO       = "prgloo";
+    static final String PHASE_HISTORICAL   = "historical";
+
+    static final String PROP_GOVSCOT_URL = "govscot:govscoturl";
+    static final String PROP_SLUG        = "govscot:slug";
 
     /** Defines the execution order used for checkpoint phase comparisons. */
-    static final List<String> PHASE_ORDER = Arrays.asList(PHASE_ALIASES, PHASE_PRGLOO, PHASE_HISTORICAL);
+    static final List<String> PHASE_ORDER = Arrays.asList(PHASE_ALIASES, PHASE_GOVSCOT_URLS, PHASE_PRGLOO, PHASE_HISTORICAL);
 
     @Override
     public void execute(RepositoryJobExecutionContext context) throws RepositoryException {
@@ -123,6 +129,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         }
         try {
             migrateAliases(session, repo, stats, pauseFlag, checkpoint);
+            migrateOldPublicationUrls(session, repo, stats, pauseFlag, checkpoint);
             migratePrglooRedirects(session, repo, stats, pauseFlag, checkpoint);
             migrateHistoricalUrls(session, repo, stats, pauseFlag, checkpoint);
         } catch (MigrationPausedException e) {
@@ -210,8 +217,146 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         repo.doSave(redirect);
         stats.migrated++;
         checkpoint.update(PHASE_ALIASES, fromPath, stats.migrated);
-        logProgress(stats);
+        logProgress(stats, checkpoint);
         checkPauseFlag(pauseFlag, stats);
+    }
+
+    private void migrateOldPublicationUrls(Session session, JcrRedirectRepository repo,
+                                            Stats stats, FeatureFlag pauseFlag, Checkpoint checkpoint)
+            throws RepositoryException {
+        if (checkpoint.isPhaseComplete(PHASE_GOVSCOT_URLS)) {
+            LOG.info("MigrateAliasRedirectsJob: govscotUrls phase already complete per checkpoint, skipping");
+            return;
+        }
+        LOG.info("MigrateAliasRedirectsJob: starting govscot URL migration");
+        boolean[] skipping = { checkpoint.hasCheckpoint() && PHASE_GOVSCOT_URLS.equals(checkpoint.phase) };
+        if (skipping[0]) {
+            LOG.info("MigrateAliasRedirectsJob: fast-forwarding govscotUrls to checkpoint path '{}'", checkpoint.lastPath);
+        }
+
+        String xpath = "//*[(@hippo:paths='957c1726-df71-4303-b335-6bdc6b2e091c')"
+                + " and (@hippo:availability='live')"
+                + " and not(@jcr:primaryType='nt:frozenNode')"
+                + " and @govscot:govscoturl"
+                + " and ((@jcr:primaryType='govscot:ComplexDocument2'"
+                + " or @jcr:primaryType='govscot:Consultation'"
+                + " or @jcr:primaryType='govscot:FOI'"
+                + " or @jcr:primaryType='govscot:Minutes'"
+                + " or @jcr:primaryType='govscot:Publication'"
+                + " or @jcr:primaryType='govscot:SpeechOrStatement'"
+                + " or @jcr:primaryType='govscot:PublicationPage'))]"
+                + " order by @jcr:score descending";
+
+        NodeIterator nodes = session.getWorkspace().getQueryManager()
+                .createQuery(xpath, Query.XPATH)
+                .execute()
+                .getNodes();
+
+        while (nodes.hasNext()) {
+            processGovscotUrl(nodes.nextNode(), session, repo, stats, pauseFlag, checkpoint, skipping);
+        }
+
+        if (skipping[0]) {
+            LOG.warn("MigrateAliasRedirectsJob: govscotUrls checkpoint path '{}' was not found during traversal the checkpoint may be stale", checkpoint.lastPath);
+        }
+        LOG.info("MigrateAliasRedirectsJob: govscot URL migration complete, migrated={}", stats.migrated);
+    }
+
+    private void processGovscotUrl(Node node, Session session, JcrRedirectRepository repo,
+                                    Stats stats, FeatureFlag pauseFlag, Checkpoint checkpoint, boolean[] skipping)
+            throws RepositoryException {
+
+        String fromPath = node.getProperty(PROP_GOVSCOT_URL).getString();
+
+        if (skipping[0]) {
+            stats.scannedToCheckpoint++;
+            if (fromPath.equals(checkpoint.lastPath)) {
+                skipping[0] = false;
+                LOG.info("MigrateAliasRedirectsJob: govscotUrls checkpoint path '{}' found after scanning {} items, resuming normal processing",
+                        checkpoint.lastPath, stats.scannedToCheckpoint);
+            } else if (stats.scannedToCheckpoint % 5_000 == 0) {
+                LOG.info("MigrateAliasRedirectsJob: govscotUrls fast-forward progress: scanned={}, target='{}'",
+                        stats.scannedToCheckpoint, checkpoint.lastPath);
+            }
+            return;
+        }
+
+        String redirectNodePath = RedirectNodePath.path(GOVSCOT, fromPath);
+        if (session.nodeExists(redirectNodePath)) {
+            stats.skipped++;
+            return;
+        }
+
+        String toUrl = getToUrl(node);
+        if (toUrl == null) {
+            LOG.warn("MigrateAliasRedirectsJob: could not determine target URL for node {}, skipping", node.getPath());
+            stats.skipped++;
+            return;
+        }
+
+        Redirect redirect = new Redirect();
+        redirect.setFrom(fromPath);
+        redirect.setTo(toUrl);
+        repo.doSave(redirect);
+        stats.migrated++;
+        checkpoint.update(PHASE_GOVSCOT_URLS, fromPath, stats.migrated);
+        logProgress(stats, checkpoint);
+        checkPauseFlag(pauseFlag, stats);
+    }
+
+    /**
+     * Derives the current site URL for a document node with a {@code govscot:govscoturl} property.
+     *
+     * <p>For {@code govscot:PublicationPage} nodes the URL is
+     * {@code /publications/<slug>/pages/<handleName>}; for all other publication sub-types it is
+     * {@code /publications/<slug>}.  The slug is obtained from the {@code index/index} variant
+     * inside the publication folder, found by walking up the ancestor chain.
+     */
+    private String getToUrl(Node node) throws RepositoryException {
+        String slug = getPublicationSlug(node);
+        if (slug == null) {
+            return null;
+        }
+        if (node.isNodeType("govscot:PublicationPage")) {
+            String pageName = node.getParent().getName();
+            return "/publications/" + slug + "/pages/" + pageName;
+        }
+        return "/publications/" + slug;
+    }
+
+    /**
+     * Walks up the JCR ancestor chain from {@code node}, looking for a folder that contains an
+     * {@code index/index} descendant with a {@code govscot:slug} property.  That descendant is
+     * the publication index document and its slug is the canonical URL segment used on the site.
+     *
+     * @return the slug string, or {@code null} if no slug could be found
+     */
+    private String getPublicationSlug(Node node) throws RepositoryException {
+        // step up from variant to handle, then walk ancestors
+        Node current = node.getParent();
+        while (current != null && !"/".equals(current.getPath())) {
+            String slug = slugFromIndexChild(current);
+            if (slug != null) {
+                return slug;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
+    private String slugFromIndexChild(Node folder) throws RepositoryException {
+        if (!folder.hasNode(INDEX)) {
+            return null;
+        }
+        Node indexHandle = folder.getNode(INDEX);
+        if (!indexHandle.hasNode(INDEX)) {
+            return null;
+        }
+        Node indexVariant = indexHandle.getNode(INDEX);
+        if (!indexVariant.hasProperty(PROP_SLUG)) {
+            return null;
+        }
+        return indexVariant.getProperty(PROP_SLUG).getString();
     }
 
     private void migratePrglooRedirects(Session session, JcrRedirectRepository repo,
@@ -292,7 +437,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         repo.doSave(redirect);
         stats.migrated++;
         checkpoint.update(PHASE_PRGLOO, fromPath, stats.migrated);
-        logProgress(stats);
+        logProgress(stats, checkpoint);
         checkPauseFlag(pauseFlag, stats);
     }
 
@@ -349,7 +494,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
                     repo.doSave(redirect);
                     stats.migrated++;
                     checkpoint.update(PHASE_HISTORICAL, fromPath, stats.migrated);
-                    logProgress(stats);
+                    logProgress(stats, checkpoint);
                     checkPauseFlag(pauseFlag, stats);
                 }
             }
@@ -404,9 +549,9 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         ScheduledJobUtils.unscheduleJob(session, MigrateAliasRedirectsJob.class.getSimpleName());
     }
 
-    private void logProgress(Stats stats) {
+    private void logProgress(Stats stats, Checkpoint checkpoint) {
         if (stats.migrated % 500 == 0) {
-            LOG.info("MigrateAliasRedirectsJob: migrated={}, skipped={}", stats.migrated, stats.skipped);
+            LOG.info("MigrateAliasRedirectsJob: migrated={}, skipped={}, checkpoint={}", stats.migrated, stats.skipped, checkpoint.phase);
         }
     }
 

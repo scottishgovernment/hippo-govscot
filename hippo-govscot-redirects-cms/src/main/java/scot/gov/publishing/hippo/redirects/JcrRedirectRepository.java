@@ -68,14 +68,15 @@ public class JcrRedirectRepository implements RedirectRepository {
     @Override
     public Optional<Redirect> lookup(String path) throws RepositoryException {
         Optional<Redirect> redirect = doLookup(path);
-        LOG.info("lookup {} -> {}", path, redirect.isEmpty() ? "empty" : redirect.get().getTo());
+        LOG.debug("lookup {} -> {}", path, redirect.isEmpty() ? "empty" : redirect.get().getTo());
         return redirect;
     }
 
     Optional<Redirect> doLookup(String path) throws RepositoryException {
         String nodePath = RedirectNodePath.path(SITE, path);
-
+        LOG.info("{} -> {}", path, nodePath);
         if (!session.nodeExists(nodePath)) {
+            LOG.debug("node doesnt exist {}", nodePath);
             return Optional.empty();
         }
         Node node = session.getNode(nodePath);
@@ -134,6 +135,7 @@ public class JcrRedirectRepository implements RedirectRepository {
         }
         leaf.setProperty(PROP_FROM, redirect.getFrom());
         leaf.setProperty(PROP_DESCRIPTION, StringUtils.defaultString(redirect.getDescription()));
+        LOG.debug("doSave {} -> {}, isHistorical? {}", redirect.getFrom(), redirect.getTo(), redirect.isHistoricalUrl());
         sessionSave();
     }
 
