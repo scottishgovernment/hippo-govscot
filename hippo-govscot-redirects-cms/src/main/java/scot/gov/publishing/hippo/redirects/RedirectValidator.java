@@ -5,7 +5,6 @@ import org.apache.commons.validator.routines.UrlValidator;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.commons.lang3.StringUtils.containsNone;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class RedirectValidator extends UrlValidator {
@@ -32,9 +31,10 @@ public class RedirectValidator extends UrlValidator {
     }
 
     boolean validFrom(Redirect redirect) {
-        return isValidPath(redirect.getFrom())
-                && !isBlank(redirect.getFrom())
-                && containsNone(redirect.getFrom(), " %:[]*|\t\n");
+        if (isBlank(redirect.getFrom())) {
+            return false;
+        }
+        return super.isValid(redirect.getFrom()) || isValidPath(redirect.getFrom());
     }
 
     boolean validTo(Redirect redirect) {

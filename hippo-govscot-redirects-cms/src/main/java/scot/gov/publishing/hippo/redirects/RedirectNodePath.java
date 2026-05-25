@@ -1,5 +1,9 @@
 package scot.gov.publishing.hippo.redirects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -28,6 +32,8 @@ import java.security.NoSuchAlgorithmException;
  */
 public class RedirectNodePath {
 
+    private static final Logger LOG = LoggerFactory.getLogger(RedirectNodePath.class);
+
     public static final String ALIASES_ROOT = "/content/redirects";
 
     // 4 levels gives us 13 million nodes with a comfortable ceiling of 200 children at the leaf level, and the
@@ -41,10 +47,14 @@ public class RedirectNodePath {
     /**
      * Returns a stable, unique JCR node path for the given site + URL path.
      * Structure: {ALIASES_ROOT}/{site}/{b0}/{b1}/{b2}/{b3}/{fullHash}
+     *
+     * <p>The path is normalised before hashing so that percent-encoded and
+     * decoded forms of the same URL always map to the same node
+     * (e.g. {@code /foo%3Abar} and {@code /foo:bar} are equivalent).
      */
     public static String path(String site, String urlPath) {
 
-        String hash = sha1Hex(urlPath);
+        String hash = sha1Hex(normalisePath(urlPath));
         String[] buckets = bucketParts(hash);
         StringBuilder b = new StringBuilder(ALIASES_ROOT).append('/').append(site);
         for (String bucket : buckets) {
@@ -67,6 +77,48 @@ public class RedirectNodePath {
             parts[i] = hash.substring(i, i + 1);
         }
         return parts;
+    }
+
+    /**
+     * Normalises a URL path to a canonical decoded form so that
+     * percent-encoded and literal forms of the same character produce the
+     * same hash.  For example, {@code /foo%3Abar}, {@code /foo%3abar}, and
+     * {@code /foo:bar} all normalise to {@code /foo:bar}.
+     *
+     * <p>Each path segment is decoded independently so that literal slash
+     * delimiters ({@code /}) are never altered.  The {@code +} character is
+     * preserved as-is (in URL paths it is a literal plus, not an encoded
+     * space as in query strings).  Malformed {@code %xx} sequences are left
+     * unchanged rather than causing an error.
+     */
+    static String normalisePath(String urlPath) {
+        if (urlPath == null || !urlPath.contains("%")) {
+            return urlPath;
+        }
+        String[] segments = urlPath.split("/", -1);
+        StringBuilder sb = new StringBuilder(urlPath.length());
+        for (int i = 0; i < segments.length; i++) {
+            if (i > 0) {
+                sb.append('/');
+            }
+            sb.append(decodeSegment(segments[i], urlPath));
+        }
+        return sb.toString();
+    }
+
+    private static String decodeSegment(String segment, String urlPath) {
+        if (!segment.contains("%")) {
+            return segment;
+        }
+        try {
+            // Replace '+' before decoding so URLDecoder does not convert it to a space
+            // (URLDecoder is designed for application/x-www-form-urlencoded, not URL paths)
+            return URLDecoder.decode(segment.replace("+", "%2B"), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            LOG.error("malformed url sequence, {} in {}", segment, urlPath, e);
+            // malformed %xx sequence — keep original
+            return segment;
+        }
     }
 
     /**

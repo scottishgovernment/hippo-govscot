@@ -35,6 +35,8 @@ public class RedirectsResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedirectsResource.class);
 
+    private static final String GOV_SCOT_ORIGIN = "https://www.gov.scot";
+
     private final RedirectRepository redirectRepository;
 
     private final RedirectValidator redirectValidator = new RedirectValidator();
@@ -53,6 +55,7 @@ public class RedirectsResource {
     @Produces({MediaType.APPLICATION_JSON})
     public Response upload(List<Redirect> redirects) {
         LOG.info("upload redirects {}", redirects.size());
+        redirects.forEach(r -> r.setFrom(normalizeFromUrl(r.getFrom())));
         List<String> violations = redirectValidator.validateRedirects(redirects);
         if (!violations.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST).entity(violations).build();
@@ -128,6 +131,7 @@ public class RedirectsResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces({MediaType.APPLICATION_JSON})
     public Response archivePublication(ArchivePublicationRequest request) {
+        request.setUrl(normalizeFromUrl(request.getUrl()));
         LOG.info("archive publication: {}", request.getUrl());
         List<String> violations = publicationArchiver.validate(request);
         if (!violations.isEmpty()) {
@@ -186,12 +190,34 @@ public class RedirectsResource {
 
     private Redirect toRedirect(CSVRecord record) {
         Redirect redirect = new Redirect();
-        redirect.setFrom(record.get(0));
+        redirect.setFrom(normalizeFromUrl(record.get(0)));
         redirect.setTo(record.get(1));
         if (record.size() > 2) {
             redirect.setDescription(record.get(2));
         }
         return redirect;
+    }
+
+    /**
+     * Normalises a {@code from} URL for storage:
+     * <ol>
+     *   <li>If the value is a fully-qualified {@code https://www.gov.scot/} URL, the origin is
+     *       stripped so only the path is retained.</li>
+     *   <li>Any percent-encoded characters in the path are decoded to their literal form (e.g.
+     *       {@code %3A} → {@code :}, {@code %2B} → {@code +}), using the same logic as
+     *       {@link RedirectNodePath#normalisePath}.  This ensures the stored path matches what
+     *       the servlet container hands to the lookup service after URL-decoding the request
+     *       URI.</li>
+     * </ol>
+     */
+    static String normalizeFromUrl(String url) {
+        if (url == null) {
+            return null;
+        }
+        String path = url.startsWith(GOV_SCOT_ORIGIN + "/")
+                ? url.substring(GOV_SCOT_ORIGIN.length())
+                : url;
+        return RedirectNodePath.normalisePath(path);
     }
 
     private void logRedirects(List<Redirect> redirects) {
