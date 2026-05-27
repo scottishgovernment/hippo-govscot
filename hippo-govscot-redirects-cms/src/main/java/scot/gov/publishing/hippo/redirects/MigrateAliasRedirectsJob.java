@@ -16,6 +16,8 @@ import javax.jcr.query.Query;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Scheduled job that migrates URL alias redirects from the legacy path-mirror JCR layout
@@ -72,6 +74,15 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
     static final String HISTORICAL_ROOT    = "/content/redirects/HistoricalUrls";
     static final String PRGLOO_ROOT        = "/content/redirects/prgloo";
     static final String WEBARCHIVE_BASE    = "https://webarchive.nrscotland.gov.uk/300/news.gov.scot/news/";
+
+    /**
+     * Matches archive URLs where the scheme was omitted before the captured host, e.g.
+     * {@code https://webarchive.nrscotland.gov.uk/20200119101657/www2.gov.scot/...}.
+     * Group 1 is everything up to and including the trailing slash after the timestamp;
+     * group 2 is {@code www*.gov.scot/...}.
+     */
+    static final Pattern ARCHIVE_MISSING_SCHEME_PATTERN =
+            Pattern.compile("^(https://[^/]+/\\d+/)(www[^/]*\\.gov\\.scot/.*)$");
     static final int    SAVE_BATCH_SIZE    = 100;
     static final long   SAVE_DELAY_MS      = 1_000L;
 
@@ -210,7 +221,7 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
 
         Redirect redirect = new Redirect();
         redirect.setFrom(fromPath);
-        redirect.setTo(node.getProperty(LegacyRedirectsRepository.PROP_URL).getString());
+        redirect.setTo(fixArchiveUrl(node.getProperty(LegacyRedirectsRepository.PROP_URL).getString()));
         if (node.hasProperty(LegacyRedirectsRepository.PROP_DESCRIPTION)) {
             redirect.setDescription(node.getProperty(LegacyRedirectsRepository.PROP_DESCRIPTION).getString());
         }
@@ -547,6 +558,24 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
      */
     private void unscheduleJob(Session session) throws RepositoryException {
         ScheduledJobUtils.unscheduleJob(session, MigrateAliasRedirectsJob.class.getSimpleName());
+    }
+
+    /**
+     * If {@code url} is a web-archive URL where the scheme was omitted before the captured host
+     * (e.g. {@code .../20200119101657/www2.gov.scot/...}), inserts {@code https://} so it becomes
+     * {@code .../20200119101657/https://www2.gov.scot/...}.  Other URLs are returned unchanged.
+     */
+    static String fixArchiveUrl(String url) {
+        if (url == null) {
+            return null;
+        }
+        Matcher m = ARCHIVE_MISSING_SCHEME_PATTERN.matcher(url);
+        if (m.matches()) {
+            String fixed = m.group(1) + "https://" + m.group(2);
+            LOG.info("MigrateAliasRedirectsJob: fixing archive URL missing scheme: '{}' -> '{}'", url, fixed);
+            return fixed;
+        }
+        return url;
     }
 
     private void logProgress(Stats stats, Checkpoint checkpoint) {
