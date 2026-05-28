@@ -79,13 +79,14 @@ public class PublicationArchiver {
      * @return one or more redirects derived from the input; never empty
      */
     public List<Redirect> expand(Redirect redirect) throws RepositoryException {
-        String slug = extractSlug(redirect.getFrom());
+        String from = redirect.getFrom().replaceAll("/+$", "");
+        String slug = extractSlug(from);
         if (slug == null) {
             return Collections.singletonList(redirect);
         }
         // Only expand the publication root URL. Sub-paths (pages, documents, etc.) are
         // explicit entries and should be kept as-is.
-        if (!redirect.getFrom().equals(PUBLICATIONS_PREFIX + slug)) {
+        if (!from.equals(PUBLICATIONS_PREFIX + slug)) {
             return Collections.singletonList(redirect);
         }
         Node variant = findPublicationVariant(slug);
