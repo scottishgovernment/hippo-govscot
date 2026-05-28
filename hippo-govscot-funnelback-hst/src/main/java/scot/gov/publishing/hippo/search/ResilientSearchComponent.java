@@ -83,8 +83,8 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         searchType = componentConfig.getRawParameters().getOrDefault("searchtype", SEARCH_TYPE_RESILIENT);
         createProviders(componentConfig);
         resilientSearchService = new ResilientSearchService();
-        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
-        resilientSearchService.setBloomreachSearchService(bloomreachSearchService);
+        resilientSearchService.setPrimarySearchService(funnelbackSearchServiceDXP);
+        resilientSearchService.setBackSearchService(bloomreachSearchService);
 
         displayLabels = Boolean.getBoolean(componentConfig.getRawParameters().getOrDefault(DISPLAY_LABELS, "true"));
         displayDates = Boolean.getBoolean(componentConfig.getRawParameters().getOrDefault(DISPLAY_DATES, "true"));

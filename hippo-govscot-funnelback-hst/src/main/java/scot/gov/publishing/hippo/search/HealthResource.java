@@ -1,19 +1,13 @@
 package scot.gov.publishing.hippo.search;
 
 
-import com.netflix.hystrix.HystrixCircuitBreaker;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandMetrics;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
 
-import static com.netflix.hystrix.HystrixEventType.FAILURE;
-import static com.netflix.hystrix.HystrixEventType.TIMEOUT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static scot.gov.publishing.hippo.search.ResilientSearchService.FUNNELBACK_SEARCH_COMMAND_KEY;
-import static scot.gov.publishing.hippo.search.ResilientSearchService.FUNNELBACK_SUGGESTIONS_COMMAND_KEY;
 
 @Path("/_search/health")
 public class HealthResource {
@@ -21,8 +15,8 @@ public class HealthResource {
     @Produces(APPLICATION_JSON)
     @GET
     public Response getHealth() {
-        Health health = healthForCommandKey(FUNNELBACK_SEARCH_COMMAND_KEY);
-        int status =  health.isOk() ? 200 : 503;
+        Health health = healthForCircuitBreaker(ResilientSearchService.SEARCH_CIRCUIT_BREAKER);
+        int status = health.isOk() ? 200 : 503;
         return Response.status(status).entity(health).build();
     }
 
@@ -30,25 +24,17 @@ public class HealthResource {
     @Path("suggestions")
     @GET
     public Response getSuggestionsHealth() {
-        Health health = healthForCommandKey(FUNNELBACK_SUGGESTIONS_COMMAND_KEY);
-        int status =  health.isOk() ? 200 : 503;
+        Health health = healthForCircuitBreaker(ResilientSearchService.SUGGESTIONS_CIRCUIT_BREAKER);
+        int status = health.isOk() ? 200 : 503;
         return Response.status(status).entity(health).build();
     }
 
-    Health healthForCommandKey(HystrixCommandKey key) {
+    Health healthForCircuitBreaker(CircuitBreaker circuitBreaker) {
         Health health = new Health();
-
-        HystrixCircuitBreaker circuitBreaker = HystrixCircuitBreaker.Factory.getInstance(key);
-        if (circuitBreaker != null) {
-            health.setOk(!circuitBreaker.isOpen());
-        }
-
-        HystrixCommandMetrics commandMetrics = HystrixCommandMetrics.getInstance(key);
-        if (commandMetrics != null) {
-            health.setFailures(commandMetrics.getRollingCount(FAILURE));
-            health.setTimeouts(commandMetrics.getRollingCount(TIMEOUT));
-            health.setLatency75(commandMetrics.getExecutionTimePercentile(75));
-        }
+        CircuitBreaker.Metrics metrics = circuitBreaker.getMetrics();
+        health.setOk(circuitBreaker.getState() != CircuitBreaker.State.OPEN);
+        health.setFailures(metrics.getNumberOfFailedCalls());
+        health.setTimeouts(metrics.getNumberOfSlowCalls());
         return health;
     }
 
@@ -57,8 +43,6 @@ public class HealthResource {
         long failures = 0;
 
         long timeouts = 0;
-
-        long latency75 = 0;
 
         boolean ok = true;
 
@@ -84,14 +68,6 @@ public class HealthResource {
 
         public void setOk(boolean ok) {
             this.ok = ok;
-        }
-
-        public long getLatency75() {
-            return latency75;
-        }
-
-        public void setLatency75(long latency75) {
-            this.latency75 = latency75;
         }
     }
 }

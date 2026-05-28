@@ -63,27 +63,15 @@
     </dependency>
 
     <dependency>
-      <groupId>com.netflix.hystrix</groupId>
-      <artifactId>hystrix-javanica</artifactId>
-      <version>1.5.18</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-circuitbreaker</artifactId>
+      <version>2.2.0</version>
     </dependency>
 
     <dependency>
-      <groupId>com.netflix.hystrix</groupId>
-      <artifactId>hystrix-servo-metrics-publisher</artifactId>
-      <version>1.5.18</version>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-timelimiter</artifactId>
+      <version>2.2.0</version>
     </dependency>
 
     <dependency>

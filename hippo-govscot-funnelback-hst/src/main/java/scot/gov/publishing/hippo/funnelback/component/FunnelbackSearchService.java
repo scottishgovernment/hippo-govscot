@@ -472,33 +472,40 @@ public class FunnelbackSearchService implements SearchService {
     }
 
     void rewriteLinks(FunnelbackSearchResponse response, HstRequest request) {
-        HstRequestContext context = request.getRequestContext();
-        VirtualHost host = context.getVirtualHost();
-        String hostGroupName = host.getHostGroupName();
-        if (!useRewriter(hostGroupName)) {
-            return;
+        // Every method on HstRequestContext calls checkStateValidity() — if the request cycle
+        // has ended (e.g. because a search timeout fired and the fallback has already responded)
+        // the context is invalid and link rewriting must be skipped.
+        try {
+            HstRequestContext context = request.getRequestContext();
+            VirtualHost host = context.getVirtualHost();
+            String hostGroupName = host.getHostGroupName();
+            if (!useRewriter(hostGroupName)) {
+                return;
+            }
+
+            VirtualHosts hosts = host.getVirtualHosts();
+            // fqdn -> alias map can be reused across multiple requests
+            Map<String, String> aliases = aliasesBySite(hosts);
+
+            // alias -> fqdn map is environment specific and depends on host in current request
+            Map<String, String> sitesByAlias = hosts.getMountsByHostGroup(hostGroupName).stream()
+                    .filter(m -> Objects.nonNull(m.getAlias()))
+                    .collect(toMap(Mount::getAlias, m -> m.getVirtualHost().getHostName()));
+
+            // prefer host name in current request if it is an alias for a site
+            Mount mount = context.getResolvedMount().getMount();
+            String publishingAlias = mount.getProperty("publishing:alias");
+            if (publishingAlias != null) {
+                String type = mount.getType();
+                Mount aliased = hosts.getMountByGroupAliasAndType(hostGroupName, publishingAlias, type);
+                sitesByAlias.put(aliased.getAlias(), mount.getVirtualHost().getHostName());
+            }
+
+            PostProcessor postProcessor = new ResultLinkRewriter(sitesByAlias, aliases);
+            postProcessor.process(response);
+        } catch (IllegalStateException e) {
+            LOG.debug("Request context is no longer valid, skipping link rewriting");
         }
-
-        VirtualHosts hosts = host.getVirtualHosts();
-        // fqdn -> alias map can be reused across multiple requests
-        Map<String, String> aliases = aliasesBySite(hosts);
-
-        // alias -> fqdn map is environment specific and depends on host in current request
-        Map<String, String> sitesByAlias = hosts.getMountsByHostGroup(hostGroupName).stream()
-                .filter(m -> Objects.nonNull(m.getAlias()))
-                .collect(toMap(Mount::getAlias, m -> m.getVirtualHost().getHostName()));
-
-        // prefer host name in current request if it is an alias for a site
-        Mount mount = context.getResolvedMount().getMount();
-        String publishingAlias = mount.getProperty("publishing:alias");
-        if (publishingAlias != null) {
-            String type = mount.getType();
-            Mount aliased = hosts.getMountByGroupAliasAndType(hostGroupName, publishingAlias, type);
-            sitesByAlias.put(aliased.getAlias(), mount.getVirtualHost().getHostName());
-        }
-
-        PostProcessor postProcessor = new ResultLinkRewriter(sitesByAlias, aliases);
-        postProcessor.process(response);
     }
 
     synchronized Map<String, String> aliasesBySite(VirtualHosts hosts) {

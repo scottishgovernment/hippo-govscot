@@ -76,6 +76,7 @@ public class SuggestionsResourceTest {
         sut.mountSupplier = () -> "mygov";
         SearchSettings searchSettings = new SearchSettings();
         searchSettings.setEnabled(true);
+        searchSettings.setSugestTimeoutMillis(1000);
         searchSettings.setSearchType("resilient");
         sut.searchSettingSource = () -> searchSettings;
         sut.funnelbackSearchServiceDXP = mock(FunnelbackSearchService.class);

@@ -41,7 +41,7 @@ public class SuggestionsResource {
 
     public SuggestionsResource() {
         resilientSearchService = new ResilientSearchService();
-        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
+        resilientSearchService.setPrimarySearchService(funnelbackSearchServiceDXP);
     }
 
     @Path("search/suggestions")
@@ -50,7 +50,7 @@ public class SuggestionsResource {
     public List<String> getSuggestions(@QueryParam("q") String partialQuery) {
         SearchSettings searchSettings = searchSettingSource.get();
         String mount = mountSupplier.get();
-        resilientSearchService.setFunnelbackSearchServiceDXP(funnelbackSearchServiceDXP);
+        resilientSearchService.setPrimarySearchService(funnelbackSearchServiceDXP);
         if (!searchSettings.isEnabled() || "bloomreach".equals(searchSettings.getSearchType())) {
             return emptyList();
         } else {

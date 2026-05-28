@@ -1,23 +1,23 @@
 package scot.gov.publishing.hippo.search;
 
-import com.netflix.hystrix.HystrixCommand;
-import com.netflix.hystrix.HystrixCommandGroupKey;
-import com.netflix.hystrix.HystrixCommandKey;
-import com.netflix.hystrix.HystrixCommandProperties;
-import com.netflix.hystrix.strategy.HystrixPlugins;
-import com.netflix.hystrix.strategy.properties.HystrixPropertiesStrategy;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.timelimiter.TimeLimiter;
+import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import scot.gov.publishing.hippo.funnelback.component.FunnelbackSearchService;
 import scot.gov.publishing.hippo.search.model.Search;
 import scot.gov.publishing.hippo.search.model.SearchResponse;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
@@ -29,159 +29,98 @@ public class ResilientSearchService implements SearchService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResilientSearchService.class);
 
-    public static final HystrixCommandGroupKey FUNNELBACK_COMMAND_GROUP_KEY = HystrixCommandGroupKey.Factory.asKey("Funnelback");
+    private static final CircuitBreakerConfig CIRCUIT_BREAKER_CONFIG = CircuitBreakerConfig.custom()
+            // use a 5-minute time-based sliding window
+            .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.TIME_BASED)
+            .slidingWindowSize(300)
+            // do not trip the circuit unless we get at least 5 requests in the window
+            .minimumNumberOfCalls(5)
+            // 50 percent error rate will cause circuit to trip
+            .failureRateThreshold(50)
+            // wait 30 seconds before retrying a tripped circuit
+            .waitDurationInOpenState(Duration.ofSeconds(30))
+            .build();
 
-    static final HystrixCommandKey FUNNELBACK_SEARCH_COMMAND_KEY = HystrixCommandKey.Factory.asKey("searchWithTimeout");
+    static final CircuitBreaker SEARCH_CIRCUIT_BREAKER = CircuitBreaker.of("search", CIRCUIT_BREAKER_CONFIG);
 
-    static final HystrixCommandKey FUNNELBACK_SUGGESTIONS_COMMAND_KEY = HystrixCommandKey.Factory.asKey("suggestionsWithTimeout");
+    static final CircuitBreaker SUGGESTIONS_CIRCUIT_BREAKER = CircuitBreaker.of("suggestions", CIRCUIT_BREAKER_CONFIG);
 
-    private SearchService funnelbackSearchServiceDXP;
+    private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
-    private SearchService bloomreachSearchService;
+    private SearchService primarySearchService;
+
+    private SearchService backSearchService;
 
     Supplier<Double> randomNumberSource = Math::random;
 
-    private static Boolean hystrixPropertiesStrategySet = false;
-
-    public ResilientSearchService() {
-        ensueHystrixPropertiesStrategy();
+    @Override
+    public SearchResponse performSearch(Search search, SearchSettings searchSettings) {
+        long timeoutMillis = searchSettings.getTimeoutMillis();
+        LOG.info("performSearch {}, {}", timeoutMillis, search.getQuery());
+        TimeLimiter timeLimiter = timeLimiter(timeoutMillis);
+        try {
+            Supplier<CompletableFuture<SearchResponse>> futureSupplier = () ->
+                    CompletableFuture.supplyAsync(() -> {
+                        throwExceptionAtSpecifiedRate("primary", searchSettings.getFunnelbackErrorRate());
+                        return primarySearchService.performSearch(search, searchSettings);
+                    }, EXECUTOR);
+            return CircuitBreaker.decorateCallable(SEARCH_CIRCUIT_BREAKER,
+                    TimeLimiter.decorateFutureSupplier(timeLimiter, futureSupplier)).call();
+        } catch (Exception e) {
+            LOG.warn("Primary search failed, falling back to back search service", e);
+            throwExceptionAtSpecifiedRate("back", searchSettings.getBloomreachErrorRate());
+            return backSearchService.performSearch(search, searchSettings);
+        }
     }
 
     @Override
-    public SearchResponse performSearch(Search search, SearchSettings searchsettings) {
-        int timeoutMillis = (int) searchsettings.getTimeoutMillis();
-        HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
-        SearchCommand command = new SearchCommand(search, searchsettings, properties);
-        return command.execute();
-    }
-
-    @Override
-    public List<String> getSuggestions(String query, String mount, SearchSettings searchsettings) {
-        int timeoutMillis = (int) searchsettings.getSugestTimeoutMillis();
-        HystrixCommandProperties.Setter properties = searchProperties(timeoutMillis);
+    public List<String> getSuggestions(String query, String mount, SearchSettings searchSettings) {
+        long timeoutMillis = searchSettings.getSugestTimeoutMillis();
         LOG.info("getSuggestions {}, {}", query, timeoutMillis);
-        SuggestionsCommand command = new SuggestionsCommand(query, mount, searchsettings, properties);
-        return command.execute();
-    }
-
-    public static void ensueHystrixPropertiesStrategy() {
-        synchronized (hystrixPropertiesStrategySet) {
-            if (!hystrixPropertiesStrategySet) {
-                hystrixPropertiesStrategySet = true;
-                HystrixPropertiesStrategy newStrategy = new HystrixPropertiesStrategyWithReloadableCache();
-                HystrixPlugins.getInstance().registerPropertiesStrategy(newStrategy);
-            }
-        }
-    }
-
-    HystrixCommandProperties.Setter searchProperties(int timeoutMillis) {
-        return HystrixCommandProperties.Setter()
-                .withExecutionTimeoutInMilliseconds(timeoutMillis)
-
-                // there are 10 buckets, so each bucket is 30 seconds
-                .withMetricsRollingStatisticalWindowInMilliseconds((int) TimeUnit.MINUTES.toMillis(5))
-
-                // wait 5 minute before retrying tripped circuit
-                .withCircuitBreakerSleepWindowInMilliseconds((int) TimeUnit.SECONDS.toMillis(30))
-
-                // do not trip the circuit unless we get at least 5 requests in the statistical window
-                .withCircuitBreakerRequestVolumeThreshold(5)
-
-                // 50 percent error rate will cause circuit to trip
-                .withCircuitBreakerErrorThresholdPercentage(50)
-
-                .withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE);
-    }
-
-    public SearchService getFunnelbackSearchServiceDXP() {
-        return funnelbackSearchServiceDXP;
-    }
-
-    public void setFunnelbackSearchServiceDXP(FunnelbackSearchService funnelbackSearchServiceDXP) {
-        this.funnelbackSearchServiceDXP = funnelbackSearchServiceDXP;
-    }
-
-    public SearchService getBloomreachSearchService() {
-        return bloomreachSearchService;
-    }
-
-    public void setBloomreachSearchService(SearchService bloomreachSearchService) {
-        this.bloomreachSearchService = bloomreachSearchService;
-    }
-
-    class SearchCommand extends HystrixCommand<SearchResponse> {
-
-        Search search;
-
-        SearchSettings searchsettings;
-
-        public SearchCommand(Search search, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
-            super(Setter
-                    .withGroupKey(FUNNELBACK_COMMAND_GROUP_KEY)
-                    .andCommandKey(FUNNELBACK_SEARCH_COMMAND_KEY)
-                    .andCommandPropertiesDefaults(commandPropertiesSetter));
-            this.search = search;
-            this.searchsettings = searchsettings;
-        }
-
-        @Override
-        protected SearchResponse run() {
-            throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            try {
-                return funnelbackSearchServiceDXP.performSearch(search, searchsettings);
-            } catch (Throwable t) {
-                LOG.error("arg", t);
-                throw t;
-            }
-        }
-
-        @Override
-        protected SearchResponse getFallback() {
-            throwExceptionAtSpecifiedRate("bloomreach", searchsettings.getBloomreachErrorRate());
-            LOG.info("falling back to bloomreaech");
-            return bloomreachSearchService.performSearch(search, searchsettings);
-        }
-    }
-
-    class SuggestionsCommand extends HystrixCommand<List<String>> {
-
-        String query;
-
-        String mount;
-
-        SearchSettings searchsettings;
-
-        public SuggestionsCommand(String query, String mount, SearchSettings searchsettings, HystrixCommandProperties.Setter commandPropertiesSetter) {
-            super(Setter
-                    .withGroupKey(FUNNELBACK_COMMAND_GROUP_KEY)
-                    .andCommandKey(FUNNELBACK_SUGGESTIONS_COMMAND_KEY)
-                    .andCommandPropertiesDefaults(commandPropertiesSetter));
-            this.query = query;
-            this.mount = mount;
-            this.searchsettings = searchsettings;
-        }
-
-        @Override
-        protected List<String> run() {
-            throwExceptionAtSpecifiedRate("funnelback", searchsettings.getFunnelbackErrorRate());
-            return funnelbackSearchServiceDXP.getSuggestions(query, mount, searchsettings);
-        }
-
-        @Override
-        protected List<String> getFallback() {
+        TimeLimiter timeLimiter = timeLimiter(timeoutMillis);
+        try {
+            Supplier<CompletableFuture<List<String>>> futureSupplier = () ->
+                    CompletableFuture.supplyAsync(() -> {
+                        throwExceptionAtSpecifiedRate("primary", searchSettings.getFunnelbackErrorRate());
+                        return primarySearchService.getSuggestions(query, mount, searchSettings);
+                    }, EXECUTOR);
+            return CircuitBreaker.decorateCallable(SUGGESTIONS_CIRCUIT_BREAKER,
+                    TimeLimiter.decorateFutureSupplier(timeLimiter, futureSupplier)).call();
+        } catch (Exception e) {
+            LOG.warn("Primary suggestions failed, returning empty list", e);
             return emptyList();
         }
+    }
+
+    private static TimeLimiter timeLimiter(long timeoutMillis) {
+        return TimeLimiter.of(TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofMillis(timeoutMillis))
+                .build());
+    }
+
+    public SearchService getPrimarySearchService() {
+        return primarySearchService;
+    }
+
+    public void setPrimarySearchService(SearchService primarySearchService) {
+        this.primarySearchService = primarySearchService;
+    }
+
+    public SearchService getBackSearchService() {
+        return backSearchService;
+    }
+
+    public void setBackSearchService(SearchService backSearchService) {
+        this.backSearchService = backSearchService;
     }
 
     /**
      * Used for testing error behaviour.  The rate can be set in the component in the sitemap.
      */
     void throwExceptionAtSpecifiedRate(String label, double rate) {
-
         if (rate == 0) {
             return;
         }
-
         double random = randomNumberSource.get();
         if (random < rate) {
             LOG.warn("Generating manufactured exception, label is {}, rate is {}", label, rate);
