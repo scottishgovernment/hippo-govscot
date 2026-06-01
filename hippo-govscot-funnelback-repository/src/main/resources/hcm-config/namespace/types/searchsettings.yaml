@@ -111,7 +111,7 @@ definitions:
             /cluster.options:
               jcr:primaryType: frontend:pluginconfig
               orientation: vertical
-              selectable.options: bloomreach=Bloomreach,funnelback-dxp=Funnelback DXP,resilient=Resilient (Funnelback DXP with bloomreach fallback)
+              selectable.options: bloomreach=Bloomreach,funnelback-dxp=Funnelback DXP,resilient-dxp=Resilient (Funnelback DXP with bloomreach fallback)
           /timeoutMillis:
             jcr:primaryType: frontend:plugin
             caption: Timeout (millis)

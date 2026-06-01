@@ -7,7 +7,6 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 
 import static scot.gov.publishing.hippo.funnelback.HippoUtils.findPublished;
-import static scot.gov.publishing.hippo.funnelback.scheduler.PollFunnelbackCurator.FUNNELBACK;
 
 public class SearchType {
 
@@ -22,14 +21,9 @@ public class SearchType {
             return "";
         }
         String searchType = published.getProperty("search:searchtype").getString();
-        if (StringUtils.equalsAny(searchType, "funnelback-dxp", "resilient-dxp")) {
+        if (StringUtils.equalsAny(searchType, "funnelback-dxp", "resilient-dxp", "resilient")) {
             return "funnelback-dxp";
         }
-
-        if (StringUtils.equalsAny(searchType, FUNNELBACK, "resilient")) {
-            return FUNNELBACK;
-        }
-
         return searchType;
     }
 }
