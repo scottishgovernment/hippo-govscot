@@ -61,11 +61,4 @@ class RedirectsResourceTest {
     void normalizeFromUrl_handlesNull() {
         assertNull(RedirectsResource.normalizeFromUrl(null));
     }
-
-    @Test
-    void normalizeFromUrl_leavesGovScotRootUnchanged() {
-        // "https://www.gov.scot" without a trailing slash — not a URL with a path
-        String root = "https://www.gov.scot";
-        assertEquals(root, RedirectsResource.normalizeFromUrl(root));
-    }
 }

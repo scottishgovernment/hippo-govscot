@@ -3,6 +3,7 @@ package scot.gov.publishing.hippo.redirects;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.jaxrs.ext.multipart.Multipart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,9 +38,13 @@ public class RedirectsResource {
 
     private static final String GOV_SCOT_ORIGIN = "https://www.gov.scot";
 
+    private static final String GOV_SCOT_ORIGIN_WWW2 = "https://www2.gov.scot";
+
+    static Set<String> ORIGINS = Set.of(GOV_SCOT_ORIGIN, GOV_SCOT_ORIGIN_WWW2);
+
     private final RedirectRepository redirectRepository;
 
-    private final RedirectValidator redirectValidator = new RedirectValidator();
+    private final RedirectValidator redirectValidator = new RedirectValidator(ORIGINS);
 
     private final PublicationArchiver publicationArchiver;
 
@@ -88,6 +93,9 @@ public class RedirectsResource {
 
         try {
             List<Redirect> redirects = expandRedirects(parsed);
+            for (Redirect r : redirects) {
+                LOG.info("{} -> {}", r.getFrom(), r.getTo());
+            }
             redirectRepository.save(redirects);
             logRedirects(redirects);
             return Response.status(Response.Status.OK).entity(redirects).build();
@@ -201,7 +209,7 @@ public class RedirectsResource {
     /**
      * Normalises a {@code from} URL for storage:
      * <ol>
-     *   <li>If the value is a fully-qualified {@code https://www.gov.scot/} URL, the origin is
+     *   <li>If the value is a fully-qualified {@code https://www.gov.scot/} URL (or www2), the origin is
      *       stripped so only the path is retained.</li>
      *   <li>Any percent-encoded characters in the path are decoded to their literal form (e.g.
      *       {@code %3A} → {@code :}, {@code %2B} → {@code +}), using the same logic as
@@ -214,9 +222,12 @@ public class RedirectsResource {
         if (url == null) {
             return null;
         }
-        String path = url.startsWith(GOV_SCOT_ORIGIN + "/")
-                ? url.substring(GOV_SCOT_ORIGIN.length())
-                : url;
+        String path = ORIGINS.stream()
+                .map(origin -> StringUtils.stripEnd(origin, "/"))
+                .filter(url::startsWith)
+                .findFirst()
+                .map(origin -> url.substring(origin.length()))
+                .orElse(url);
         return RedirectNodePath.normalisePath(path);
     }
 

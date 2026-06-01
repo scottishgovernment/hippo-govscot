@@ -2,15 +2,21 @@ package scot.gov.publishing.hippo.redirects;
 
 import org.apache.commons.validator.routines.UrlValidator;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class RedirectValidator extends UrlValidator {
 
-    public RedirectValidator() {
+    private final Set<String> allowedOrigins;
+
+    public RedirectValidator( Set<String> allowedOrigins) {
         super(new String[]{"http", "https"}, UrlValidator.ALLOW_2_SLASHES);
+        this.allowedOrigins = allowedOrigins;
     }
 
     public List<String> validateRedirects(List<Redirect> redirects) {
@@ -34,7 +40,21 @@ public class RedirectValidator extends UrlValidator {
         if (isBlank(redirect.getFrom())) {
             return false;
         }
-        return super.isValid(redirect.getFrom()) || isValidPath(redirect.getFrom());
+        if (!super.isValid(redirect.getFrom()) && !isValidPath(redirect.getFrom())) {
+            return false;
+        }
+
+        String host = extractHost(redirect.getFrom());
+        // null host means it's a relative path — accept it
+        return host == null || allowedOrigins.contains(host);
+    }
+
+    private String extractHost(String url) {
+        try {
+            return new URI(url).getHost();
+        } catch (URISyntaxException e) {
+            return null;
+        }
     }
 
     boolean validTo(Redirect redirect) {

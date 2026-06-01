@@ -1,5 +1,6 @@
 package scot.gov.publishing.hippo.redirects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.onehippo.repository.scheduling.RepositoryJob;
 import org.onehippo.repository.scheduling.RepositoryJobExecutionContext;
 import org.slf4j.Logger;
@@ -309,6 +310,13 @@ public class MigrateAliasRedirectsJob implements RepositoryJob {
         redirect.setFrom(fromPath);
         redirect.setTo(toUrl);
         repo.doSave(redirect);
+
+        // these urls also supported the /downloads page for the publication so also add that as a lookup
+        Redirect downloadsRedirect = new Redirect();
+        downloadsRedirect.setFrom(StringUtils.stripEnd(fromPath, "/") + "/downloads");
+        downloadsRedirect.setTo(toUrl);
+        repo.doSave(downloadsRedirect);
+
         stats.migrated++;
         checkpoint.update(PHASE_GOVSCOT_URLS, fromPath, stats.migrated);
         logProgress(stats, checkpoint);

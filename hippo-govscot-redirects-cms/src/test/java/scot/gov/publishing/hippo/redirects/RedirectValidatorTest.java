@@ -3,10 +3,11 @@ package scot.gov.publishing.hippo.redirects;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static scot.gov.publishing.hippo.redirects.RedirectsResource.ORIGINS;
 
 class RedirectValidatorTest {
 
-    private final RedirectValidator validator = new RedirectValidator();
+    private final RedirectValidator validator = new RedirectValidator(ORIGINS);
 
     // -------------------------------------------------------------------------
     // validFrom
