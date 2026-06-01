@@ -1,6 +1,8 @@
 package scot.gov.publishing.hippo.redirects;
 
 import org.apache.commons.validator.routines.UrlValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -11,6 +13,8 @@ import java.util.Set;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 public class RedirectValidator extends UrlValidator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RedirectValidator.class);
 
     private final Set<String> allowedOrigins;
 
@@ -53,6 +57,7 @@ public class RedirectValidator extends UrlValidator {
         try {
             return new URI(url).getHost();
         } catch (URISyntaxException e) {
+            LOG.error("error validating url: " + url, e);
             return null;
         }
     }
