@@ -216,6 +216,7 @@ public class RedirectsResource {
      *       {@link RedirectNodePath#normalisePath}.  This ensures the stored path matches what
      *       the servlet container hands to the lookup service after URL-decoding the request
      *       URI.</li>
+     *   <li>Any trailing slash is removed so that stored paths and lookup paths are consistent.</li>
      * </ol>
      */
     static String normalizeFromUrl(String url) {
@@ -228,7 +229,8 @@ public class RedirectsResource {
                 .findFirst()
                 .map(origin -> url.substring(origin.length()))
                 .orElse(url);
-        return RedirectNodePath.normalisePath(path);
+        String normalised = RedirectNodePath.normalisePath(path);
+        return StringUtils.stripEnd(normalised, "/");
     }
 
     private void logRedirects(List<Redirect> redirects) {

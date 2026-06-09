@@ -211,7 +211,9 @@ public class PublicationArchiver {
 
         if (variant.hasProperty("govscot:isbn")) {
             String isbn = variant.getProperty("govscot:isbn").getString();
-            redirects.add(redirect("/isbn/" + isbn, to));
+            if (!isBlank(isbn)) {
+                redirects.add(redirect("/isbn/" + isbn, to));
+            }
         }
 
         return redirects;

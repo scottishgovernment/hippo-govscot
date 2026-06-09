@@ -23,8 +23,13 @@ class RedirectsResourceTest {
     }
 
     @Test
+    void normalizeFromUrl_stripsTrailingSlashFromPlainPath() {
+        assertEquals("/publications/mypub", RedirectsResource.normalizeFromUrl("/publications/mypub/"));
+    }
+
+    @Test
     void normalizeFromUrl_stripsGovScotOriginWithTrailingSlash() {
-        assertEquals("/publications/mypub/",
+        assertEquals("/publications/mypub",
                 RedirectsResource.normalizeFromUrl("https://www.gov.scot/publications/mypub/"));
     }
 
