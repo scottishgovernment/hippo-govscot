@@ -1,0 +1,12 @@
+<'journal'='http://www.staging.com/journal/nt/1.0'>
+<'hippo'='http://www.onehippo.org/jcr/hippo/nt/2.0.4'>
+
+[journal:entry] > hippo:compound
+  - journal:id (string)
+  - journal:contentid (string)
+  - journal:url (string)
+  - journal:timestamp (date)
+  - journal:collection (string)
+  - journal:action (string)
+  - journal:sequence (long)
+  - journal:attempt (long)

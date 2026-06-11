@@ -59,7 +59,6 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
 
     void doExecute(RepositoryJobExecutionContext context, Session session) throws RepositoryException {
-        LOG.info("PollFunnelbackCurator");
         String token = HstServices.getComponentManager().getContainerConfiguration().getString("squiz.admin.token");
         if (isBlank(token)) {
             LOG.info("no token, skipping");

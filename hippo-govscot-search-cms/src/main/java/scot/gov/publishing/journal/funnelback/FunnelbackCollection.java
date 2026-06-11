@@ -1,4 +1,4 @@
-package scot.gov.publishing.searchjournal.funnelback;
+package scot.gov.publishing.journal.funnelback;
 
 import static org.apache.commons.lang3.StringUtils.equalsAny;
 

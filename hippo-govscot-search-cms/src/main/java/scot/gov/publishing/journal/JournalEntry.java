@@ -1,8 +1,8 @@
-package scot.gov.publishing.searchjournal;
+package scot.gov.publishing.journal;
 
 import java.util.Calendar;
 
-public class SearchJournalEntry {
+public class JournalEntry {
 
     private String contentId;
 
@@ -12,7 +12,7 @@ public class SearchJournalEntry {
 
     private String collection;
 
-    private String action;
+    private JournalAction action;
 
     private long attempt = 0;
 
@@ -50,11 +50,11 @@ public class SearchJournalEntry {
         this.collection = collection;
     }
 
-    public String getAction() {
+    public JournalAction getAction() {
         return action;
     }
 
-    public void setAction(String action) {
+    public void setAction(JournalAction action) {
         this.action = action;
     }
 
