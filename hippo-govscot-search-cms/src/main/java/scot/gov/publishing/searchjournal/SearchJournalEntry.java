@@ -1,0 +1,76 @@
+package scot.gov.publishing.searchjournal;
+
+import java.util.Calendar;
+
+public class SearchJournalEntry {
+
+    private String contentId;
+
+    private String url;
+
+    private Calendar timestamp;
+
+    private String collection;
+
+    private String action;
+
+    private long attempt = 0;
+
+    private long sequence;
+
+    public String getContentId() {
+        return contentId;
+    }
+
+    public void setContentId(String contentId) {
+        this.contentId = contentId;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public Calendar getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(Calendar timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public void setAction(String action) {
+        this.action = action;
+    }
+
+    public long getAttempt() {
+        return attempt;
+    }
+
+    public void setAttempt(long attempt) {
+        this.attempt = attempt;
+    }
+
+    public long getSequence() {
+        return sequence;
+    }
+
+    public void setSequence(long sequence) {
+        this.sequence = sequence;
+    }
+}
