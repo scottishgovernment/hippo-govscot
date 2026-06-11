@@ -34,12 +34,11 @@ public class RedirectsModule extends AbstractReconfigurableDaemonModule {
         LOG.info("Initialising redirects rest api");
         JAXRSInvoker invoker = new AuthorizingRepositoryJaxrsInvoker(modulePath, HIPPO_REST_PERMISSION);
         JacksonJsonProvider jacksonJsonProvider = new JacksonJsonProvider(new ObjectMapper());
-        SwitchingRedirectRepository switchingRepo =
-                new SwitchingRedirectRepository(session);
-        PublicationArchiver publicationArchiver = new PublicationArchiver(session, switchingRepo);
+        JcrRedirectRepository redirectRepository = new JcrRedirectRepository(session);
+        PublicationArchiver publicationArchiver = new PublicationArchiver(session, redirectRepository);
         RepositoryJaxrsService.addEndpoint(new CXFRepositoryJaxrsEndpoint(PATH)
                 .invoker(invoker)
-                .singleton(new RedirectsResource(switchingRepo, publicationArchiver))
+                .singleton(new RedirectsResource(redirectRepository, publicationArchiver))
                 .singleton(jacksonJsonProvider));
     }
 

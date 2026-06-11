@@ -3,8 +3,8 @@ package scot.gov.publishing.hippo.redirects.hst;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scot.gov.publishing.hippo.redirects.Redirect;
+import scot.gov.publishing.hippo.redirects.JcrRedirectRepository;
 import scot.gov.publishing.hippo.redirects.RedirectRepository;
-import scot.gov.publishing.hippo.redirects.SwitchingRedirectRepository;
 
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
@@ -18,8 +18,7 @@ import java.util.Optional;
  * one atomic step. Both hits (a redirect exists) and misses (no redirect for this path) are
  * cached, so paths with no redirect do not cause repeated JCR reads.
  *
- * <p>The active lookup strategy is delegated to {@link SwitchingRedirectRepository}, which
- * consults feature flags to choose between the hash-bucketed and legacy path-mirror structures.
+ * <p>Lookups are delegated to {@link JcrRedirectRepository}.
  */
 public class AliasRedirectService {
 
@@ -56,7 +55,7 @@ public class AliasRedirectService {
 
     private Redirect doLookup(Session session, String path) {
         try {
-            RedirectRepository repo = new SwitchingRedirectRepository(session);
+            RedirectRepository repo = new JcrRedirectRepository(session);
             return repo.lookup(path).orElse(NO_REDIRECT);
         } catch (RepositoryException e) {
             LOG.error("Failed to lookup alias redirect for path '{}'", path, e);
