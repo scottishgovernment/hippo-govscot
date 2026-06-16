@@ -1,0 +1,10 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:frontend/cms/cms-static:
+      /publications-perspective:
+        jcr:primaryType: frontend:plugin
+        jcr:mixinTypes: ['frontend:navigationitem']
+        frontend:appPath: importer
+        hipposys:userrole: scotgov.publications.user
+        plugin.class: scot.gov.publishing.publications.cms.PublicationsPerspective
+        wicket.id: service.tab

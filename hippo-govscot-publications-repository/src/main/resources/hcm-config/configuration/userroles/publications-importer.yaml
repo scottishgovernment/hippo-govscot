@@ -1,0 +1,9 @@
+definitions:
+  config:
+    /hippo:configuration/hippo:userroles:
+      /scotgov.publications.user:
+        jcr:primaryType: hipposys:userrole
+        hipposys:system: true
+        hipposys:description: Access to the publications importer
+        hipposys:userroles:
+          - xm.cms.user
