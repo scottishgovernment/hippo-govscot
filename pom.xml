@@ -22,6 +22,8 @@
     <module>hippo-govscot-cms</module>
     <module>hippo-govscot-feedback-cms</module>
     <module>hippo-govscot-feedback-repository</module>
+    <module>hippo-govscot-publications-cms</module>
+    <module>hippo-govscot-publications-repository</module>
     <module>hippo-govscot-funnelback-hst</module>
     <module>hippo-govscot-funnelback-cms</module>
     <module>hippo-govscot-funnelback-repository</module>
