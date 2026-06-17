@@ -25,18 +25,18 @@ public class RedirectValidator extends UrlValidator {
 
     public List<String> validateRedirects(List<Redirect> redirects) {
         List<String> violations = new ArrayList<>();
-        for (Redirect redirect : redirects) {
-            validateRedirect(redirect, violations);
+        for (int i = 0; i < redirects.size(); i++) {
+            validateRedirect(redirects.get(i), i + 1, violations);
         }
         return violations;
     }
 
-    void validateRedirect(Redirect redirect, List<String> violations) {
+    void validateRedirect(Redirect redirect, int lineNumber, List<String> violations) {
         if (!validFrom(redirect)) {
-            violations.add("Invalid From url: " + redirect.getFrom());
+            violations.add("Line " + lineNumber + ": Invalid From url: " + redirect.getFrom());
         }
         if (!validTo(redirect)) {
-            violations.add("Invalid To url: " + redirect.getTo());
+            violations.add("Line " + lineNumber + ": Invalid To url: " + redirect.getTo());
         }
     }
 
