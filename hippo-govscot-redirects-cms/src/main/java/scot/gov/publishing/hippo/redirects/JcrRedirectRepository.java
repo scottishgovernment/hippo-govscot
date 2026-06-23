@@ -119,6 +119,7 @@ public class JcrRedirectRepository implements RedirectRepository {
         if (redirect.isHistoricalUrl()) {
             leaf.setProperty(PROP_HISTORICAL, true);
         } else {
+            removeHistoricalPropertyIfPresent(leaf);
             leaf.setProperty(PROP_URL, redirect.getTo());
         }
         leaf.setProperty(PROP_FROM, redirect.getFrom());
@@ -135,6 +136,12 @@ public class JcrRedirectRepository implements RedirectRepository {
             saver.save();
         } else {
             session.save();
+        }
+    }
+
+    private void removeHistoricalPropertyIfPresent(Node n) throws RepositoryException {
+        if (n.hasProperty(PROP_HISTORICAL)) {
+            n.getProperty(PROP_HISTORICAL).remove();
         }
     }
 
