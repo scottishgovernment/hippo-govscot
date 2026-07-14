@@ -48,6 +48,9 @@ public class SsoFilter extends HttpFilter {
             case "disable":
                 disableSSOCookie(req, res);
                 break;
+            case "reset":
+                removeSSOCookie(req, res);
+                break;
             case "jwks":
                 serveJwks(res);
                 break;
@@ -87,6 +90,15 @@ public class SsoFilter extends HttpFilter {
      */
     private void disableSSOCookie(HttpServletRequest req, HttpServletResponse res) throws IOException {
         res.addCookie(createSsoCookie(req.isSecure(), false));
+        sendRedirect(req, res);
+    }
+
+    /**
+     * Deletes any cookies used to control SSO authentication.
+     */
+    private void removeSSOCookie(HttpServletRequest req, HttpServletResponse res) throws IOException {
+        res.addCookie(createCookie(SSO_COOKIE_NAME, "", req.isSecure(), 0));
+        res.addCookie(clearLoggedOutCookie(req.isSecure()));
         sendRedirect(req, res);
     }
 
