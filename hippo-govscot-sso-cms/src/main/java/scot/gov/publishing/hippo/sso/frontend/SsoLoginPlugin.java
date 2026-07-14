@@ -1,6 +1,7 @@
 package scot.gov.publishing.hippo.sso.frontend;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -20,6 +21,7 @@ import org.onehippo.forge.resetpassword.login.CustomLoginPlugin;
 import scot.gov.publishing.hippo.sso.OidcConfig;
 import scot.gov.publishing.hippo.sso.RedirectHandler;
 import scot.gov.publishing.hippo.sso.SsoConfig;
+import scot.gov.publishing.hippo.sso.SsoFilter;
 import scot.gov.publishing.hippo.sso.SsoSessionAttributes;
 
 @SuppressWarnings("unused")
@@ -159,7 +161,11 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // This forces an IdP redirect which, in turn, clears the session and
                     // ensures the application picks up the new credentials.
                     session.removeAttribute(SsoSessionAttributes.CREDENTIALS);
-                    session.removeAttribute(SsoSessionAttributes.LOGGED_OUT);
+                    // Written directly to the servlet response, not via Wicket's WebResponse:
+                    // a subsequent RestartResponseException elsewhere in the request would
+                    // reset the buffered Wicket-level response and silently drop the cookie.
+                    HttpServletResponse response = (HttpServletResponse) getRequestCycle().getResponse().getContainerResponse();
+                    response.addCookie(SsoFilter.clearLoggedOutCookie(request.isSecure()));
                     // Save the URL of the login page as RETURN_URL, captured when the page
                     // was first rendered, so CallbackHandler can return the user here after
                     // authentication.
@@ -187,7 +193,6 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
             HttpServletRequest request = (HttpServletRequest) getRequest().getContainerRequest();
             HttpSession session = request.getSession(true);
             session.removeAttribute(SsoSessionAttributes.SSO);
-            session.removeAttribute(SsoSessionAttributes.LOGGED_OUT);
         }
     }
 

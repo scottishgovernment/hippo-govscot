@@ -13,6 +13,13 @@ public class SsoFilter extends HttpFilter {
 
     public static final String SSO_COOKIE_NAME = "sso";
 
+    /**
+     * Cookie name used to indicate that the user has logged out.
+     * This allows the redirect filter to avoid immediately redirecting the user
+     * back to the IdP when not required (sso.redirect=ONCE).
+     */
+    public static final String LOGGED_OUT_COOKIE_NAME = "logged_out";
+
     private final CallbackHandler callbackHandler = new CallbackHandler();
 
     @Override
@@ -90,7 +97,7 @@ public class SsoFilter extends HttpFilter {
         // "user not found". If left in the session, OidcLoginFilter would see
         // them and pass through rather than redirecting to the IdP.
         s.removeAttribute(SsoSessionAttributes.CREDENTIALS);
-        s.removeAttribute(SsoSessionAttributes.LOGGED_OUT);
+        res.addCookie(clearLoggedOutCookie(req.isSecure()));
         sendRedirect(req, res);
     }
 
@@ -100,11 +107,30 @@ public class SsoFilter extends HttpFilter {
     }
 
     private static Cookie createSsoCookie(boolean secure, boolean enable) {
-        Cookie cookie = new Cookie(SSO_COOKIE_NAME, Boolean.toString(enable));
+        return createCookie(SSO_COOKIE_NAME, Boolean.toString(enable), secure, -1);
+    }
+
+    /**
+     * Sets the logged-out cookie, read by SsoRedirectFilter to suppress an immediate
+     * auto-redirect back to the IdP after logout (sso.redirect=ONCE only).
+     */
+    public static Cookie loggedOutCookie(boolean secure) {
+        return createCookie(LOGGED_OUT_COOKIE_NAME, Boolean.toString(true), secure, -1);
+    }
+
+    /**
+     * Clears the logged-out cookie, e.g. when the user initiates a fresh login.
+     */
+    public static Cookie clearLoggedOutCookie(boolean secure) {
+        return createCookie(LOGGED_OUT_COOKIE_NAME, "", secure, 0);
+    }
+
+    private static Cookie createCookie(String name, String value, boolean secure, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
         cookie.setSecure(secure);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
-        cookie.setMaxAge(-1);
+        cookie.setMaxAge(maxAge);
         return cookie;
     }
 

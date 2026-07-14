@@ -38,15 +38,6 @@ public final class SsoSessionAttributes {
      */
     public static final String RETURN_URL = "return_url";
 
-    /**
-     * A flag attribute to indicate that the user has logged out.
-     * This is used to prevent the user from automatically being logged back in
-     * after logging out. It distinguishes between the cases where the login
-     * page is shown because the user logged out, and the user was not logged
-     * in after following an IdP redirect.
-     */
-    public static final String LOGGED_OUT = "logged_out";
-
     static final String STATE = "state";
     static final String NONCE = "nonce";
     static final String CODE_VERIFIER = "code_verifier";

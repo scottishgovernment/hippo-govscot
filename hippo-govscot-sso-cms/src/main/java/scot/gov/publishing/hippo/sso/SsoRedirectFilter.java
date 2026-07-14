@@ -17,6 +17,12 @@ public class SsoRedirectFilter extends HttpFilter {
 
     public static final String CREDENTIALS_ATTR_NAME = SsoSessionAttributes.CREDENTIALS;
 
+    /**
+     * Session attribute set on successful login by Bloomreach.
+     * This is used to detect whether a user is already authenticated.
+     */
+    private static final String HIPPO_USERNAME_ATTR_NAME = "hippo:username";
+
     private static final Logger LOG = LoggerFactory.getLogger(SsoRedirectFilter.class);
 
     private static final List<String> EXCLUDED_PREFIXES = List.of(
@@ -68,6 +74,8 @@ public class SsoRedirectFilter extends HttpFilter {
         String requestUrl = queryString == null ? requestUri : requestUri + "?" + queryString;
         LOG.debug("SsoRedirectFilter - {} {}", request.getMethod(), requestUrl);
 
+        clearLoggedOutCookieIfAuthenticated(request, response);
+
         // Only redirect GET requests to the IdP. Redirecting other requests
         // would cause the request body to be lost.
         if (!"GET".equals(request.getMethod())) {
@@ -107,15 +115,42 @@ public class SsoRedirectFilter extends HttpFilter {
         boolean sessionAttr = session != null && session.getAttribute(SsoSessionAttributes.SSO) != null;
         boolean sso = switch (ssoConfig.mode()) {
             case OFF -> false;
-            case REQUIRED -> ssoConfig.redirect() == SsoConfig.Redirect.AUTO;
+            case REQUIRED -> ssoConfig.redirect() != SsoConfig.Redirect.MANUAL;
             case OPTIONAL -> sessionAttr || cookiePreference(request);
         };
-        return sso && !isExcluded(request) && !isLoggedOut(request);
+        // The logged-out cookie only suppresses redirects for ONCE; AUTO redirects
+        // unconditionally, ignoring it.
+        boolean suppressedByLogout = ssoConfig.redirect() == SsoConfig.Redirect.ONCE && isLoggedOut(request);
+        return sso && !isExcluded(request) && !suppressedByLogout;
     }
 
     private static boolean isLoggedOut(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (ArrayUtils.isEmpty(cookies)) {
+            return false;
+        }
+        return Arrays.stream(cookies)
+                .filter(c -> SsoFilter.LOGGED_OUT_COOKIE_NAME.equalsIgnoreCase(c.getName()))
+                .map(Cookie::getValue)
+                .anyMatch(BooleanUtils::toBoolean);
+    }
+
+    /**
+     * Clears the logged-out cookie whenever the request carries an authenticated CMS
+     * session, regardless of how the user logged in (password or SSO) or the current
+     * sso.redirect value. Without this, a stale logged-out cookie from a previous ONCE
+     * session (or a manual visit) would keep suppressing auto-redirect after the user has
+     * since logged in again.
+     */
+    private static void clearLoggedOutCookieIfAuthenticated(HttpServletRequest request, HttpServletResponse response) {
         HttpSession session = request.getSession(false);
-        return session != null && session.getAttribute(SsoSessionAttributes.LOGGED_OUT) != null;
+        if (session == null || session.getAttribute(HIPPO_USERNAME_ATTR_NAME) == null) {
+            return;
+        }
+        if (!isLoggedOut(request)) {
+            return;
+        }
+        response.addCookie(SsoFilter.clearLoggedOutCookie(request.isSecure()));
     }
 
     private static boolean isExcluded(HttpServletRequest request) {
@@ -127,7 +162,7 @@ public class SsoRedirectFilter extends HttpFilter {
     }
 
     private boolean cookiePreference(HttpServletRequest request) {
-        boolean systemDefault = ssoConfig.redirect() == SsoConfig.Redirect.AUTO;
+        boolean systemDefault = ssoConfig.redirect() != SsoConfig.Redirect.MANUAL;
         Cookie[] cookies = request.getCookies();
         if (ArrayUtils.isEmpty(cookies)) {
             return systemDefault;

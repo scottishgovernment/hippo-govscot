@@ -127,13 +127,62 @@ public class SsoRedirectFilterTest {
     }
 
     @Test
-    public void loggedOutSessionPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.LOGGED_OUT)).thenReturn(true);
+    public void redirectOnceWithLoggedOutCookiePassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
 
         sut.doFilter(req, resp, chain);
 
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    @Test
+    public void redirectOnceWithoutLoggedOutCookieRedirectsToIdP() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
+        sut.redirectHandler = new RedirectHandler(testOidcConfig());
+        when(req.getCookies()).thenReturn(null);
+        when(req.getSession(true)).thenReturn(session);
+
+        sut.doFilter(req, resp, chain);
+
+        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
+        verify(chain, never()).doFilter(any(), any());
+    }
+
+    /**
+     * AUTO ignores the logged-out cookie entirely — logging out and browsing again logs
+     * the user straight back in.
+     */
+    @Test
+    public void redirectAutoWithLoggedOutCookieStillRedirectsToIdP() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
+        sut.redirectHandler = new RedirectHandler(testOidcConfig());
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
+        when(req.getSession(true)).thenReturn(session);
+
+        sut.doFilter(req, resp, chain);
+
+        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
+        verify(chain, never()).doFilter(any(), any());
+    }
+
+    /**
+     * An authenticated CMS session (hippo:username set) always clears a stale logged-out
+     * cookie, regardless of sso.redirect, so a later logout is not immediately suppressed
+     * by a leftover cookie from a previous session.
+     */
+    @Test
+    public void authenticatedSessionClearsLoggedOutCookie() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
+        when(req.getSession(false)).thenReturn(session);
+        when(session.getAttribute("hippo:username")).thenReturn("someuser");
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
+
+        sut.doFilter(req, resp, chain);
+
+        verify(resp).addCookie(argThat(c ->
+                c.getName().equals(SsoFilter.LOGGED_OUT_COOKIE_NAME) && c.getMaxAge() == 0));
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }

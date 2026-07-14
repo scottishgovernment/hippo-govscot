@@ -43,7 +43,8 @@ public record SsoConfig(
 
     enum Redirect {
         AUTO,
-        MANUAL
+        MANUAL,
+        ONCE
     }
 
     public enum Form {
