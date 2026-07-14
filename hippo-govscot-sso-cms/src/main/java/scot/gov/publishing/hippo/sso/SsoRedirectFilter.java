@@ -132,10 +132,14 @@ public class SsoRedirectFilter extends HttpFilter {
 
         // Indicates whether an error occurred during SSO login (e.g. user authenticated with
         // IdP but is not assigned to the application).
-        boolean pendingError = session != null
-                && (session.getAttribute(SsoSessionAttributes.SSO_ERROR) != null
-                        || session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) != null);
+        boolean pendingError = hasPendingError(session);
         return sso && !isExcluded(request) && !userLoggedOut && !pendingError;
+    }
+
+    private static boolean hasPendingError(HttpSession session) {
+        return session != null
+                && (session.getAttribute(SsoSessionAttributes.SSO_ERROR) != null
+                || session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) != null);
     }
 
     private static boolean isLoggedOut(HttpServletRequest request) {
