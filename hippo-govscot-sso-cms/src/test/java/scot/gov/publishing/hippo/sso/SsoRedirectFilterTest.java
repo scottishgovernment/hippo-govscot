@@ -209,6 +209,57 @@ public class SsoRedirectFilterTest {
         verify(resp, never()).sendRedirect(anyString());
     }
 
+    /**
+     * REQUIRED+AUTO redirects unconditionally by default, but a pending SSO_ERROR from a
+     * just-completed callback (e.g. the IdP rejected the user) must suppress it — otherwise
+     * the browser bounces straight back to the IdP, gets the same error, and loops forever
+     * without the login page ever rendering.
+     */
+    @Test
+    public void requiredModeWithPendingSsoErrorPassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
+        when(req.getSession(false)).thenReturn(session);
+        when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
+
+        sut.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    /**
+     * Same as above but for CALLBACK_ERROR (internal callback failures), which must suppress
+     * the redirect just as SSO_ERROR does.
+     */
+    @Test
+    public void requiredModeWithPendingCallbackErrorPassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
+        when(req.getSession(false)).thenReturn(session);
+        when(session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR)).thenReturn(true);
+
+        sut.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    /**
+     * OPTIONAL with an sso=true preference cookie also redirects unconditionally, so the
+     * same pending-error suppression must apply there too, not just in REQUIRED mode.
+     */
+    @Test
+    public void optionalModeWithSsoCookieTrueAndPendingSsoErrorPassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "true")});
+        when(req.getSession(false)).thenReturn(session);
+        when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
+
+        sut.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
     @Test
     public void credentialsInSessionPassesThroughAndSetsRequestAttribute() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
@@ -260,6 +311,26 @@ public class SsoRedirectFilterTest {
         sut.doFilter(req, resp, chain);
 
         verify(req).setAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME, mockCreds);
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    /**
+     * A password-authenticated session (hippo:username set, no SSO CREDENTIALS attribute)
+     * must never be redirected to the IdP, even when OPTIONAL mode's cookie/session-attribute
+     * preference would otherwise default to auto-redirecting (sso.redirect=AUTO, no sso
+     * cookie). Without checking hippo:username here, an already-logged-in password user would
+     * be bounced straight back to the IdP on their very next request.
+     */
+    @Test
+    public void passwordAuthenticatedSessionWithAutoRedirectPassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
+        when(req.getSession(false)).thenReturn(session);
+        when(session.getAttribute("hippo:username")).thenReturn("localadmin");
+        when(req.getCookies()).thenReturn(null);
+
+        sut.doFilter(req, resp, chain);
+
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }

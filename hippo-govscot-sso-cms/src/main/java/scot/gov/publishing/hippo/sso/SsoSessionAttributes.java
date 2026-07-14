@@ -5,7 +5,14 @@ import org.hippoecm.frontend.model.UserCredentials;
 public final class SsoSessionAttributes {
 
     /**
-     * A flag attribute to indicate that the user is logged in via SSO.
+     * Session attribute name that indicates that SSO login has been requested.
+     * This could be clicking the SSO login button or visiting /sso/login.
+     * It persists through the IdP callback awaiting JCR resolution.
+     * It is cleared on successful login (see
+     * {@code SsoLoginPlugin.SsoLoginPanel#loginSuccess()}).
+     * It must also be cleared on any login failure (see {@code CallbackHandler}).
+     * Otherwise it stays set with no credentials and, in {@code OPTIONAL} mode,
+     * keeps forcing an IdP redirect regardless of the configured {@code sso.redirect} value.
      */
     public static final String SSO = "sso";
 

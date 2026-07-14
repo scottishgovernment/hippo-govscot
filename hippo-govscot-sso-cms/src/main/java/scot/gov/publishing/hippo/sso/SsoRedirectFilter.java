@@ -95,6 +95,13 @@ public class SsoRedirectFilter extends HttpFilter {
                 chain.doFilter(request, response);
                 return;
             }
+            // A use who has already authenticated never needs an IdP redirect.
+            // Only SSO-authenticated sessions carry CREDENTIALS above - this avoids redirecting
+            // users who logged in using a password.
+            if (existingSession.getAttribute(HIPPO_USERNAME_ATTR_NAME) != null) {
+                chain.doFilter(request, response);
+                return;
+            }
         }
 
         if (!requiresIdpRedirect(request)) {
@@ -118,10 +125,17 @@ public class SsoRedirectFilter extends HttpFilter {
             case REQUIRED -> ssoConfig.redirect() != SsoConfig.Redirect.MANUAL;
             case OPTIONAL -> sessionAttr || cookiePreference(request);
         };
+
         // The logged-out cookie only suppresses redirects for ONCE; AUTO redirects
         // unconditionally, ignoring it.
-        boolean suppressedByLogout = ssoConfig.redirect() == SsoConfig.Redirect.ONCE && isLoggedOut(request);
-        return sso && !isExcluded(request) && !suppressedByLogout;
+        boolean userLoggedOut = ssoConfig.redirect() == SsoConfig.Redirect.ONCE && isLoggedOut(request);
+
+        // Indicates whether an error occurred during SSO login (e.g. user authenticated with
+        // IdP but is not assigned to the application).
+        boolean pendingError = session != null
+                && (session.getAttribute(SsoSessionAttributes.SSO_ERROR) != null
+                        || session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) != null);
+        return sso && !isExcluded(request) && !userLoggedOut && !pendingError;
     }
 
     private static boolean isLoggedOut(HttpServletRequest request) {

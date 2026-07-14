@@ -17,6 +17,7 @@ import org.hippoecm.frontend.plugins.login.DefaultLoginPlugin;
 import org.hippoecm.frontend.plugins.login.LoginConfig;
 import org.hippoecm.frontend.plugins.login.LoginHandler;
 import org.hippoecm.frontend.plugins.login.LoginPanel;
+import org.hippoecm.frontend.session.LoginException;
 import org.onehippo.forge.resetpassword.frontend.ResetPasswordConst;
 import org.onehippo.forge.resetpassword.login.CustomLoginPlugin;
 import scot.gov.publishing.hippo.sso.OidcConfig;
@@ -184,6 +185,22 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
             ssoLogin.add(new Label("sso-login-label", new ResourceModel("sso.login")));
             ssoLogin.setDefaultFormProcessing(false);
             return ssoLogin;
+        }
+
+        /**
+         * Handler for submit button for username/password login.
+         * Clears any stale SSO session attributes left over from a previous SSO
+         * attempt. This avoids SSO login errors persisting if the user is authenticated
+         * with the IdP but has no matching Bloomreach account, and tries to login with
+         * username and password instead.
+         */
+        @Override
+        protected void login() throws LoginException {
+            HttpServletRequest request = (HttpServletRequest) getRequest().getContainerRequest();
+            HttpSession session = request.getSession(true);
+            session.removeAttribute(SsoSessionAttributes.SSO);
+            session.removeAttribute(SsoSessionAttributes.CREDENTIALS);
+            super.login();
         }
 
         @Override

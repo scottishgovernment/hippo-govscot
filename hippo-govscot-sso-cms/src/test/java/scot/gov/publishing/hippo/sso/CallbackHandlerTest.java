@@ -53,6 +53,22 @@ public class CallbackHandlerTest {
         verify(resp).sendRedirect("/cms/");
     }
 
+    /**
+     * The SSO session attribute marks a login as requested/in-flight, not that the user is
+     * authenticated. If it survives an IdP error, it stays set with no credentials and, in
+     * REQUIRED mode or OPTIONAL with an sso=true cookie, SsoRedirectFilter would otherwise
+     * redirect straight back to the IdP — looping forever on the same error.
+     */
+    @Test
+    public void idpErrorClearsSsoAttribute() throws Exception {
+        when(req.getParameter("error")).thenReturn("access_denied");
+        when(req.getParameter("error_description")).thenReturn("User cancelled");
+
+        sut.handleRequest(req, resp);
+
+        verify(session).removeAttribute(SsoSessionAttributes.SSO);
+    }
+
     @Test
     public void idpErrorRedirectsToReturnUrl() throws Exception {
         when(req.getParameter("error")).thenReturn("login_required");
@@ -152,6 +168,22 @@ public class CallbackHandlerTest {
         verify(session).removeAttribute(SsoSessionAttributes.STATE);
         verify(session).removeAttribute(SsoSessionAttributes.NONCE);
         verify(session).removeAttribute(SsoSessionAttributes.CODE_VERIFIER);
+    }
+
+    /**
+     * Same rationale as idpErrorClearsSsoAttribute: an internal callback error must not leave
+     * the SSO attribute set with no credentials, or SsoRedirectFilter could otherwise loop
+     * back to the IdP in REQUIRED mode or with an sso=true preference cookie.
+     */
+    @Test
+    public void callbackErrorClearsSsoAttribute() throws Exception {
+        when(req.getParameter("error")).thenReturn(null);
+        when(req.getParameter("state")).thenReturn(null);
+        when(req.getParameter("code")).thenReturn("some-auth-code");
+
+        sut.handleRequest(req, resp);
+
+        verify(session).removeAttribute(SsoSessionAttributes.SSO);
     }
 
 }

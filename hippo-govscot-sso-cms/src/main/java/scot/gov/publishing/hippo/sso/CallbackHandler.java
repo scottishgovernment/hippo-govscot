@@ -90,7 +90,9 @@ public class CallbackHandler {
     private static void handleErrorCallback(HttpServletRequest req, String error) {
         String description = req.getParameter("error_description");
         LOG.warn("IdP returned error: {} ({})", error, description);
-        req.getSession().setAttribute(SsoSessionAttributes.SSO_ERROR, error);
+        HttpSession session = req.getSession();
+        session.removeAttribute(SsoSessionAttributes.SSO);
+        session.setAttribute(SsoSessionAttributes.SSO_ERROR, error);
     }
 
     private void handleSuccessCallback(HttpServletRequest req) throws CallbackException {
@@ -216,6 +218,7 @@ public class CallbackHandler {
         String returnUrl = Objects.toString(
                 session.getAttribute(SsoSessionAttributes.RETURN_URL),
                 req.getContextPath() + "/");
+        session.removeAttribute(SsoSessionAttributes.SSO);
         // Clear OIDC flow attributes from the failed attempt — they are single-use and
         // tied to this now-failed flow, so leaving them would only add debugging noise.
         session.removeAttribute(SsoSessionAttributes.STATE);
