@@ -2,7 +2,11 @@ package scot.gov.publishing.hippo.sso;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.*;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpFilter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
@@ -11,7 +15,12 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+
+import static scot.gov.publishing.hippo.sso.SsoConfig.Mode.OFF;
+import static scot.gov.publishing.hippo.sso.SsoConfig.Mode.REQUIRED;
+import static scot.gov.publishing.hippo.sso.SsoConfig.Redirect.MANUAL;
 
 public class SsoRedirectFilter extends HttpFilter {
 
@@ -55,7 +64,7 @@ public class SsoRedirectFilter extends HttpFilter {
         this.ssoConfig = SsoConfig.get();
 
         // Early return if SSO is not enabled
-        if (SsoConfig.Mode.OFF == this.ssoConfig.mode()) {
+        if (OFF == this.ssoConfig.mode()) {
             this.configured = true;
             return;
         }
@@ -76,36 +85,8 @@ public class SsoRedirectFilter extends HttpFilter {
 
         clearLoggedOutCookieIfAuthenticated(request, response);
 
-        // Only redirect GET requests to the IdP. Redirecting other requests
-        // would cause the request body to be lost.
-        if (!"GET".equals(request.getMethod())) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        // Always propagate credentials from session to request, regardless of redirect mode.
-        // In REQUIRED+MANUAL and OPTIONAL+MANUAL the filter does not auto-redirect, but
-        // CallbackHandler still stores credentials in a fresh session after IdP authentication.
-        // Without this check those credentials would be silently dropped.
-        HttpSession existingSession = request.getSession(false);
-        if (existingSession != null) {
-            Object creds = existingSession.getAttribute(CREDENTIALS_ATTR_NAME);
-            if (creds != null) {
-                request.setAttribute(CREDENTIALS_ATTR_NAME, creds);
-                chain.doFilter(request, response);
-                return;
-            }
-            // A use who has already authenticated never needs an IdP redirect.
-            // Only SSO-authenticated sessions carry CREDENTIALS above - this avoids redirecting
-            // users who logged in using a password.
-            if (existingSession.getAttribute(HIPPO_USERNAME_ATTR_NAME) != null) {
-                chain.doFilter(request, response);
-                return;
-            }
-        }
-
-        if (!requiresIdpRedirect(request)) {
-            chain.doFilter(request, response);
+        if (passThrough(request)) {
+            super.doFilter(request, response, chain);
             return;
         }
 
@@ -117,23 +98,93 @@ public class SsoRedirectFilter extends HttpFilter {
         response.sendRedirect(url);
     }
 
-    private boolean requiresIdpRedirect(HttpServletRequest request) {
+    private boolean passThrough(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
-        boolean sessionAttr = session != null && session.getAttribute(SsoSessionAttributes.SSO) != null;
-        boolean sso = switch (ssoConfig.mode()) {
-            case OFF -> false;
-            case REQUIRED -> ssoConfig.redirect() != SsoConfig.Redirect.MANUAL;
-            case OPTIONAL -> sessionAttr || cookiePreference(request);
-        };
 
-        // The logged-out cookie only suppresses redirects for ONCE; AUTO redirects
-        // unconditionally, ignoring it.
-        boolean userLoggedOut = ssoConfig.redirect() == SsoConfig.Redirect.ONCE && isLoggedOut(request);
+        // Pass through requests without redirecting if ...
 
-        // Indicates whether an error occurred during SSO login (e.g. user authenticated with
-        // IdP but is not assigned to the application).
-        boolean pendingError = hasPendingError(session);
-        return sso && !isExcluded(request) && !userLoggedOut && !pendingError;
+        // The request is not a GET request. Only redirect GET requests to the IdP.
+        // Redirecting other requests would cause the request body to be lost.
+        if (!"GET".equals(request.getMethod())) {
+            return true;
+        }
+
+        // The SSO integration is disabled
+        if (ssoConfig.mode() == OFF) {
+            return true;
+        }
+
+        // The user is already authenticated by Bloomreach or the IdP
+        if (isAuthenticated(request)) {
+            return true;
+        }
+
+        // There are SSO errors that should be displayed by the application.
+        // For example, if the user is authenticated with the IdP but is not
+        // assigned to the application.
+        if (hasPendingError(session)) {
+            return true;
+        }
+
+        // The user logged out and should not be logged in automatically
+        if (isLogOutPermitted() && isLogoutRequested(request)) {
+            return true;
+        }
+
+        // SSO login is manual and the user has not requested it
+        if (ssoConfig.redirect() == MANUAL && !isSSOLoginRequested(request)) {
+            return true;
+        }
+
+        // SSO is not required, not explicitly requested, and disabled by a cookie.
+        if (isSsoDisabledByCookie(request, session)) {
+            return true;
+        }
+
+        // The request isn't for a URL that requires authentication
+        return isPublic(request);
+    }
+
+    /**
+     * Returns true if the user is authenticated, either locally or with the IdP.
+     * Copies IdP credentials to the request if present.
+     */
+    private static boolean isAuthenticated(HttpServletRequest request) {
+        HttpSession existingSession = request.getSession(false);
+        if (existingSession == null) {
+            return false;
+        }
+
+        // Propagate credentials from session to request.
+        // CallbackHandler stores credentials in a fresh session after IdP authentication.
+        // These need to be copied to a request attribute.
+        Object creds = existingSession.getAttribute(CREDENTIALS_ATTR_NAME);
+        if (creds != null) {
+            request.setAttribute(CREDENTIALS_ATTR_NAME, creds);
+            return true;
+        }
+
+        // A user who has already authenticated never needs an IdP redirect.
+        // Only SSO-authenticated sessions carry CREDENTIALS above - this avoids redirecting
+        // users who logged in using a password.
+        return existingSession.getAttribute(HIPPO_USERNAME_ATTR_NAME) != null;
+    }
+
+    private static boolean isSSOLoginRequested(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        return isSsoLoginRequestedByUI(session) || isSSOLoginRequestedByCookie(request);
+    }
+
+    private static boolean isSsoLoginRequestedByUI(HttpSession session) {
+        return session != null && session.getAttribute(SsoSessionAttributes.SSO) != null;
+    }
+
+    private static boolean isSSOLoginRequestedByCookie(HttpServletRequest request) {
+        return getBooleanCookie(request, SsoFilter.SSO_COOKIE_NAME).orElse(false);
+    }
+
+    private static boolean isSsoLoginSuppressedByCookie(HttpServletRequest request) {
+        return !getBooleanCookie(request, SsoFilter.SSO_COOKIE_NAME).orElse(true);
     }
 
     private static boolean hasPendingError(HttpSession session) {
@@ -142,15 +193,18 @@ public class SsoRedirectFilter extends HttpFilter {
                 || session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) != null);
     }
 
-    private static boolean isLoggedOut(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (ArrayUtils.isEmpty(cookies)) {
-            return false;
-        }
-        return Arrays.stream(cookies)
-                .filter(c -> SsoFilter.LOGGED_OUT_COOKIE_NAME.equalsIgnoreCase(c.getName()))
-                .map(Cookie::getValue)
-                .anyMatch(BooleanUtils::toBoolean);
+    private boolean isLogOutPermitted() {
+        return ssoConfig.redirect() != SsoConfig.Redirect.AUTO;
+    }
+
+    private static boolean isLogoutRequested(HttpServletRequest request) {
+        return getBooleanCookie(request, SsoFilter.LOGGED_OUT_COOKIE_NAME).orElse(false);
+    }
+
+    private boolean isSsoDisabledByCookie(HttpServletRequest request, HttpSession session) {
+        return ssoConfig.mode() != REQUIRED
+                && !isSsoLoginRequestedByUI(session)
+                && isSsoLoginSuppressedByCookie(request);
     }
 
     /**
@@ -165,13 +219,13 @@ public class SsoRedirectFilter extends HttpFilter {
         if (session == null || session.getAttribute(HIPPO_USERNAME_ATTR_NAME) == null) {
             return;
         }
-        if (!isLoggedOut(request)) {
+        if (!isLogoutRequested(request)) {
             return;
         }
         response.addCookie(SsoFilter.clearLoggedOutCookie(request.isSecure()));
     }
 
-    private static boolean isExcluded(HttpServletRequest request) {
+    private static boolean isPublic(HttpServletRequest request) {
         String contextPath = request.getContextPath();
         String requestURI = request.getRequestURI();
         String path = requestURI.substring(contextPath.length());
@@ -179,18 +233,16 @@ public class SsoRedirectFilter extends HttpFilter {
                 || EXCLUDED_PATHS.contains(path);
     }
 
-    private boolean cookiePreference(HttpServletRequest request) {
-        boolean systemDefault = ssoConfig.redirect() != SsoConfig.Redirect.MANUAL;
+    private static Optional<Boolean> getBooleanCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
         if (ArrayUtils.isEmpty(cookies)) {
-            return systemDefault;
+            return Optional.empty();
         }
         return Arrays.stream(cookies)
-                .filter(c -> SsoFilter.SSO_COOKIE_NAME.equalsIgnoreCase(c.getName()))
+                .filter(c -> name.equalsIgnoreCase(c.getName()))
                 .map(Cookie::getValue)
                 .map(BooleanUtils::toBoolean)
-                .findFirst()
-                .orElse(systemDefault);
+                .findFirst();
     }
 
 }

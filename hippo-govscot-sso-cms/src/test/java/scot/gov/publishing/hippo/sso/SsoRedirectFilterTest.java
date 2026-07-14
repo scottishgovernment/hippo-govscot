@@ -198,6 +198,75 @@ public class SsoRedirectFilterTest {
         verify(resp, never()).sendRedirect(anyString());
     }
 
+    /**
+     * A user who visited /sso/disable (cookie sso=false) must have auto-redirect
+     * suppressed even in AUTO mode, not just MANUAL — the opt-out cookie is a general
+     * override, not one scoped to MANUAL's opt-in behaviour.
+     */
+    @Test
+    public void optionalModeAutoWithSsoCookieFalsePassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+
+        sut.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    /**
+     * Same opt-out cookie override as above, but for ONCE mode.
+     */
+    @Test
+    public void optionalModeOnceWithSsoCookieFalsePassesThrough() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.ONCE, SsoConfig.Form.REVEAL);
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+
+        sut.doFilter(req, resp, chain);
+
+        verify(chain).doFilter(req, resp);
+        verify(resp, never()).sendRedirect(anyString());
+    }
+
+    /**
+     * REQUIRED mode never consults the sso preference cookie — it is only meaningful
+     * when SSO is OPTIONAL. An sso=false cookie must not suppress the mandatory redirect.
+     */
+    @Test
+    public void requiredModeWithSsoCookieFalseStillRedirectsToIdP() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
+        sut.redirectHandler = new RedirectHandler(testOidcConfig());
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getSession(true)).thenReturn(session);
+
+        sut.doFilter(req, resp, chain);
+
+        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
+        verify(chain, never()).doFilter(any(), any());
+    }
+
+    /**
+     * An explicit SSO login request (SsoSessionAttributes.SSO set via the login button)
+     * must win over a stale sso=false opt-out cookie — the cookie is only a fallback
+     * default, not a veto over an explicit request. Otherwise a user who previously hit
+     * /sso/disable, then clicks "log in with SSO", would be silently kept on the
+     * password form instead of being sent to the IdP.
+     */
+    @Test
+    public void optionalModeWithSsoSessionAttrOverridesSsoCookieFalseRedirectsToIdP() throws Exception {
+        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
+        sut.redirectHandler = new RedirectHandler(testOidcConfig());
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getSession(false)).thenReturn(session);
+        when(req.getSession(true)).thenReturn(session);
+        when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn(true);
+
+        sut.doFilter(req, resp, chain);
+
+        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
+        verify(chain, never()).doFilter(any(), any());
+    }
+
     @Test
     public void optionalModeManualNoCookiePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
@@ -387,7 +456,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
         sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(null);
-        when(req.getSession(true)).thenReturn(session);
+        when(req.getSession(anyBoolean())).thenReturn(session);
 
         sut.doFilter(req, resp, chain);
 
