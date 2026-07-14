@@ -3,6 +3,7 @@ package scot.gov.publishing.hippo.sso.frontend;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
@@ -86,6 +87,11 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
             choiceSeparator.add(new Label("choice-separator-label", new ResourceModel("choice.separator")));
             choiceSeparator.setVisible(credentialsAllowed);
             choiceSeparator.setOutputMarkupPlaceholderTag(true);
+            if (credentialsVisible) {
+                // EXPANDED: the separator sits directly above the visible username/password
+                // fields, so the container's default bottom padding leaves an oversized gap.
+                choiceSeparator.add(AttributeModifier.append("style", "padding-bottom: 0;"));
+            }
             form.add(choiceSeparator);
 
             // Single credentials container for AJAX toggling
