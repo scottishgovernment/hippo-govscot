@@ -29,8 +29,6 @@ import scot.gov.publishing.hippo.sso.SsoSessionAttributes;
 @SuppressWarnings("unused")
 public class SsoLoginPlugin extends CustomLoginPlugin {
 
-    private final OidcConfig oidcConfig = OidcConfig.get();
-
     public SsoLoginPlugin(IPluginContext context, IPluginConfig config) {
         super(context, config);
     }
@@ -44,27 +42,9 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
         return new SsoLoginPanel(id, config, handler);
     }
 
-    private static void checkSsoErrors(LoginPanel panel) {
-        HttpServletRequest httpRequest = (HttpServletRequest) panel.getRequest().getContainerRequest();
-        HttpSession httpSession = httpRequest.getSession(false);
-        if (httpSession != null &&
-                httpSession.getAttribute(SsoSessionAttributes.SSO) != null &&
-                httpSession.getAttribute(SsoSessionAttributes.CREDENTIALS) != null) {
-            panel.getSession().error(panel.getString("sso.user.not.found"));
-        }
-        Object ssoError = httpSession != null ? httpSession.getAttribute(SsoSessionAttributes.SSO_ERROR) : null;
-        if (ssoError != null) {
-            httpSession.removeAttribute(SsoSessionAttributes.SSO_ERROR);
-            panel.getSession().error(panel.getString("sso.idp.error"));
-        }
-        Object callbackError = httpSession != null ? httpSession.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) : null;
-        if (callbackError != null) {
-            httpSession.removeAttribute(SsoSessionAttributes.CALLBACK_ERROR);
-            panel.getSession().error(panel.getString("sso.callback.error"));
-        }
-    }
-
     class SsoLoginPanel extends DefaultLoginPlugin.TimeZonePanel {
+
+        private final OidcConfig oidcConfig = OidcConfig.get();
 
         private final String returnUrl;
 
@@ -171,7 +151,7 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // Written directly to the servlet response, not via Wicket's WebResponse:
                     // a subsequent RestartResponseException elsewhere in the request would
                     // reset the buffered Wicket-level response and silently drop the cookie.
-                    HttpServletResponse response = (HttpServletResponse) getRequestCycle().getResponse().getContainerResponse();
+                    HttpServletResponse response = (HttpServletResponse) getResponse().getContainerResponse();
                     response.addCookie(SsoFilter.clearLoggedOutCookie(request.isSecure()));
                     // Save the URL of the login page as RETURN_URL, captured when the page
                     // was first rendered, so CallbackHandler can return the user here after
@@ -209,6 +189,27 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
             checkSsoErrors(this);
         }
 
+        private void checkSsoErrors(LoginPanel panel) {
+            HttpServletRequest httpRequest = (HttpServletRequest) getRequest().getContainerRequest();
+            HttpSession httpSession = httpRequest.getSession(false);
+            if (httpSession == null) {
+                return;
+            }
+            if (httpSession.getAttribute(SsoSessionAttributes.SSO) != null
+                    && httpSession.getAttribute(SsoSessionAttributes.CREDENTIALS) != null) {
+                panel.getSession().error(panel.getString("sso.user.not.found"));
+            }
+            Object ssoError = httpSession.getAttribute(SsoSessionAttributes.SSO_ERROR);
+            if (ssoError != null) {
+                httpSession.removeAttribute(SsoSessionAttributes.SSO_ERROR);
+                panel.getSession().error(panel.getString("sso.idp.error"));
+            }
+            Object callbackError = httpSession.getAttribute(SsoSessionAttributes.CALLBACK_ERROR);
+            if (callbackError != null) {
+                httpSession.removeAttribute(SsoSessionAttributes.CALLBACK_ERROR);
+                panel.getSession().error(panel.getString("sso.callback.error"));
+            }
+        }
 
         @Override
         protected void loginSuccess() {
