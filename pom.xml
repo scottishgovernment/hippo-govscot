@@ -41,7 +41,7 @@
   </modules>
 
   <properties>
-    <hippo.version>16.5.2</hippo.version>
+    <hippo.version>16.6.6</hippo.version>
   </properties>
 
   <dependencyManagement>
