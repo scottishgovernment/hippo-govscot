@@ -148,6 +148,9 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // This forces an IdP redirect which, in turn, clears the session and
                     // ensures the application picks up the new credentials.
                     session.removeAttribute(SsoSessionAttributes.CREDENTIALS);
+                    // Clear any error from a previous attempt now that a fresh one is starting.
+                    session.removeAttribute(SsoSessionAttributes.SSO_ERROR);
+                    session.removeAttribute(SsoSessionAttributes.CALLBACK_ERROR);
                     // Written directly to the servlet response, not via Wicket's WebResponse:
                     // a subsequent RestartResponseException elsewhere in the request would
                     // reset the buffered Wicket-level response and silently drop the cookie.
@@ -199,14 +202,18 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     && httpSession.getAttribute(SsoSessionAttributes.CREDENTIALS) != null) {
                 panel.getSession().error(panel.getString("sso.user.not.found"));
             }
-            Object ssoError = httpSession.getAttribute(SsoSessionAttributes.SSO_ERROR);
-            if (ssoError != null) {
-                httpSession.removeAttribute(SsoSessionAttributes.SSO_ERROR);
+            // SSO and IdP errors are deliberately not cleared from the session here.
+            // This page can be constructed and then discarded by an internal redirect
+            // (e.g. "/" to "/?0") before the user ever sees it. If that happened, then
+            // clearing here could cause the error to be lost during a redirect and
+            // never displayed.
+            // Further, if the error is lost, they may be redirected back to the IdP again.
+            // Errors should be cleared only where a fresh SSO attempt starts instead
+            // (i.e. SsoLoginPlugin#ssoLoginButton, SsoFilter#performSSOLogin).
+            if (httpSession.getAttribute(SsoSessionAttributes.SSO_ERROR) != null) {
                 panel.getSession().error(panel.getString("sso.idp.error"));
             }
-            Object callbackError = httpSession.getAttribute(SsoSessionAttributes.CALLBACK_ERROR);
-            if (callbackError != null) {
-                httpSession.removeAttribute(SsoSessionAttributes.CALLBACK_ERROR);
+            if (httpSession.getAttribute(SsoSessionAttributes.CALLBACK_ERROR) != null) {
                 panel.getSession().error(panel.getString("sso.callback.error"));
             }
         }
