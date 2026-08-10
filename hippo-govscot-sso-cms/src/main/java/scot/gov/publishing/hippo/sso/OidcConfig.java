@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivateKey;
 import java.util.Collections;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public record OidcConfig(
@@ -35,13 +36,38 @@ public record OidcConfig(
         URI tokenEndpoint,
         URI userInfoEndpoint,
         ClientID clientId,
-        Supplier<ClientAuthentication> clientAuthentication,
+        Supplier<ClientAuthentication> clientAuthenticationFactory,
         JWKSet publicJwks
 ) {
 
     private static final Logger LOG = LoggerFactory.getLogger(OidcConfig.class);
 
+    // Package-private so tests can substitute a stub, avoiding a dependency on the
+    // HST component manager.
+    static Function<String, String> getConfigValue = OidcConfig::containerConfigValue;
+
+    // Package-private so tests can reset the cache between cases.
+    static volatile OidcConfig instance;
+
+    public ClientAuthentication newClientAuthentication() {
+        return clientAuthenticationFactory.get();
+    }
+
     public static OidcConfig get() {
+        OidcConfig config = instance;
+        if (config == null) {
+            synchronized (OidcConfig.class) {
+                config = instance;
+                if (config == null) {
+                    config = loadAndWrap();
+                    instance = config;
+                }
+            }
+        }
+        return config;
+    }
+
+    private static OidcConfig loadAndWrap() {
         try {
             return loadConfig();
         } catch (IOException | GeneralException | JOSEException ex) {
@@ -49,14 +75,17 @@ public record OidcConfig(
         }
     }
 
-    private static OidcConfig loadConfig() throws GeneralException, IOException, JOSEException {
+    private static String containerConfigValue(String key) {
         ContainerConfiguration config = HstServices.getComponentManager().getContainerConfiguration();
+        return config.getString(key);
+    }
 
-        String issuer = config.getString("oidc.issuer");
-        String authorizationEndpoint = config.getString("oidc.authorization.endpoint");
-        String jwksUri = config.getString("oidc.jwks.uri");
-        String tokenEndpoint = config.getString("oidc.token.endpoint");
-        String userInfoEndpoint = config.getString("oidc.userinfo.endpoint");
+    static OidcConfig loadConfig() throws GeneralException, IOException, JOSEException {
+        String issuer = getConfigValue.apply("oidc.issuer");
+        String authorizationEndpoint = getConfigValue.apply("oidc.authorization.endpoint");
+        String jwksUri = getConfigValue.apply("oidc.jwks.uri");
+        String tokenEndpoint = getConfigValue.apply("oidc.token.endpoint");
+        String userInfoEndpoint = getConfigValue.apply("oidc.userinfo.endpoint");
 
         if (ObjectUtils.anyNull(authorizationEndpoint, jwksUri, tokenEndpoint, userInfoEndpoint)) {
             OIDCProviderMetadata metadata = OIDCProviderMetadata.resolve(new Issuer(issuer));
@@ -74,24 +103,25 @@ public record OidcConfig(
             }
         }
 
-        ClientID clientId = new ClientID(config.getString("oidc.client.id"));
+        ClientID clientId = new ClientID(getConfigValue.apply("oidc.client.id"));
         URI tokenEndpointUri = URI.create(tokenEndpoint);
 
-        String keyFile = config.getString("oidc.client.key.file");
-        Supplier<ClientAuthentication> clientAuthentication;
+        String keyFile = getConfigValue.apply("oidc.client.key.file");
+        Supplier<ClientAuthentication> clientAuthenticationFactory;
         JWKSet publicJwks;
         if (keyFile != null) {
             // PrivateKeyJWT signs a JWT at construction time, so create a fresh one per request.
             RSAKey rsaKey = loadRsaKey(keyFile);
             PrivateKey privateKey = rsaKey.toRSAPrivateKey();
             String keyID = rsaKey.getKeyID();
-            clientAuthentication = () -> createClientAuthentication(
+            clientAuthenticationFactory = () -> createClientAuthentication(
                     clientId, tokenEndpointUri, privateKey, keyID);
             publicJwks = new JWKSet(rsaKey.toPublicJWK());
         } else {
-            // ClientSecretBasic is stateless and can be reused.
-            Secret clientSecret = new Secret(config.getString("oidc.client.secret"));
-            clientAuthentication = () -> new ClientSecretBasic(clientId, clientSecret);
+            // ClientSecretBasic is immutable, so a single instance can be reused.
+            Secret secret = new Secret(getConfigValue.apply("oidc.client.secret"));
+            ClientAuthentication clientSecretBasic = new ClientSecretBasic(clientId, secret);
+            clientAuthenticationFactory = () -> clientSecretBasic;
             publicJwks = new JWKSet(Collections.emptyList());
         }
 
@@ -102,7 +132,7 @@ public record OidcConfig(
                 tokenEndpointUri,
                 URI.create(userInfoEndpoint),
                 clientId,
-                clientAuthentication,
+                clientAuthenticationFactory,
                 publicJwks
         );
     }

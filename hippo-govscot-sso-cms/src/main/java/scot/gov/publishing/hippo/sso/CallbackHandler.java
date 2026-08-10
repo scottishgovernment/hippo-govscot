@@ -159,7 +159,7 @@ public class CallbackHandler {
 
         TokenRequest tokenRequest = new TokenRequest.Builder(
                 oidcConfig.tokenEndpoint(),
-                oidcConfig.clientAuthentication().get(),
+                oidcConfig.newClientAuthentication(),
                 codeGrant).build();
         try {
             HTTPResponse tokenHttpResponse = tokenRequest.toHTTPRequest().send();

@@ -44,8 +44,6 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
 
     class SsoLoginPanel extends DefaultLoginPlugin.TimeZonePanel {
 
-        private final OidcConfig oidcConfig = OidcConfig.get();
-
         private final String returnUrl;
 
         public SsoLoginPanel(String id, LoginConfig config, LoginHandler handler) {
@@ -161,6 +159,7 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // authentication.
                     session.setAttribute(SsoSessionAttributes.RETURN_URL, returnUrl);
                     // Build the IdP authorization URL and navigate the browser to it.
+                    OidcConfig oidcConfig = OidcConfig.get();
                     String idpUrl = new RedirectHandler(oidcConfig).buildRedirectUrl(request, session);
                     target.appendJavaScript("window.location.href = '" + idpUrl + "';");
                 }
