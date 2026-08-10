@@ -72,8 +72,6 @@ public class SsoSecurityProvider extends AbstractSecurityProvider {
         if (creds.getAttribute(SsoAttributes.SSO_ID) != null) {
             Node user = userMgr.getUser(creds.getUserID());
             copyAttribute(creds, SsoAttributes.SSO_EMAIL, user, User.PROP_EMAIL);
-            copyAttribute(creds, SsoAttributes.SSO_GIVEN_NAME, user, User.PROP_FIRSTNAME);
-            copyAttribute(creds, SsoAttributes.SSO_FAMILY_NAME, user, User.PROP_LASTNAME);
         }
         super.syncUser(creds, userMgr);
     }
