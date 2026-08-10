@@ -32,9 +32,8 @@ public class SsoSecurityManager extends SecurityManager {
             SecurityProvider ssoProvider = provider(SSO_PROVIDER_ID);
             SsoUserManager ssoUserManager = (SsoUserManager) ssoProvider.getUserManager();
 
-            String repositoryUserId = ssoUserManager.resolveUserId(userId);
-            if (repositoryUserId != null) {
-                userId = repositoryUserId;
+            userId = ssoUserManager.resolveUserId(creds);
+            if (ssoUserManager.hasUser(userId)) {
                 if (!ssoUserManager.isActive(userId)) {
                     LOG.debug("Inactive user: {}", userId);
                     return AuthenticationStatus.ACCOUNT_EXPIRED;
