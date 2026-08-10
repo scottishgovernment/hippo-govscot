@@ -38,6 +38,7 @@
     <module>hippo-govscot-redirects-repository</module>
     <module>hippo-govscot-redirects-cms</module>
     <module>hippo-govscot-redirects-hst</module>
+    <module>hippo-govscot-useradmin-cms</module>
   </modules>
 
   <properties>
