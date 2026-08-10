@@ -56,6 +56,14 @@
       <artifactId>jakarta.servlet-api</artifactId>
     </dependency>
 
+    <!-- HstRequestUtils, for proxy-aware request scheme/host resolution -->
+    <dependency>
+      <groupId>org.onehippo.cms7.hst</groupId>
+      <artifactId>hst-commons</artifactId>
+      <version>${hippo.version}</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- Nimbus OpenID Connect -->
     <dependency>
       <groupId>com.nimbusds</groupId>
@@ -85,6 +93,12 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-nop</artifactId>
       <scope>test</scope>
     </dependency>
 

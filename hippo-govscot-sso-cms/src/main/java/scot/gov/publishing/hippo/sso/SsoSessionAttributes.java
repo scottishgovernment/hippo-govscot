@@ -49,6 +49,15 @@ public final class SsoSessionAttributes {
     static final String NONCE = "nonce";
     static final String CODE_VERIFIER = "code_verifier";
 
+    /**
+     * The {@code redirect_uri} sent in the authorization request, resolved against the
+     * request that started the login (see {@code RedirectHandler}). The token exchange
+     * must send back this exact value (RFC 6749 §4.1.3), so it is stashed here rather
+     * than re-resolved from the callback request, which could differ subtly (e.g. proxy
+     * header handling) from the original.
+     */
+    static final String REDIRECT_URI = "redirect_uri";
+
     private SsoSessionAttributes() {
         // Constants only
     }

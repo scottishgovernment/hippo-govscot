@@ -108,8 +108,10 @@ public class CallbackHandler {
             throw new CallbackException(HttpServletResponse.SC_UNAUTHORIZED, "Invalid state (mismatched)");
         }
 
+        URI redirectUri = sessionAttribute(session, SsoSessionAttributes.REDIRECT_URI, URI.class);
+
         // Exchange code for tokens
-        OIDCTokenResponse successResponse = getTokenResponse(code, codeVerifier);
+        OIDCTokenResponse successResponse = getTokenResponse(code, redirectUri, codeVerifier);
 
         // Validate and extract JWT claim set from exchanged tokens
         OIDCTokens tokens = successResponse.getOIDCTokens();
@@ -146,12 +148,13 @@ public class CallbackHandler {
         return attribute;
     }
 
-    private OIDCTokenResponse getTokenResponse(String code, CodeVerifier codeVerifier) throws CallbackException {
+    private OIDCTokenResponse getTokenResponse(String code, URI redirectUri, CodeVerifier codeVerifier)
+            throws CallbackException {
         // Exchange code for tokens
         AuthorizationCode codeObj = new AuthorizationCode(code);
         AuthorizationGrant codeGrant = new AuthorizationCodeGrant(
                 codeObj,
-                URI.create(oidcConfig.redirectUri()),
+                redirectUri,
                 codeVerifier);
 
         TokenRequest tokenRequest = new TokenRequest.Builder(
@@ -224,6 +227,7 @@ public class CallbackHandler {
         session.removeAttribute(SsoSessionAttributes.STATE);
         session.removeAttribute(SsoSessionAttributes.NONCE);
         session.removeAttribute(SsoSessionAttributes.CODE_VERIFIER);
+        session.removeAttribute(SsoSessionAttributes.REDIRECT_URI);
         session.setAttribute(SsoSessionAttributes.CALLBACK_ERROR, true);
         resp.sendRedirect(returnUrl);
     }

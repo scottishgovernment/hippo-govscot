@@ -161,7 +161,7 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // authentication.
                     session.setAttribute(SsoSessionAttributes.RETURN_URL, returnUrl);
                     // Build the IdP authorization URL and navigate the browser to it.
-                    String idpUrl = new RedirectHandler(oidcConfig).buildRedirectUrl(session);
+                    String idpUrl = new RedirectHandler(oidcConfig).buildRedirectUrl(request, session);
                     target.appendJavaScript("window.location.href = '" + idpUrl + "';");
                 }
             };

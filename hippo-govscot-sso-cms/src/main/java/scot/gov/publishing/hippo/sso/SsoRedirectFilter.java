@@ -96,7 +96,7 @@ public class SsoRedirectFilter extends HttpFilter {
 
         session = request.getSession(true);
         session.setAttribute(SsoSessionAttributes.RETURN_URL, requestUrl);
-        String url = redirectHandler.buildRedirectUrl(session);
+        String url = redirectHandler.buildRedirectUrl(request, session);
         LOG.info("Redirecting from {}", requestUrl);
         LOG.info("Redirecting to {}", url);
         response.sendRedirect(url);

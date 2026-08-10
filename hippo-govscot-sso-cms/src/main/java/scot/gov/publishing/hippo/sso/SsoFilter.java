@@ -11,6 +11,13 @@ import java.io.IOException;
  */
 public class SsoFilter extends HttpFilter {
 
+    /**
+     * The OIDC callback path routed to {@link CallbackHandler} below, relative to the
+     * context path. Used by {@link RedirectHandler} to build the redirect_uri sent to the
+     * IdP, so it must stay in sync with the "callback" case in {@link #doFilter}.
+     */
+    public static final String CALLBACK_PATH = "/sso/callback";
+
     public static final String SSO_COOKIE_NAME = "sso";
 
     /**

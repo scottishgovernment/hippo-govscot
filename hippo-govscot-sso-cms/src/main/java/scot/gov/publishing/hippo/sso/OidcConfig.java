@@ -36,7 +36,6 @@ public record OidcConfig(
         URI userInfoEndpoint,
         ClientID clientId,
         Supplier<ClientAuthentication> clientAuthentication,
-        String redirectUri,
         JWKSet publicJwks
 ) {
 
@@ -104,7 +103,6 @@ public record OidcConfig(
                 URI.create(userInfoEndpoint),
                 clientId,
                 clientAuthentication,
-                config.getString("oidc.redirect.uri"),
                 publicJwks
         );
     }

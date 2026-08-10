@@ -37,6 +37,8 @@ public class SsoRedirectFilterTest {
     public void setUp() {
         sut = new SsoRedirectFilter();
         sut.configured = true;
+        sut.redirectHandler = newRedirectHandler();
+
         req = mock(HttpServletRequest.class);
         resp = mock(HttpServletResponse.class);
         session = mock(HttpSession.class);
@@ -62,9 +64,18 @@ public class SsoRedirectFilterTest {
                 URI.create("https://idp.example.com/userinfo"),
                 new ClientID("test-client"),
                 () -> new ClientSecretBasic(new ClientID("test-client"), new Secret("secret")),
-                "https://cms.example.com/cms/sso/callback",
                 new JWKSet()
         );
+    }
+
+    /**
+     * A {@link RedirectHandler} with its {@code getCmsBaseUrl} stubbed, avoiding a dependency
+     * on the hst:platform model that {@code HstRequestUtils.getCmsBaseURL} needs.
+     */
+    private RedirectHandler newRedirectHandler() {
+        RedirectHandler redirectHandler = new RedirectHandler(testOidcConfig());
+        redirectHandler.getCmsBaseUrl = request -> "https://cms.publishing.gov.scot/";
+        return redirectHandler;
     }
 
     // =========================================================================
@@ -140,7 +151,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void redirectOnceWithoutLoggedOutCookieRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(null);
         when(req.getSession(true)).thenReturn(session);
 
@@ -157,7 +167,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void redirectAutoWithLoggedOutCookieStillRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
@@ -235,7 +244,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void requiredModeWithSsoCookieFalseStillRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
         when(req.getSession(true)).thenReturn(session);
 
@@ -255,7 +263,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoSessionAttrOverridesSsoCookieFalseRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
         when(req.getSession(false)).thenReturn(session);
         when(req.getSession(true)).thenReturn(session);
@@ -412,7 +419,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void requiredModeRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getSession(true)).thenReturn(session);
 
         sut.doFilter(req, resp, chain);
@@ -427,7 +433,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoSessionAttrRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getSession(false)).thenReturn(session);
         when(req.getSession(true)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn("true");
@@ -441,7 +446,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoCookieTrueRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
@@ -454,7 +458,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeAutoNoCookieRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getCookies()).thenReturn(null);
         when(req.getSession(anyBoolean())).thenReturn(session);
 
@@ -471,7 +474,6 @@ public class SsoRedirectFilterTest {
     @Test
     public void redirectUrlContainsResponseTypeCodeAndStateParam() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        sut.redirectHandler = new RedirectHandler(testOidcConfig());
         when(req.getSession(true)).thenReturn(session);
 
         sut.doFilter(req, resp, chain);
