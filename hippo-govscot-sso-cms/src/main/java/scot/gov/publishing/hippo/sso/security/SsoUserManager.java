@@ -15,6 +15,7 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 import javax.jcr.query.Query;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +33,12 @@ public class SsoUserManager extends DelegatingHippoUserManager {
     private static final Logger LOG = LoggerFactory.getLogger(SsoUserManager.class);
 
     private final Session session;
+
+    List<UserIdResolver> userIdResolvers = List.of(
+            new UserIdResolver("lower case match", this::resolveByLowerCase),
+            new UserIdResolver("email query", this::resolveByEmailQuery),
+            new UserIdResolver("linear scan", this::resolveByScan)
+    );
 
     /**
      * Maps user IDs (as provided by the IdP) to the actual user IDs in the repository.
@@ -122,31 +129,40 @@ public class SsoUserManager extends DelegatingHippoUserManager {
             return cached;
         }
 
-        String idLowerCase = userId.toLowerCase(Locale.ENGLISH);
-        if (!userId.equals(idLowerCase) && super.hasUser(idLowerCase)) {
-            resolvedUserIds.put(userId, idLowerCase);
-            LOG.debug("resolveUserId: {} found by lower case match", userId);
-            return idLowerCase;
+        for (UserIdResolver resolver: userIdResolvers) {
+            String resolvedUserId = resolver.resolve(userId);
+            if (resolvedUserId != null) {
+                String resolverName = resolver.name();
+                LOG.info("resolveUserId: {} to {} by {}", userId, resolvedUserId, resolverName);
+                resolvedUserIds.put(userId, resolvedUserId);
+                return resolvedUserId;
+            }
         }
 
-        // Try to find the user by email address, which may have been set to lower-case
-        // during a previous SSO login
-        String userIdByEmail = resolveUserIdByEmail(userId);
-        if (userIdByEmail != null) {
-            resolvedUserIds.put(userId, userIdByEmail);
-            LOG.info("resolveUserId: {} to {} by email query", userId, userIdByEmail);
-            return userIdByEmail;
-        }
-
-        // Fall back to linear scan of all users
-        String userIdByScan = resolveUserIdByScan(userId);
-        if (userIdByScan != null) {
-            LOG.info("resolveUserId: {} to {} by linear scan", userId, userIdByScan);
-            resolvedUserIds.put(userId, userIdByScan);
-            return userIdByScan;
-        }
         LOG.info("resolveUserId: {} not found", userId);
         return userId;
+    }
+
+    record UserIdResolver(String name, Strategy strategy) {
+        String resolve(String userId) throws RepositoryException {
+            return strategy.resolve(userId);
+        }
+
+        @FunctionalInterface
+        interface Strategy {
+            String resolve(String userId) throws RepositoryException;
+        }
+    }
+
+    /**
+     * Looks for a matching user ID that is lower case
+     */
+    String resolveByLowerCase(String userId) throws RepositoryException {
+        String idLowerCase = userId.toLowerCase(Locale.ENGLISH);
+        if (!userId.equals(idLowerCase) && hasUser(idLowerCase)) {
+            return idLowerCase;
+        }
+        return null;
     }
 
     /**
@@ -155,7 +171,7 @@ public class SsoUserManager extends DelegatingHippoUserManager {
      * The email property is set during SSO login by synchronizeOnLogin, so this
      * avoids a linear scan on subsequent logins (e.g. after a restart clears the cache).
      */
-    private String resolveUserIdByEmail(String userId) throws RepositoryException {
+    String resolveByEmailQuery(String userId) throws RepositoryException {
         String sql = "SELECT * FROM [hipposys:user] WHERE [hipposys:email] = $email";
         Query query = session.getWorkspace().getQueryManager().createQuery(sql, Query.JCR_SQL2);
         query.bindValue("email", session.getValueFactory().createValue(userId));
@@ -172,7 +188,7 @@ public class SsoUserManager extends DelegatingHippoUserManager {
     /**
      * Scan all users in the repository, looking for a case-insensitive match.
      */
-    private String resolveUserIdByScan(String userId) throws RepositoryException {
+    String resolveByScan(String userId) throws RepositoryException {
         NodeIterator nodes = listUsers(0, 0);
         while (nodes.hasNext()) {
             Node node = nodes.nextNode();
