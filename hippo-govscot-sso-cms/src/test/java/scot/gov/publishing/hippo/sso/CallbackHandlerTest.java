@@ -18,7 +18,7 @@ import static org.mockito.Mockito.*;
  * provider. The {@code configured} flag is set to {@code true} directly so that
  * {@code ensureConfigured()} is a no-op (avoiding HST infrastructure).
  */
-public class CallbackHandlerTest {
+class CallbackHandlerTest {
 
     private CallbackHandler sut;
     private HttpServletRequest req;
@@ -26,7 +26,7 @@ public class CallbackHandlerTest {
     private HttpSession session;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         sut = new CallbackHandler();
         sut.configured = true;
 
@@ -43,7 +43,7 @@ public class CallbackHandlerTest {
     // -- IdP error --
 
     @Test
-    public void idpErrorStoresSsoErrorAndRedirects() throws Exception {
+    void idpErrorStoresSsoErrorAndRedirects() throws Exception {
         when(req.getParameter("error")).thenReturn("access_denied");
         when(req.getParameter("error_description")).thenReturn("User cancelled");
 
@@ -60,7 +60,7 @@ public class CallbackHandlerTest {
      * redirect straight back to the IdP — looping forever on the same error.
      */
     @Test
-    public void idpErrorClearsSsoAttribute() throws Exception {
+    void idpErrorClearsSsoAttribute() throws Exception {
         when(req.getParameter("error")).thenReturn("access_denied");
         when(req.getParameter("error_description")).thenReturn("User cancelled");
 
@@ -70,7 +70,7 @@ public class CallbackHandlerTest {
     }
 
     @Test
-    public void idpErrorRedirectsToReturnUrl() throws Exception {
+    void idpErrorRedirectsToReturnUrl() throws Exception {
         when(req.getParameter("error")).thenReturn("login_required");
         when(req.getParameter("error_description")).thenReturn(null);
         when(session.getAttribute(SsoSessionAttributes.RETURN_URL)).thenReturn("/console/");
@@ -81,7 +81,7 @@ public class CallbackHandlerTest {
     }
 
     @Test
-    public void idpErrorFallsBackToContextRootWhenReturnUrlMissing() throws Exception {
+    void idpErrorFallsBackToContextRootWhenReturnUrlMissing() throws Exception {
         when(req.getParameter("error")).thenReturn("access_denied");
         when(req.getParameter("error_description")).thenReturn(null);
         when(session.getAttribute(SsoSessionAttributes.RETURN_URL)).thenReturn(null);
@@ -94,7 +94,7 @@ public class CallbackHandlerTest {
     // -- Missing callback parameters --
 
     @Test
-    public void missingStateParameterSetsCallbackErrorAndRedirects() throws Exception {
+    void missingStateParameterSetsCallbackErrorAndRedirects() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn(null);
         when(req.getParameter("code")).thenReturn("some-auth-code");
@@ -106,7 +106,7 @@ public class CallbackHandlerTest {
     }
 
     @Test
-    public void missingCodeParameterSetsCallbackErrorAndRedirects() throws Exception {
+    void missingCodeParameterSetsCallbackErrorAndRedirects() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn("some-state");
         when(req.getParameter("code")).thenReturn(null);
@@ -123,7 +123,7 @@ public class CallbackHandlerTest {
     // -- State mismatch --
 
     @Test
-    public void stateMismatchSetsCallbackErrorAndRedirects() throws Exception {
+    void stateMismatchSetsCallbackErrorAndRedirects() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn("attacker-state");
         when(req.getParameter("code")).thenReturn("some-auth-code");
@@ -140,7 +140,7 @@ public class CallbackHandlerTest {
     // -- Session expiry (missing OIDC session attributes) --
 
     @Test
-    public void missingSessionStateSetsCallbackErrorAndRedirects() throws Exception {
+    void missingSessionStateSetsCallbackErrorAndRedirects() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn("some-state");
         when(req.getParameter("code")).thenReturn("some-auth-code");
@@ -158,7 +158,7 @@ public class CallbackHandlerTest {
     // -- OIDC attribute cleanup on error --
 
     @Test
-    public void callbackErrorClearsOidcSessionAttributes() throws Exception {
+    void callbackErrorClearsOidcSessionAttributes() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn(null);
         when(req.getParameter("code")).thenReturn("some-auth-code");
@@ -176,7 +176,7 @@ public class CallbackHandlerTest {
      * back to the IdP in REQUIRED mode or with an sso=true preference cookie.
      */
     @Test
-    public void callbackErrorClearsSsoAttribute() throws Exception {
+    void callbackErrorClearsSsoAttribute() throws Exception {
         when(req.getParameter("error")).thenReturn(null);
         when(req.getParameter("state")).thenReturn(null);
         when(req.getParameter("code")).thenReturn("some-auth-code");

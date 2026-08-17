@@ -4,8 +4,6 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
 import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.id.ClientID;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -14,27 +12,31 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link RedirectHandler} — specifically the {@code passThrough} logic
- * and surrounding filter behaviour.
+ * Unit tests for {@link RedirectHandler}: issuing the redirect to the IdP once
+ * {@code SsoFilter} has already decided one is required. Whether a redirect is required at
+ * all is {@link SsoRedirectPolicyTest}'s concern.
  *
  * <p>{@code configured} is set to {@code true} in {@code setUp()} so that
- * {@code ensureConfigured()} is a no-op; {@code ssoConfig} and (where needed) {@code oidcConfig}
- * are assigned directly, avoiding any HST/Hippo infrastructure.
+ * {@code ensureConfigured()} is a no-op; {@code oidcRedirectHandler} is assigned directly,
+ * avoiding any HST/Hippo infrastructure.
  */
-public class RedirectHandlerTest {
+class RedirectHandlerTest {
 
     private RedirectHandler sut;
     private HttpServletRequest req;
     private HttpServletResponse resp;
     private HttpSession session;
-    private FilterChain chain;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         sut = new RedirectHandler();
         sut.configured = true;
         sut.oidcRedirectHandler = newOidcRedirectHandler();
@@ -42,13 +44,11 @@ public class RedirectHandlerTest {
         req = mock(HttpServletRequest.class);
         resp = mock(HttpServletResponse.class);
         session = mock(HttpSession.class);
-        chain = mock(FilterChain.class);
 
-        // Defaults: GET request with a non-excluded URI and no context-path prefix.
-        when(req.getMethod()).thenReturn("GET");
         when(req.getContextPath()).thenReturn("");
         when(req.getRequestURI()).thenReturn("/cms/");
         when(req.getQueryString()).thenReturn(null);
+        when(req.getSession(true)).thenReturn(session);
     }
 
     /**
@@ -78,407 +78,38 @@ public class RedirectHandlerTest {
         return oidcRedirectHandler;
     }
 
-    // =========================================================================
-    // Pass-through cases — filter must call chain.doFilter() and must NOT
-    // call response.sendRedirect().
-    // =========================================================================
-
     @Test
-    public void offModePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OFF, SsoConfig.Redirect.MANUAL, SsoConfig.Form.NATIVE);
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void postRequestPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getMethod()).thenReturn("POST");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void excludedPrefixSkinPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getRequestURI()).thenReturn("/skin/logo.png");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void excludedPrefixSsoCallbackPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getRequestURI()).thenReturn("/sso/callback");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void excludedExactPathNavigationItemsPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getRequestURI()).thenReturn("/ws/navigationitems");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void redirectOnceWithLoggedOutCookiePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void redirectOnceWithoutLoggedOutCookieRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(null);
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
+    void redirectsToIdPAuthorizationEndpoint() throws Exception {
+        sut.redirect(req, resp);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    /**
-     * AUTO ignores the logged-out cookie entirely — logging out and browsing again logs
-     * the user straight back in.
-     */
-    @Test
-    public void redirectAutoWithLoggedOutCookieStillRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    /**
-     * An authenticated CMS session (hippo:username set) always clears a stale logged-out
-     * cookie, regardless of sso.redirect, so a later logout is not immediately suppressed
-     * by a leftover cookie from a previous session.
-     */
-    @Test
-    public void authenticatedSessionClearsLoggedOutCookie() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute("hippo:username")).thenReturn("someuser");
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).addCookie(argThat(c ->
-                c.getName().equals(SsoCookies.LOGGED_OUT_COOKIE_NAME) && c.getMaxAge() == 0));
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
     }
 
     @Test
-    public void optionalModeWithSsoCookieFalsePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
+    void setsOidcSessionAttributesForCallbackValidation() throws Exception {
+        sut.redirect(req, resp);
 
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * A user who visited /sso/disable (cookie sso=false) must have auto-redirect
-     * suppressed even in AUTO mode, not just MANUAL — the opt-out cookie is a general
-     * override, not one scoped to MANUAL's opt-in behaviour.
-     */
-    @Test
-    public void optionalModeAutoWithSsoCookieFalsePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * Same opt-out cookie override as above, but for ONCE mode.
-     */
-    @Test
-    public void optionalModeOnceWithSsoCookieFalsePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.ONCE, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * REQUIRED mode never consults the sso preference cookie — it is only meaningful
-     * when SSO is OPTIONAL. An sso=false cookie must not suppress the mandatory redirect.
-     */
-    @Test
-    public void requiredModeWithSsoCookieFalseStillRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    /**
-     * An explicit SSO login request (SsoSessionAttributes.SSO set via the login button)
-     * must win over a stale sso=false opt-out cookie — the cookie is only a fallback
-     * default, not a veto over an explicit request. Otherwise a user who previously hit
-     * /sso/disable, then clicks "log in with SSO", would be silently kept on the
-     * password form instead of being sent to the IdP.
-     */
-    @Test
-    public void optionalModeWithSsoSessionAttrOverridesSsoCookieFalseRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
-        when(req.getSession(false)).thenReturn(session);
-        when(req.getSession(true)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn(true);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    @Test
-    public void optionalModeManualNoCookiePassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(null);
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * REQUIRED+AUTO redirects unconditionally by default, but a pending SSO_ERROR from a
-     * just-completed callback (e.g. the IdP rejected the user) must suppress it — otherwise
-     * the browser bounces straight back to the IdP, gets the same error, and loops forever
-     * without the login page ever rendering.
-     */
-    @Test
-    public void requiredModeWithPendingSsoErrorPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * Same as above but for CALLBACK_ERROR (internal callback failures), which must suppress
-     * the redirect just as SSO_ERROR does.
-     */
-    @Test
-    public void requiredModeWithPendingCallbackErrorPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR)).thenReturn(true);
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * OPTIONAL with an sso=true preference cookie also redirects unconditionally, so the
-     * same pending-error suppression must apply there too, not just in REQUIRED mode.
-     */
-    @Test
-    public void optionalModeWithSsoCookieTrueAndPendingSsoErrorPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "true")});
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    @Test
-    public void credentialsInSessionPassesThroughAndSetsRequestAttribute() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        Object mockCreds = mock(Object.class);
-        when(req.getSession(false)).thenReturn(session);
-        when(req.getSession(true)).thenReturn(session);
-        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
-
-        sut.handle(req, resp, chain);
-
-        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * REQUIRED+MANUAL: requireSsoSession() returns false so the filter does not auto-redirect.
-     * However, CallbackHandler still stores credentials in a fresh session after IdP auth.
-     * The filter must copy them to request attributes so Wicket can pick them up.
-     */
-    @Test
-    public void requiredModeManualCredentialsInSessionPassesThroughAndSetsRequestAttribute() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.MANUAL, SsoConfig.Form.SSO);
-        Object mockCreds = mock(Object.class);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
-
-        sut.handle(req, resp, chain);
-
-        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * OPTIONAL+MANUAL: after callback, CallbackHandler creates a fresh session with only
-     * credentials (the SSO session attribute was in the old session). With MANUAL system
-     * default and no sso cookie, requireSsoSession() returns false — credentials must still
-     * be forwarded to the request.
-     */
-    @Test
-    public void optionalModeManualCredentialsInSessionPassesThroughAndSetsRequestAttribute() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        Object mockCreds = mock(Object.class);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
-        when(req.getCookies()).thenReturn(null);
-
-        sut.handle(req, resp, chain);
-
-        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    /**
-     * A password-authenticated session (hippo:username set, no SSO CREDENTIALS attribute)
-     * must never be redirected to the IdP, even when OPTIONAL mode's cookie/session-attribute
-     * preference would otherwise default to auto-redirecting (sso.redirect=AUTO, no sso
-     * cookie). Without checking hippo:username here, an already-logged-in password user would
-     * be bounced straight back to the IdP on their very next request.
-     */
-    @Test
-    public void passwordAuthenticatedSessionWithAutoRedirectPassesThrough() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute("hippo:username")).thenReturn("localadmin");
-        when(req.getCookies()).thenReturn(null);
-
-        sut.handle(req, resp, chain);
-
-        verify(chain).doFilter(req, resp);
-        verify(resp, never()).sendRedirect(anyString());
-    }
-
-    // =========================================================================
-    // IdP redirect cases — filter must call response.sendRedirect() to the IdP
-    // and store STATE, NONCE, and CODE_VERIFIER in the session.
-    // =========================================================================
-
-    @Test
-    public void requiredModeRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(session).setAttribute(eq(SsoSessionAttributes.STATE), any());
         verify(session).setAttribute(eq(SsoSessionAttributes.NONCE), any());
         verify(session).setAttribute(eq(SsoSessionAttributes.CODE_VERIFIER), any());
-        verify(chain, never()).doFilter(any(), any());
     }
 
     @Test
-    public void optionalModeWithSsoSessionAttrRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getSession(false)).thenReturn(session);
-        when(req.getSession(true)).thenReturn(session);
-        when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn("true");
+    void setsReturnUrlOnSessionFromRequestUriAndQueryString() throws Exception {
+        when(req.getRequestURI()).thenReturn("/cms/some/path");
+        when(req.getQueryString()).thenReturn("0");
 
-        sut.handle(req, resp, chain);
+        sut.redirect(req, resp);
 
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
+        verify(session).setAttribute(SsoSessionAttributes.RETURN_URL, "/cms/some/path?0");
     }
 
     @Test
-    public void optionalModeWithSsoCookieTrueRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "true")});
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    @Test
-    public void optionalModeAutoNoCookieRedirectsToIdP() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(null);
-        when(req.getSession(anyBoolean())).thenReturn(session);
-
-        sut.handle(req, resp, chain);
-
-        verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
-        verify(chain, never()).doFilter(any(), any());
-    }
-
-    // =========================================================================
-    // Spot-checks: redirect URL shape
-    // =========================================================================
-
-    @Test
-    public void redirectUrlContainsResponseTypeCodeAndStateParam() throws Exception {
-        sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getSession(true)).thenReturn(session);
-
-        sut.handle(req, resp, chain);
+    void redirectUrlContainsResponseTypeCodeAndStateParam() throws Exception {
+        sut.redirect(req, resp);
 
         verify(resp).sendRedirect(argThat((String url) ->
                 url.contains("response_type=code") && url.contains("state=")));
     }
+
 }

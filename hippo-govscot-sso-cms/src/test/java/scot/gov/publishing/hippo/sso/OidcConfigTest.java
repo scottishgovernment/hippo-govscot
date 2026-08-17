@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * do not interfere with each other even if parallel test execution is enabled.
  */
 @ResourceLock(value = "scot.gov.publishing.hippo.sso.OidcConfig", mode = ResourceAccessMode.READ_WRITE)
-public class OidcConfigTest {
+class OidcConfigTest {
 
     @TempDir
     static Path tempDir;
