@@ -8,10 +8,10 @@ import org.hippoecm.frontend.plugin.IPluginContext;
 import org.hippoecm.frontend.plugin.config.IPluginConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scot.gov.publishing.hippo.sso.SsoFilter;
+import scot.gov.publishing.hippo.sso.EndpointHandler;
 
 /**
- * Sets a cookie when the user logs out, so that SsoRedirectFilter can prevent the user
+ * Sets a cookie when the user logs out, so that RedirectHandler can prevent the user
  * from being automatically logged back in (sso.redirect=ONCE only).
  *
  * <p>A cookie is used rather than a session attribute because {@link #logoutSession()}
@@ -44,7 +44,7 @@ public class SsoLogoutService extends CmsLogoutService {
         RequestCycle requestCycle = RequestCycle.get();
         HttpServletRequest req = (HttpServletRequest) requestCycle.getRequest().getContainerRequest();
         HttpServletResponse res = (HttpServletResponse) requestCycle.getResponse().getContainerResponse();
-        res.addCookie(SsoFilter.loggedOutCookie(req.isSecure()));
+        res.addCookie(EndpointHandler.loggedOutCookie(req.isSecure()));
     }
 
 }

@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * Unit tests for {@link OidcConfig}. {@code getConfigValue} is stubbed directly
- * (matching {@link RedirectHandler#getCmsBaseUrl}) so no HST infrastructure or
+ * (matching {@link OidcRedirectHandler#getCmsBaseUrl}) so no HST infrastructure or
  * network discovery call is needed, and endpoint values are supplied explicitly.
  *
  * <p>{@code getConfigValue} and {@code instance} are static so this test class

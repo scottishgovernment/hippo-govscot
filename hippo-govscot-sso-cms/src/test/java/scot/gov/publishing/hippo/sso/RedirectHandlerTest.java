@@ -18,16 +18,16 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * Unit tests for {@link SsoRedirectFilter} — specifically the {@code requireSsoSession} logic
+ * Unit tests for {@link RedirectHandler} — specifically the {@code passThrough} logic
  * and surrounding filter behaviour.
  *
  * <p>{@code configured} is set to {@code true} in {@code setUp()} so that
  * {@code ensureConfigured()} is a no-op; {@code ssoConfig} and (where needed) {@code oidcConfig}
  * are assigned directly, avoiding any HST/Hippo infrastructure.
  */
-public class SsoRedirectFilterTest {
+public class RedirectHandlerTest {
 
-    private SsoRedirectFilter sut;
+    private RedirectHandler sut;
     private HttpServletRequest req;
     private HttpServletResponse resp;
     private HttpSession session;
@@ -35,9 +35,9 @@ public class SsoRedirectFilterTest {
 
     @BeforeEach
     public void setUp() {
-        sut = new SsoRedirectFilter();
+        sut = new RedirectHandler();
         sut.configured = true;
-        sut.redirectHandler = newRedirectHandler();
+        sut.oidcRedirectHandler = newOidcRedirectHandler();
 
         req = mock(HttpServletRequest.class);
         resp = mock(HttpServletResponse.class);
@@ -69,13 +69,13 @@ public class SsoRedirectFilterTest {
     }
 
     /**
-     * A {@link RedirectHandler} with its {@code getCmsBaseUrl} stubbed, avoiding a dependency
+     * A {@link OidcRedirectHandler} with its {@code getCmsBaseUrl} stubbed, avoiding a dependency
      * on the hst:platform model that {@code HstRequestUtils.getCmsBaseURL} needs.
      */
-    private RedirectHandler newRedirectHandler() {
-        RedirectHandler redirectHandler = new RedirectHandler(testOidcConfig());
-        redirectHandler.getCmsBaseUrl = request -> "https://cms.publishing.gov.scot/";
-        return redirectHandler;
+    private OidcRedirectHandler newOidcRedirectHandler() {
+        OidcRedirectHandler oidcRedirectHandler = new OidcRedirectHandler(testOidcConfig());
+        oidcRedirectHandler.getCmsBaseUrl = request -> "https://cms.publishing.gov.scot/";
+        return oidcRedirectHandler;
     }
 
     // =========================================================================
@@ -87,7 +87,7 @@ public class SsoRedirectFilterTest {
     public void offModePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OFF, SsoConfig.Redirect.MANUAL, SsoConfig.Form.NATIVE);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -98,7 +98,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getMethod()).thenReturn("POST");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -109,7 +109,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getRequestURI()).thenReturn("/skin/logo.png");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -120,7 +120,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getRequestURI()).thenReturn("/sso/callback");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -131,7 +131,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getRequestURI()).thenReturn("/ws/navigationitems");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -142,7 +142,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -154,7 +154,7 @@ public class SsoRedirectFilterTest {
         when(req.getCookies()).thenReturn(null);
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -170,7 +170,7 @@ public class SsoRedirectFilterTest {
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -188,7 +188,7 @@ public class SsoRedirectFilterTest {
         when(session.getAttribute("hippo:username")).thenReturn("someuser");
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).addCookie(argThat(c ->
                 c.getName().equals(SsoCookies.LOGGED_OUT_COOKIE_NAME) && c.getMaxAge() == 0));
@@ -201,7 +201,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -217,7 +217,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -231,7 +231,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.ONCE, SsoConfig.Form.REVEAL);
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -247,7 +247,7 @@ public class SsoRedirectFilterTest {
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -268,7 +268,7 @@ public class SsoRedirectFilterTest {
         when(req.getSession(true)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn(true);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -279,7 +279,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
         when(req.getCookies()).thenReturn(null);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -297,7 +297,7 @@ public class SsoRedirectFilterTest {
         when(req.getSession(false)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -313,7 +313,7 @@ public class SsoRedirectFilterTest {
         when(req.getSession(false)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.CALLBACK_ERROR)).thenReturn(true);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -330,7 +330,7 @@ public class SsoRedirectFilterTest {
         when(req.getSession(false)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -342,11 +342,11 @@ public class SsoRedirectFilterTest {
         Object mockCreds = mock(Object.class);
         when(req.getSession(false)).thenReturn(session);
         when(req.getSession(true)).thenReturn(session);
-        when(session.getAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
+        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
-        verify(req).setAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME, mockCreds);
+        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }
@@ -361,11 +361,11 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.MANUAL, SsoConfig.Form.SSO);
         Object mockCreds = mock(Object.class);
         when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
+        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
-        verify(req).setAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME, mockCreds);
+        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }
@@ -381,12 +381,12 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
         Object mockCreds = mock(Object.class);
         when(req.getSession(false)).thenReturn(session);
-        when(session.getAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
+        when(session.getAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME)).thenReturn(mockCreds);
         when(req.getCookies()).thenReturn(null);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
-        verify(req).setAttribute(SsoRedirectFilter.CREDENTIALS_ATTR_NAME, mockCreds);
+        verify(req).setAttribute(RedirectHandler.CREDENTIALS_ATTR_NAME, mockCreds);
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }
@@ -405,7 +405,7 @@ public class SsoRedirectFilterTest {
         when(session.getAttribute("hippo:username")).thenReturn("localadmin");
         when(req.getCookies()).thenReturn(null);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
@@ -421,7 +421,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(session).setAttribute(eq(SsoSessionAttributes.STATE), any());
@@ -437,7 +437,7 @@ public class SsoRedirectFilterTest {
         when(req.getSession(true)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn("true");
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -449,7 +449,7 @@ public class SsoRedirectFilterTest {
         when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -461,7 +461,7 @@ public class SsoRedirectFilterTest {
         when(req.getCookies()).thenReturn(null);
         when(req.getSession(anyBoolean())).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) -> url.startsWith("https://idp.example.com/auth")));
         verify(chain, never()).doFilter(any(), any());
@@ -476,7 +476,7 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
         when(req.getSession(true)).thenReturn(session);
 
-        sut.doFilter(req, resp, chain);
+        sut.handle(req, resp, chain);
 
         verify(resp).sendRedirect(argThat((String url) ->
                 url.contains("response_type=code") && url.contains("state=")));

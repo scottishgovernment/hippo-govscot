@@ -20,10 +20,10 @@ import org.hippoecm.frontend.plugins.login.LoginPanel;
 import org.hippoecm.frontend.session.LoginException;
 import org.onehippo.forge.resetpassword.frontend.ResetPasswordConst;
 import org.onehippo.forge.resetpassword.login.CustomLoginPlugin;
+import scot.gov.publishing.hippo.sso.EndpointHandler;
 import scot.gov.publishing.hippo.sso.OidcConfig;
-import scot.gov.publishing.hippo.sso.RedirectHandler;
+import scot.gov.publishing.hippo.sso.OidcRedirectHandler;
 import scot.gov.publishing.hippo.sso.SsoConfig;
-import scot.gov.publishing.hippo.sso.SsoFilter;
 import scot.gov.publishing.hippo.sso.SsoSessionAttributes;
 
 @SuppressWarnings("unused")
@@ -153,14 +153,14 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
                     // a subsequent RestartResponseException elsewhere in the request would
                     // reset the buffered Wicket-level response and silently drop the cookie.
                     HttpServletResponse response = (HttpServletResponse) getResponse().getContainerResponse();
-                    response.addCookie(SsoFilter.clearLoggedOutCookie(request.isSecure()));
+                    response.addCookie(EndpointHandler.clearLoggedOutCookie(request.isSecure()));
                     // Save the URL of the login page as RETURN_URL, captured when the page
                     // was first rendered, so CallbackHandler can return the user here after
                     // authentication.
                     session.setAttribute(SsoSessionAttributes.RETURN_URL, returnUrl);
                     // Build the IdP authorization URL and navigate the browser to it.
                     OidcConfig oidcConfig = OidcConfig.get();
-                    String idpUrl = new RedirectHandler(oidcConfig).buildRedirectUrl(request, session);
+                    String idpUrl = new OidcRedirectHandler(oidcConfig).buildRedirectUrl(request, session);
                     target.appendJavaScript("window.location.href = '" + idpUrl + "';");
                 }
             };
@@ -208,7 +208,7 @@ public class SsoLoginPlugin extends CustomLoginPlugin {
             // never displayed.
             // Further, if the error is lost, they may be redirected back to the IdP again.
             // Errors should be cleared only where a fresh SSO attempt starts instead
-            // (i.e. SsoLoginPlugin#ssoLoginButton, SsoFilter#performSSOLogin).
+            // (i.e. SsoLoginPlugin#ssoLoginButton, EndpointHandler#performSSOLogin).
             if (httpSession.getAttribute(SsoSessionAttributes.SSO_ERROR) != null) {
                 panel.getSession().error(panel.getString("sso.idp.error"));
             }

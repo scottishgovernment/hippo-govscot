@@ -56,7 +56,7 @@ public class CallbackHandlerTest {
     /**
      * The SSO session attribute marks a login as requested/in-flight, not that the user is
      * authenticated. If it survives an IdP error, it stays set with no credentials and, in
-     * REQUIRED mode or OPTIONAL with an sso=true cookie, SsoRedirectFilter would otherwise
+     * REQUIRED mode or OPTIONAL with an sso=true cookie, RedirectHandler would otherwise
      * redirect straight back to the IdP — looping forever on the same error.
      */
     @Test
@@ -172,7 +172,7 @@ public class CallbackHandlerTest {
 
     /**
      * Same rationale as idpErrorClearsSsoAttribute: an internal callback error must not leave
-     * the SSO attribute set with no credentials, or SsoRedirectFilter could otherwise loop
+     * the SSO attribute set with no credentials, or RedirectHandler could otherwise loop
      * back to the IdP in REQUIRED mode or with an sso=true preference cookie.
      */
     @Test

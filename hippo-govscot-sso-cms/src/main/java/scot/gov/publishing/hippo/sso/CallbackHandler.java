@@ -5,7 +5,11 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.oauth2.sdk.*;
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
+import com.nimbusds.oauth2.sdk.AuthorizationGrant;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.id.State;
@@ -176,7 +180,7 @@ public class CallbackHandler {
         try {
             HTTPResponse httpResponse = userInfoRequest.toHTTPRequest().send();
             UserInfo userInfo = UserInfoSuccessResponse.parse(httpResponse).getUserInfo();
-            LOG.info("UserInfo: {}", userInfo);
+            LOG.trace("Obtained user info: {}", userInfo);
             return userInfo;
         } catch (IOException ex) {
             throw new CallbackException(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "User info IO error", ex);
