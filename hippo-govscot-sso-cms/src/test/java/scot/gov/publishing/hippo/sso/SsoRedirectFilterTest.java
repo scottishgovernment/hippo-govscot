@@ -140,7 +140,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void redirectOnceWithLoggedOutCookiePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
 
         sut.doFilter(req, resp, chain);
 
@@ -167,7 +167,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void redirectAutoWithLoggedOutCookieStillRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
         sut.doFilter(req, resp, chain);
@@ -186,12 +186,12 @@ public class SsoRedirectFilterTest {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.ONCE, SsoConfig.Form.SSO);
         when(req.getSession(false)).thenReturn(session);
         when(session.getAttribute("hippo:username")).thenReturn("someuser");
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.LOGGED_OUT_COOKIE_NAME, "true")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.LOGGED_OUT_COOKIE_NAME, "true")});
 
         sut.doFilter(req, resp, chain);
 
         verify(resp).addCookie(argThat(c ->
-                c.getName().equals(SsoFilter.LOGGED_OUT_COOKIE_NAME) && c.getMaxAge() == 0));
+                c.getName().equals(SsoCookies.LOGGED_OUT_COOKIE_NAME) && c.getMaxAge() == 0));
         verify(chain).doFilter(req, resp);
         verify(resp, never()).sendRedirect(anyString());
     }
@@ -199,7 +199,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoCookieFalsePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
         sut.doFilter(req, resp, chain);
 
@@ -215,7 +215,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeAutoWithSsoCookieFalsePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
         sut.doFilter(req, resp, chain);
 
@@ -229,7 +229,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeOnceWithSsoCookieFalsePassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.ONCE, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
 
         sut.doFilter(req, resp, chain);
 
@@ -244,7 +244,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void requiredModeWithSsoCookieFalseStillRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.REQUIRED, SsoConfig.Redirect.AUTO, SsoConfig.Form.SSO);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
         when(req.getSession(true)).thenReturn(session);
 
         sut.doFilter(req, resp, chain);
@@ -263,7 +263,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoSessionAttrOverridesSsoCookieFalseRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.AUTO, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "false")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "false")});
         when(req.getSession(false)).thenReturn(session);
         when(req.getSession(true)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO)).thenReturn(true);
@@ -326,7 +326,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoCookieTrueAndPendingSsoErrorPassesThrough() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "true")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "true")});
         when(req.getSession(false)).thenReturn(session);
         when(session.getAttribute(SsoSessionAttributes.SSO_ERROR)).thenReturn("access_denied");
 
@@ -446,7 +446,7 @@ public class SsoRedirectFilterTest {
     @Test
     public void optionalModeWithSsoCookieTrueRedirectsToIdP() throws Exception {
         sut.ssoConfig = new SsoConfig(SsoConfig.Mode.OPTIONAL, SsoConfig.Redirect.MANUAL, SsoConfig.Form.REVEAL);
-        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoFilter.SSO_COOKIE_NAME, "true")});
+        when(req.getCookies()).thenReturn(new Cookie[]{new Cookie(SsoCookies.SSO_COOKIE_NAME, "true")});
         when(req.getSession(true)).thenReturn(session);
 
         sut.doFilter(req, resp, chain);

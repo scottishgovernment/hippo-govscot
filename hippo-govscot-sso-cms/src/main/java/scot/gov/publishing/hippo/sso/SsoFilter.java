@@ -6,6 +6,9 @@ import jakarta.servlet.http.*;
 
 import java.io.IOException;
 
+import static scot.gov.publishing.hippo.sso.SsoCookies.LOGGED_OUT_COOKIE_NAME;
+import static scot.gov.publishing.hippo.sso.SsoCookies.SSO_COOKIE_NAME;
+
 /**
  * Provides various endpoints for the SSO integration including the callback endpoint.
  */
@@ -17,15 +20,6 @@ public class SsoFilter extends HttpFilter {
      * IdP, so it must stay in sync with the "callback" case in {@link #doFilter}.
      */
     public static final String CALLBACK_PATH = "/sso/callback";
-
-    public static final String SSO_COOKIE_NAME = "sso";
-
-    /**
-     * Cookie name used to indicate that the user has logged out.
-     * This allows the redirect filter to avoid immediately redirecting the user
-     * back to the IdP when not required (sso.redirect=ONCE).
-     */
-    public static final String LOGGED_OUT_COOKIE_NAME = "logged_out";
 
     private final CallbackHandler callbackHandler = new CallbackHandler();
 

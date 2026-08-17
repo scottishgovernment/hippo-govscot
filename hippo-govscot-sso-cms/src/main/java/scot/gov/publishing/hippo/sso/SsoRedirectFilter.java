@@ -2,20 +2,15 @@ package scot.gov.publishing.hippo.sso;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import static scot.gov.publishing.hippo.sso.SsoConfig.Mode.OFF;
@@ -129,7 +124,7 @@ public class SsoRedirectFilter extends HttpFilter {
         }
 
         // The user logged out and should not be logged in automatically
-        if (isLogOutPermitted() && isLogoutRequested(request)) {
+        if (isLogOutPermitted() && SsoCookies.isLogoutRequested(request)) {
             return true;
         }
 
@@ -159,19 +154,11 @@ public class SsoRedirectFilter extends HttpFilter {
     }
 
     private static boolean isSsoLoginRequested(HttpServletRequest request, HttpSession session) {
-        return isSsoLoginRequestedByUI(session) || isSsoLoginRequestedByCookie(request);
+        return isSsoLoginRequestedByUI(session) || SsoCookies.isSsoLoginRequested(request);
     }
 
     private static boolean isSsoLoginRequestedByUI(HttpSession session) {
         return session != null && session.getAttribute(SsoSessionAttributes.SSO) != null;
-    }
-
-    private static boolean isSsoLoginRequestedByCookie(HttpServletRequest request) {
-        return getBooleanCookie(request, SsoFilter.SSO_COOKIE_NAME).orElse(false);
-    }
-
-    private static boolean isSsoLoginSuppressedByCookie(HttpServletRequest request) {
-        return !getBooleanCookie(request, SsoFilter.SSO_COOKIE_NAME).orElse(true);
     }
 
     private static boolean hasPendingError(HttpSession session) {
@@ -183,21 +170,18 @@ public class SsoRedirectFilter extends HttpFilter {
         return ssoConfig.redirect() != SsoConfig.Redirect.AUTO;
     }
 
-    private static boolean isLogoutRequested(HttpServletRequest request) {
-        return getBooleanCookie(request, SsoFilter.LOGGED_OUT_COOKIE_NAME).orElse(false);
-    }
 
     private boolean isSsoDisabledByCookie(HttpServletRequest request, HttpSession session) {
         return ssoConfig.mode() != REQUIRED
                 && !isSsoLoginRequestedByUI(session)
-                && isSsoLoginSuppressedByCookie(request);
+                && SsoCookies.isSsoLoginSuppressed(request);
     }
 
     /**
      * Returns true if the user is authenticated but has a stale logged_out cookie.
      */
     private static boolean hasJustReauthenticated(HttpServletRequest request, HttpSession session) {
-        return hasAttribute(session, HIPPO_USERNAME_ATTR_NAME) && isLogoutRequested(request);
+        return hasAttribute(session, HIPPO_USERNAME_ATTR_NAME) && SsoCookies.isLogoutRequested(request);
     }
 
     /**
@@ -214,18 +198,6 @@ public class SsoRedirectFilter extends HttpFilter {
         String path = requestURI.substring(contextPath.length());
         return EXCLUDED_PREFIXES.stream().anyMatch(path::startsWith)
                 || EXCLUDED_PATHS.contains(path);
-    }
-
-    private static Optional<Boolean> getBooleanCookie(HttpServletRequest request, String name) {
-        Cookie[] cookies = request.getCookies();
-        if (ArrayUtils.isEmpty(cookies)) {
-            return Optional.empty();
-        }
-        return Arrays.stream(cookies)
-                .filter(c -> name.equalsIgnoreCase(c.getName()))
-                .map(Cookie::getValue)
-                .map(BooleanUtils::toBoolean)
-                .findFirst();
     }
 
     /**
