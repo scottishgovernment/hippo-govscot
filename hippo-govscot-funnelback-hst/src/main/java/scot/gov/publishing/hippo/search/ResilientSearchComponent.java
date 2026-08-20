@@ -37,6 +37,7 @@ import javax.jcr.query.QueryResult;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 import static java.util.Collections.emptyMap;
@@ -284,7 +285,12 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         if (isBlank(dateValue)) {
             return null;
         }
-        return LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        try {
+            return LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } catch (DateTimeParseException e) {
+            LOG.warn("Invalid date value {} for param {}, ignoring", dateValue, dateParam);
+            return null;
+        }
     }
 
     Sort sort(HstRequest request) {
