@@ -1,18 +1,23 @@
-package scot.gov.publishing.searchjournal;
+package scot.gov.publishing.journal;
 
 import java.util.Calendar;
 
-public class SearchJournalEntry {
+public class JournalEntry {
 
     private String contentId;
+
+    /**
+     * Identifies which site this entry belongs to, for deployments that serve multiple sites
+     * from the same journal/reconciliation pipeline (e.g. a publishing platform). {@code null}
+     * or blank means the single default site.
+     */
+    private String site;
 
     private String url;
 
     private Calendar timestamp;
 
-    private String collection;
-
-    private String action;
+    private JournalAction action;
 
     private long attempt = 0;
 
@@ -24,6 +29,14 @@ public class SearchJournalEntry {
 
     public void setContentId(String contentId) {
         this.contentId = contentId;
+    }
+
+    public String getSite() {
+        return site;
+    }
+
+    public void setSite(String site) {
+        this.site = site;
     }
 
     public String getUrl() {
@@ -42,19 +55,11 @@ public class SearchJournalEntry {
         this.timestamp = timestamp;
     }
 
-    public String getCollection() {
-        return collection;
-    }
-
-    public void setCollection(String collection) {
-        this.collection = collection;
-    }
-
-    public String getAction() {
+    public JournalAction getAction() {
         return action;
     }
 
-    public void setAction(String action) {
+    public void setAction(JournalAction action) {
         this.action = action;
     }
 
