@@ -288,7 +288,7 @@ public class ResilientSearchComponent extends EssentialsContentComponent {
         try {
             return LocalDate.parse(dateValue, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         } catch (DateTimeParseException e) {
-            LOG.warn("Invalid date value {} for param {}, ignoring", dateValue, dateParam);
+            LOG.warn("Invalid date value {} for param {}, ignoring", dateValue, dateParam, e);
             return null;
         }
     }
