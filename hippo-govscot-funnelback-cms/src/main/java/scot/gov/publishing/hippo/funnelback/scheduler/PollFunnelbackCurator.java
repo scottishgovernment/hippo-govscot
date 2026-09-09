@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.hippoecm.hst.core.container.ComponentManager;
+import org.hippoecm.hst.core.container.ContainerConfiguration;
 import org.hippoecm.hst.site.HstServices;
 import org.hippoecm.repository.api.Document;
 import org.hippoecm.repository.api.HippoWorkspace;
@@ -39,6 +40,10 @@ public class PollFunnelbackCurator implements RepositoryJob {
     private static final Logger LOG = LoggerFactory.getLogger(PollFunnelbackCurator.class);
 
     public static final String FUNNELBACK = "funnelback";
+
+    public static final String DEFAULT_USER_AGENT = "Bloomreach CMS (digital-publishing@gov.scot)";
+
+    static final String USER_AGENT_PROPERTY = "squiz.admin.useragent";
 
     private static final String HASH = "search:hash";
 
@@ -95,6 +100,14 @@ public class PollFunnelbackCurator implements RepositoryJob {
         return "";
     }
 
+    String userAgent() {
+        return containerConfiguration().getString(USER_AGENT_PROPERTY, DEFAULT_USER_AGENT);
+    }
+
+    ContainerConfiguration containerConfiguration() {
+        return HstServices.getComponentManager().getContainerConfiguration();
+    }
+
     boolean isComponentManagerReady() {
         ComponentManager componentManager = HstServices.getComponentManager();
         if (componentManager == null) {
@@ -128,7 +141,7 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
     String doGetPageContentHash(String collection, String token, String searchType) throws IOException, URISyntaxException {
         URI uri = curatorURI(collection, searchType);
-        CloseableHttpClient httpClient = HttpClients.createDefault();
+        CloseableHttpClient httpClient = HttpClients.custom().setUserAgent(userAgent()).build();
         HttpGet request = new HttpGet(uri);
         try {
             request.addHeader("X-Security-Token", token);
