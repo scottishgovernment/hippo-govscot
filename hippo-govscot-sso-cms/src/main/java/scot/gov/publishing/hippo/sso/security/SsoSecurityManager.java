@@ -58,7 +58,7 @@ public class SsoSecurityManager extends SecurityManager {
             // i.e. the username form field value, or the IdP claim for SSO
             LOG.atInfo()
                     .addKeyValue("login.user", userId)
-                    .addKeyValue("login.user.claim", creds.getUserID())
+                    .addKeyValue("login.claim", creds.getUserID())
                     .addKeyValue("login.method", isSsoLogin ? "sso" : "password")
                     .log("Successful login for user: {}", userId);
 
