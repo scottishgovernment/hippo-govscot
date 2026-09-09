@@ -53,7 +53,7 @@ public class SsoSecurityManager extends SecurityManager {
             creds.setAttribute("providerId", SSO_PROVIDER_ID);
             ssoProvider.synchronizeOnLogin(creds);
 
-            // userId is the resolved repository user ID;
+            // userId is the resolved repository user ID.
             // creds.getUserID() is the ID as presented
             // i.e. the username form field value, or the IdP claim for SSO
             LOG.atInfo()
