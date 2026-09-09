@@ -28,6 +28,7 @@ public class SsoSecurityManager extends SecurityManager {
     @Override
     public AuthenticationStatus authenticate(SimpleCredentials creds) {
         String userId = creds.getUserID();
+        boolean isSsoLogin = creds.getAttribute(SsoAttributes.SSO_ID) != null;
         try {
             SecurityProvider ssoProvider = provider(SSO_PROVIDER_ID);
             SsoUserManager ssoUserManager = (SsoUserManager) ssoProvider.getUserManager();
@@ -39,7 +40,6 @@ public class SsoSecurityManager extends SecurityManager {
                     return AuthenticationStatus.ACCOUNT_EXPIRED;
                 }
 
-                boolean isSsoLogin = creds.getAttribute(SsoAttributes.SSO_ID) != null;
                 if (!isSsoLogin && ssoUserManager.isPasswordExpired(userId)) {
                     LOG.debug("Password expired for user: {}", userId);
                     return AuthenticationStatus.CREDENTIAL_EXPIRED;
@@ -52,6 +52,16 @@ public class SsoSecurityManager extends SecurityManager {
 
             creds.setAttribute("providerId", SSO_PROVIDER_ID);
             ssoProvider.synchronizeOnLogin(creds);
+
+            // userId is the resolved repository user ID;
+            // creds.getUserID() is the ID as presented
+            // i.e. the username form field value, or the IdP claim for SSO
+            LOG.atInfo()
+                    .addKeyValue("login.user", userId)
+                    .addKeyValue("login.user.claim", creds.getUserID())
+                    .addKeyValue("login.method", isSsoLogin ? "sso" : "password")
+                    .log("Successful login for user: {}", userId);
+
             return AuthenticationStatus.SUCCEEDED;
         } catch (RepositoryException ex) {
             LOG.warn("Error authenticating user: {}", userId, ex);
