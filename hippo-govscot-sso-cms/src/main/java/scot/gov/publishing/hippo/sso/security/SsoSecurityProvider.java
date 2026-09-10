@@ -3,6 +3,8 @@ package scot.gov.publishing.hippo.sso.security;
 import org.apache.jackrabbit.api.security.user.UserManager;
 import org.apache.jackrabbit.value.StringValue;
 import org.hippoecm.frontend.plugins.cms.admin.users.User;
+import org.hippoecm.repository.api.HippoNodeType;
+import org.hippoecm.repository.api.NodeNameCodec;
 import org.hippoecm.repository.security.AbstractSecurityProvider;
 import org.hippoecm.repository.security.DelegatingSecurityProvider;
 import org.hippoecm.repository.security.ManagerContext;
@@ -10,6 +12,7 @@ import org.hippoecm.repository.security.SecurityProviderContext;
 import org.hippoecm.repository.security.group.GroupManager;
 import org.hippoecm.repository.security.group.RepositoryGroupManager;
 import org.hippoecm.repository.security.user.HippoUserManager;
+import org.hippoecm.repository.util.JcrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scot.gov.publishing.hippo.sso.SsoAttributes;
@@ -21,7 +24,8 @@ import javax.jcr.SimpleCredentials;
 
 /**
  * Custom SecurityProvider that wraps the repository user manager with an
- * SSO-aware user manager and copies OIDC claims to the user node on login.
+ * SSO-aware user manager, copies OIDC claims to the user node on login,
+ * and logs successful logins.
  *
  * <p>Extends {@link AbstractSecurityProvider} rather than
  * {@link DelegatingSecurityProvider} in order to override {@link #syncUser}.
@@ -67,6 +71,22 @@ public class SsoSecurityProvider extends AbstractSecurityProvider {
         return groupManager;
     }
 
+    /**
+     * Synchronizes the user on login, and logs successful logins.
+     * The superclass runs the sync only once per credentials object; the same
+     * check is reused here so each login is logged once, since a single CMS
+     * login logs in several JCR sessions with the same credentials object
+     * (e.g. the channel manager preview session).
+     */
+    @Override
+    public void synchronizeOnLogin(SimpleCredentials creds) throws RepositoryException {
+        boolean firstLogin = !Boolean.TRUE.equals(creds.getAttribute(SYNCED_ATTR_NAME));
+        super.synchronizeOnLogin(creds);
+        if (firstLogin) {
+            logLogin(creds);
+        }
+    }
+
     @Override
     protected void syncUser(SimpleCredentials creds, HippoUserManager userMgr) throws RepositoryException {
         if (creds.getAttribute(SsoAttributes.SSO_ID) != null) {
@@ -74,6 +94,30 @@ public class SsoSecurityProvider extends AbstractSecurityProvider {
             copyAttribute(creds, SsoAttributes.SSO_EMAIL, user, User.PROP_EMAIL);
         }
         super.syncUser(creds, userMgr);
+    }
+
+    /**
+     * Log a successful login, except those by system users (hipposys:system).
+     * On instances where the site is served from the same instance as the CMS,
+     * system users includes HST logins required to serve the site.
+     */
+    private void logLogin(SimpleCredentials creds) throws RepositoryException {
+        HippoUserManager userMgr = (HippoUserManager) getUserManager();
+        Node user = userMgr.getUser(creds.getUserID());
+        if (user == null || JcrUtils.getBooleanProperty(user, HippoNodeType.HIPPO_SYSTEM, false)) {
+            return;
+        }
+
+        // The node name is the resolved repository user ID.
+        // creds.getUserID() is the ID as presented,
+        // i.e. the username form field value, or the IdP claim for SSO.
+        String userId = NodeNameCodec.decode(user.getName());
+        boolean isSsoLogin = creds.getAttribute(SsoAttributes.SSO_ID) != null;
+        LOG.atInfo()
+                .addKeyValue("login.user", userId)
+                .addKeyValue("login.claim", creds.getUserID())
+                .addKeyValue("login.method", isSsoLogin ? "sso" : "password")
+                .log("Successful login for user: {}", userId);
     }
 
     private void copyAttribute(SimpleCredentials creds, String attributeName, Node node, String propertyName)
