@@ -76,11 +76,17 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
-      <version>6.1.21</version>
-<!--      Version 6.2.0+ seems to break MediaType / MockHttpServletResponse?-->
-<!--      <version>6.2.8</version> brXM 16.4.1 version, removed 16.5+-->
+      <version>6.2.19</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>6.2.19</version>
+      <scope>test</scope>
+    </dependency>
+
       <dependency>
           <groupId>commons-io</groupId>
           <artifactId>commons-io</artifactId>
