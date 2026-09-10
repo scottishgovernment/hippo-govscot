@@ -141,20 +141,13 @@ public class PollFunnelbackCurator implements RepositoryJob {
 
     String doGetPageContentHash(String collection, String token, String searchType) throws IOException, URISyntaxException {
         URI uri = curatorURI(collection, searchType);
-        CloseableHttpClient httpClient = HttpClients.custom().setUserAgent(userAgent()).build();
         HttpGet request = new HttpGet(uri);
-        try {
-            request.addHeader("X-Security-Token", token);
-            CloseableHttpResponse response = httpClient.execute(request);
-            try {
-                InputStream pageInputStream = response.getEntity().getContent();
-                String tmp = IOUtils.toString(pageInputStream, StandardCharsets.UTF_8);
-                return DigestUtils.sha1Hex(tmp);
-            } finally {
-                response.close();
-            }
-        } finally {
-            httpClient.close();
+        request.addHeader("X-Security-Token", token);
+        try (CloseableHttpClient httpClient = HttpClients.custom().setUserAgent(userAgent()).build();
+             CloseableHttpResponse response = httpClient.execute(request);
+             InputStream pageInputStream = response.getEntity().getContent()) {
+            String tmp = IOUtils.toString(pageInputStream, StandardCharsets.UTF_8);
+            return DigestUtils.sha1Hex(tmp);
         }
     }
 
