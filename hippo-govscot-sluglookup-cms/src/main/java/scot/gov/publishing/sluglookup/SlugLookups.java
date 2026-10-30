@@ -50,6 +50,7 @@ public class SlugLookups {
     public void removeLookup(String path, String site, String type, String mountType) throws RepositoryException {
         Node existingLookup = findLookupForPath(site, type, mountType, path);
         clearLookup(existingLookup);
+        session.save();
     }
 
     public Node ensureLookupPath(String slug, String path, String site, String type, String mountType) throws RepositoryException {
@@ -117,8 +118,8 @@ public class SlugLookups {
             return;
         }
 
-        LOG.info("clearing lookup path for node {}", node.getPath());
-        node.getProperty(PATH).remove();
+        LOG.info("removing lookup node {}", node.getPath());
+        node.remove();
     }
 
 }
