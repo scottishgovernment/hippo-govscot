@@ -20,6 +20,9 @@ public class SlugLookups {
 
     private static final String PATH = "sluglookup:path";
 
+    // number of hash folders between the lookup root and a slug lookup node
+    private static final int HASH_DEPTH = 4;
+
     Session session;
 
     public SlugLookups(Session session) {
@@ -119,7 +122,26 @@ public class SlugLookups {
         }
 
         LOG.info("removing lookup node {}", node.getPath());
+        Node parent = node.getParent();
         node.remove();
+        removeEmptyHashFolders(parent);
+    }
+
+    /**
+     * Walk up through the hash folders above a removed lookup, removing any that are now empty.
+     * Stops at the first non-empty folder and never goes above the hash folders into the lookup root.
+     */
+    void removeEmptyHashFolders(Node folder) throws RepositoryException {
+        Node current = folder;
+        for (int i = 0; i < HASH_DEPTH && isEmpty(current); i++) {
+            Node parent = current.getParent();
+            current.remove();
+            current = parent;
+        }
+    }
+
+    private boolean isEmpty(Node node) throws RepositoryException {
+        return !node.hasNodes() && !node.hasProperty(PATH);
     }
 
 }
