@@ -4,7 +4,7 @@ import org.apache.wicket.model.IModel;
 import org.hippoecm.addon.workflow.IWorkflowInvoker;
 import org.hippoecm.addon.workflow.WorkflowDialog;
 import org.hippoecm.frontend.dialog.Dialog;
-import org.hippoecm.frontend.plugins.reviewedactions.dialogs.DatePickerComponent;
+import org.hippoecm.frontend.component.DatePickerComponent;
 import org.hippoecm.repository.api.WorkflowDescriptor;
 
 import java.util.Date;
