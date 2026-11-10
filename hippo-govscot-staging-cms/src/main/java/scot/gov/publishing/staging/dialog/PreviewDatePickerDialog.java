@@ -27,6 +27,8 @@ import org.apache.wicket.validation.validator.DateValidator;
 import org.hippoecm.frontend.behaviors.EventStoppingDecorator;
 import org.hippoecm.frontend.dialog.AbstractDialog;
 import org.hippoecm.frontend.session.UserSession;
+import org.hippoecm.hst.configuration.hosting.Mount;
+import org.hippoecm.hst.configuration.hosting.VirtualHosts;
 import org.hippoecm.hst.container.RequestContextProvider;
 import org.hippoecm.hst.core.linking.HstLinkCreator;
 import org.hippoecm.hst.core.request.HstRequestContext;
@@ -35,17 +37,23 @@ import org.hippoecm.hst.platform.model.HstModelRegistry;
 import org.hippoecm.repository.HippoStdNodeType;
 import org.hippoecm.repository.util.JcrUtils;
 import org.hippoecm.repository.util.NodeIterable;
-import org.onehippo.cms7.channelmanager.HstUtil;
 import org.onehippo.cms7.services.HippoServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wicketstuff.datetime.extensions.yui.calendar.DatePicker;
 
-import javax.jcr.*;
+import javax.jcr.Node;
+import javax.jcr.NodeIterator;
+import javax.jcr.RepositoryException;
+import javax.jcr.Session;
+import javax.jcr.Workspace;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import static scot.gov.publishing.staging.plugins.PreviewPlugin.INTERNAL_PREVIEW_NODE_NAME;
 
@@ -184,61 +192,87 @@ public class PreviewDatePickerDialog extends AbstractDialog<String> {
         UUID uuid = UUID.randomUUID();
         String randomUUIDString = uuid.toString();
         Session session = UserSession.get().getJcrSession();
-        nodeIDs.forEach(id->{
+        for (String id : nodeIDs) {
             try {
                 Node node = session.getNodeByIdentifier(id);
-                List<String> urls = getPreviewURLs(node);
-                generatePreviewLinkNodes(node, urls, randomUUIDString);
-            } catch (RepositoryException e){
+                Optional<String> previewUrl = findSiteAlias(node)
+                        .flatMap(alias -> getPreviewURL(alias, node));
+                if (previewUrl.isPresent()) {
+                    generatePreviewLinkNode(node, previewUrl.get(), randomUUIDString);
+                }
+            } catch (RepositoryException e) {
                 LOG.error("An exception occurred while generating a preview for node with uuid {}", id, e);
             }
-        });
+        }
     }
 
-    private List<String> getPreviewURLs(Node node) {
-        HstRequestContext hstRequestContext = RequestContextProvider.get();
-        HstModelRegistry hstModelRegistry = HippoServiceRegistry.getService(HstModelRegistry.class);
-        HstModel siteModel = hstModelRegistry.getHstModel("/site");
-        HstLinkCreator hstLinkCreator = siteModel.getHstLinkCreator();
-        return siteModel.getVirtualHosts().getMountsByHostGroup(HstUtil.getHostGroup())
-                .stream()
-                .filter(mount -> {
-                    try {
-                        return "preview".equals(mount.getType()) && mount.getAlias().endsWith("-staging") && node.getPath().contains(mount.getContentPath());
-                    } catch (RepositoryException e) {
-                        LOG.error("An exception occurred during preview link creation.", e);
-                    }
-                    return false;
-                })
-                .map(mount -> hstLinkCreator.create(node, mount).toUrlForm(hstRequestContext, true))
-                .collect(Collectors.toList());
-    }
-
-    protected void generatePreviewLinkNodes(Node node, List<String> urls, String randomUUIDString) throws RepositoryException {
-        Node unpublishedVariant = getUnpublishedVariant(node);
-        urls.stream().forEach(url -> {
-            if (unpublishedVariant != null) {
-                //storing the preview id in a separate child node
-                try {
-                    String fullURL = new URIBuilder(url).addParameter("previewkey", randomUUIDString).toString();
-                    Node previewId = unpublishedVariant.addNode(INTERNAL_PREVIEW_NODE_NAME, "staging:preview");
-                    previewId.setProperty("staging:key", randomUUIDString);
-                    previewId.setProperty("staging:url", fullURL);
-                    previewId.setProperty("staging:user", UserSession.get().getJcrSession().getUser().getId());
-                    previewId.setProperty("staging:creationdate", Calendar.getInstance());
-                    Calendar expiration = Calendar.getInstance();
-                    expiration.setTime(expirationDate);
-                    previewId.setProperty("staging:expirationdate", expiration);
-                    previewId.getSession().save();
-                } catch (RepositoryException e) {
-                    LOG.error("Exception while generating preview link nodes.", e);
-                } catch (URISyntaxException e){
-                    LOG.error("Exception while constructing full URL.", e);
-                }
-            } else {
-                LOG.error("unpublishedVariant is null");
+    /**
+     * Returns the alias of the site that contains the given content item.
+     */
+    private Optional<String> findSiteAlias(Node node) {
+        try {
+            String contentPath = node.getPath();
+            if (contentPath.startsWith("/content/documents/")) {
+                String alias = contentPath.split("/", 5)[3];
+                return Optional.of(alias);
             }
+        } catch (RepositoryException ex) {
+            LOG.error("An exception occurred during preview link creation.", ex);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Returns a link to a content item on the preview host.
+     * This does NOT include the query string with preview key.
+     */
+    private Optional<String> getPreviewURL(String siteAlias, Node node) {
+        HstRequestContext hstRequestContext = RequestContextProvider.get();
+
+        String hostGroupName = hstRequestContext.getVirtualHost().getHostGroupName();
+        String alias = siteAlias + "-staging";
+        String type = "preview";
+
+        HstModel siteModel = HippoServiceRegistry.getService(HstModelRegistry.class)
+                .getHstModel("/site");
+        VirtualHosts virtualHosts = siteModel.getVirtualHosts();
+        Mount mount = virtualHosts.getMountByGroupAliasAndType(hostGroupName, alias, type);
+
+        return Optional.ofNullable(mount).map(m -> {
+            HstLinkCreator hstLinkCreator = siteModel.getHstLinkCreator();
+            return hstLinkCreator.create(node, m)
+                    .toUrlForm(hstRequestContext, true);
         });
+    }
+
+    /**
+     * Store a preview link as a child of the unpublished variant.
+     */
+    protected void generatePreviewLinkNode(Node handle, String url, String randomUUIDString) throws RepositoryException {
+        Node unpublishedVariant = getUnpublishedVariant(handle);
+        if (unpublishedVariant == null) {
+            LOG.error("Could not store preview link {} for handle {} with no unpublished variant",
+                    url,
+                    handle.getIdentifier());
+            return;
+        }
+        // Store the preview id in a separate child node
+        try {
+            String fullURL = new URIBuilder(url).addParameter("previewkey", randomUUIDString).toString();
+            Node previewId = unpublishedVariant.addNode(INTERNAL_PREVIEW_NODE_NAME, "staging:preview");
+            previewId.setProperty("staging:key", randomUUIDString);
+            previewId.setProperty("staging:url", fullURL);
+            previewId.setProperty("staging:user", UserSession.get().getJcrSession().getUser().getId());
+            previewId.setProperty("staging:creationdate", Calendar.getInstance());
+            Calendar expiration = Calendar.getInstance();
+            expiration.setTime(expirationDate);
+            previewId.setProperty("staging:expirationdate", expiration);
+            previewId.getSession().save();
+        } catch (RepositoryException e) {
+            LOG.error("Exception while generating preview link nodes.", e);
+        } catch (URISyntaxException e){
+            LOG.error("Exception while constructing full URL.", e);
+        }
     }
 
     private Node getUnpublishedVariant(Node handle) throws RepositoryException {
