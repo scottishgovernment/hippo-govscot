@@ -117,6 +117,12 @@
       <artifactId>hippo-addon-crisp-core</artifactId>
       <version>${hippo.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
